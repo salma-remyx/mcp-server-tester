@@ -1,4 +1,4 @@
-import { test as base, expect } from '@playwright/test';
+import { test as base } from '@playwright/test';
 import {
   createMCPClientForConfig,
   createMCPFixture,
@@ -7,6 +7,8 @@ import {
   extractTextFromResponse,
   type MCPConfig,
   type MCPFixtureApi,
+  // Extended expect with MCP tool matchers
+  expect,
 } from '@mcp-testing/server-tester';
 import { tmpdir } from 'os';
 import { mkdtemp, writeFile, rm } from 'fs/promises';
@@ -66,5 +68,27 @@ test.describe('Basic MCP Server Tests', () => {
 
     const passed = result.checks.filter((c) => c.pass).length;
     expect(passed).toBeGreaterThanOrEqual(3);
+  });
+});
+
+/**
+ * NEW: Matcher-Based API
+ *
+ * These tests demonstrate the new Playwright matcher-based approach.
+ * Cleaner and follows standard Playwright conventions.
+ */
+test.describe('Matcher-Based Tests (NEW)', () => {
+  test('reads file with matchers', async ({ mcp }) => {
+    const result = await mcp.callTool('read_file', { path: 'hello.txt' });
+
+    // Use new matchers - cleaner syntax
+    expect(result).not.toBeToolError();
+    expect(result).toContainToolText('Hello, MCP!');
+  });
+
+  test('validates error responses', async ({ mcp }) => {
+    const result = await mcp.callTool('read_file', { path: 'nonexistent.txt' });
+
+    expect(result).toBeToolError();
   });
 });

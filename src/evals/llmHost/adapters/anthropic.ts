@@ -41,9 +41,13 @@ export function createAnthropicAdapter(): LLMAdapter {
 
     async createClient(config: LLMHostConfig): Promise<unknown> {
       // Dynamic import for optional dependency
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       let Anthropic;
       try {
+        // @ts-expect-error - Optional dependency, dynamically imported
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const module = await import('@anthropic-ai/sdk');
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         Anthropic = module.default;
       } catch {
         throw new Error(
@@ -61,6 +65,7 @@ export function createAnthropicAdapter(): LLMAdapter {
         );
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       return new Anthropic({ apiKey });
     },
 

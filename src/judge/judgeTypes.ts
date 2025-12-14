@@ -1,36 +1,73 @@
 /**
+ * Usage metrics from Claude Agent SDK response
+ */
+export interface UsageMetrics {
+  /**
+   * Number of input tokens consumed
+   */
+  inputTokens: number;
+
+  /**
+   * Number of output tokens generated
+   */
+  outputTokens: number;
+
+  /**
+   * Total cost in USD
+   */
+  totalCostUsd: number;
+
+  /**
+   * Execution duration in milliseconds
+   */
+  durationMs: number;
+
+  /**
+   * API call duration in milliseconds (excluding network overhead)
+   */
+  durationApiMs?: number;
+
+  /**
+   * Number of tokens read from cache
+   */
+  cacheReadInputTokens?: number;
+
+  /**
+   * Number of tokens written to cache
+   */
+  cacheCreationInputTokens?: number;
+}
+
+/**
  * Supported LLM provider types
  */
-export type LLMProviderKind = 'openai' | 'anthropic' | 'custom-http';
+export type ProviderKind = 'claude' | 'anthropic' | 'openai' | 'custom-http';
 
 /**
  * Configuration for an LLM judge
  */
-export interface LLMJudgeConfig {
+export interface JudgeConfig {
   /**
    * LLM provider to use
+   * @default 'claude'
    */
-  provider: LLMProviderKind;
+  provider?: ProviderKind;
 
   /**
    * Environment variable name containing the API key
-   * @default 'OPENAI_API_KEY' for openai, 'ANTHROPIC_API_KEY' for anthropic
+   * @default 'ANTHROPIC_API_KEY'
    */
   apiKeyEnvVar?: string;
 
   /**
    * Model to use for judging
-   * @default 'gpt-4' for openai, 'claude-3-5-sonnet-20241022' for anthropic
+   * @default 'claude-sonnet-4-20250514'
    */
   model?: string;
 
   /**
-   * Custom endpoint URL (for custom-http provider)
-   */
-  endpointUrl?: string;
-
-  /**
    * Maximum tokens for response
+   * @default 1000
    */
   maxTokens?: number;
 
@@ -39,12 +76,24 @@ export interface LLMJudgeConfig {
    * @default 0.0
    */
   temperature?: number;
+
+  /**
+   * Maximum budget in USD for the judge evaluation
+   * @default 0.10
+   */
+  maxBudgetUsd?: number;
+
+  /**
+   * Maximum size (in bytes) for tool output before failing the test
+   * When set, the judge will fail if the candidate response exceeds this size
+   */
+  maxToolOutputSize?: number;
 }
 
 /**
  * Result from LLM judge evaluation
  */
-export interface LLMJudgeResult {
+export interface JudgeResult {
   /**
    * Whether the evaluation passed
    */
@@ -59,23 +108,38 @@ export interface LLMJudgeResult {
    * Reasoning/explanation from the judge
    */
   reasoning?: string;
+
+  /**
+   * Usage metrics from the Claude Agent SDK
+   */
+  usage?: UsageMetrics;
+
+  /**
+   * Size of the candidate response in bytes (for maxToolOutputSize tracking)
+   */
+  candidateSizeBytes?: number;
+
+  /**
+   * Whether the candidate exceeded maxToolOutputSize
+   */
+  exceedsMaxToolOutputSize?: boolean;
 }
 
 /**
  * LLM judge client interface
  */
-export interface LLMJudgeClient {
+export interface Judge {
   /**
    * Evaluates a candidate response against a reference
    *
    * @param candidate - The actual response to evaluate
    * @param reference - The expected/reference response (or null if not applicable)
    * @param rubric - The evaluation rubric/criteria
-   * @returns Evaluation result
+   * @returns Evaluation result with usage metrics
    */
   evaluate(
     candidate: unknown,
     reference: unknown,
     rubric: string
-  ): Promise<LLMJudgeResult>;
+  ): Promise<JudgeResult>;
 }

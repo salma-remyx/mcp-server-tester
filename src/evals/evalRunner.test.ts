@@ -1,10 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import {
-  runEvalCase,
-  runEvalDataset,
-  type EvalExpectation,
-  type EvalExpectationContext,
-} from './evalRunner.js';
+import { z } from 'zod';
+import { runEvalCase, runEvalDataset, type EvalContext } from './evalRunner.js';
 import type { EvalCase, EvalDataset } from './datasetTypes.js';
 import type { MCPFixtureApi } from '../mcp/fixtures/mcpFixture.js';
 
@@ -29,7 +25,7 @@ function createMockMCP(callToolResponse?: {
   };
 }
 
-function createContext(mcp?: MCPFixtureApi): EvalExpectationContext {
+function createContext(mcp?: MCPFixtureApi): EvalContext {
   return {
     mcp: mcp ?? createMockMCP(),
   };
@@ -44,16 +40,6 @@ function createEvalCase(overrides: Partial<EvalCase> = {}): EvalCase {
   };
 }
 
-function createPassingExpectation(): EvalExpectation {
-  return vi.fn().mockResolvedValue({ pass: true, details: 'Passed' });
-}
-
-function createFailingExpectation(details?: string): EvalExpectation {
-  return vi
-    .fn()
-    .mockResolvedValue({ pass: false, details: details ?? 'Failed' });
-}
-
 describe('runEvalCase', () => {
   describe('direct mode', () => {
     it('should call tool and return result', async () => {
@@ -61,7 +47,7 @@ describe('runEvalCase', () => {
       const context = createContext(mcp);
       const evalCase = createEvalCase();
 
-      const result = await runEvalCase(evalCase, {}, context);
+      const result = await runEvalCase(evalCase, context);
 
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mcp.callTool).toHaveBeenCalledWith('test-tool', { input: 'test' });
@@ -80,79 +66,198 @@ describe('runEvalCase', () => {
       const context = createContext(mcp);
       const evalCase = createEvalCase();
 
-      const result = await runEvalCase(evalCase, {}, context);
+      const result = await runEvalCase(evalCase, context);
 
       expect(result.response).toEqual({ data: 'structured' });
     });
 
-    it('should pass when no expectations are provided', async () => {
+    it('should pass when no expect block is provided', async () => {
       const context = createContext();
       const evalCase = createEvalCase();
 
-      const result = await runEvalCase(evalCase, {}, context);
+      const result = await runEvalCase(evalCase, context);
 
       expect(result.pass).toBe(true);
     });
 
-    it('should pass when all expectations pass', async () => {
-      const context = createContext();
-      const evalCase = createEvalCase();
+    it('should pass when expect.containsText matches', async () => {
+      const mcp = createMockMCP({
+        content: [{ type: 'text', text: 'hello world' }],
+      });
+      const context = createContext(mcp);
+      const evalCase = createEvalCase({
+        expect: { containsText: 'hello' },
+      });
 
-      const result = await runEvalCase(
-        evalCase,
-        {
-          exact: createPassingExpectation(),
-          schema: createPassingExpectation(),
-        },
-        context
-      );
+      const result = await runEvalCase(evalCase, context);
 
       expect(result.pass).toBe(true);
-      expect(result.expectations.exact?.pass).toBe(true);
+      expect(result.expectations.textContains?.pass).toBe(true);
+    });
+
+    it('should fail when expect.containsText does not match', async () => {
+      const mcp = createMockMCP({
+        content: [{ type: 'text', text: 'hello world' }],
+      });
+      const context = createContext(mcp);
+      const evalCase = createEvalCase({
+        expect: { containsText: 'goodbye' },
+      });
+
+      const result = await runEvalCase(evalCase, context);
+
+      expect(result.pass).toBe(false);
+      expect(result.expectations.textContains?.pass).toBe(false);
+    });
+
+    it('should validate with expect.schema when schema is provided', async () => {
+      const mcp = createMockMCP({
+        structuredContent: { name: 'test', age: 25 },
+      });
+      const context = createContext(mcp);
+      const evalCase = createEvalCase({
+        expect: { schema: 'PersonSchema' },
+      });
+
+      const PersonSchema = z.object({
+        name: z.string(),
+        age: z.number(),
+      });
+
+      const result = await runEvalCase(evalCase, context, {
+        schemas: { PersonSchema },
+      });
+
+      expect(result.pass).toBe(true);
       expect(result.expectations.schema?.pass).toBe(true);
     });
 
-    it('should fail when any expectation fails', async () => {
-      const context = createContext();
-      const evalCase = createEvalCase();
+    it('should fail when expect.schema validation fails', async () => {
+      const mcp = createMockMCP({
+        structuredContent: { name: 'test', age: 'not-a-number' },
+      });
+      const context = createContext(mcp);
+      const evalCase = createEvalCase({
+        expect: { schema: 'PersonSchema' },
+      });
 
-      const result = await runEvalCase(
-        evalCase,
-        {
-          exact: createPassingExpectation(),
-          schema: createFailingExpectation('Schema mismatch'),
-        },
-        context
-      );
+      const PersonSchema = z.object({
+        name: z.string(),
+        age: z.number(),
+      });
+
+      const result = await runEvalCase(evalCase, context, {
+        schemas: { PersonSchema },
+      });
 
       expect(result.pass).toBe(false);
-      expect(result.expectations.exact?.pass).toBe(true);
       expect(result.expectations.schema?.pass).toBe(false);
-      expect(result.expectations.schema?.details).toBe('Schema mismatch');
     });
 
-    it('should handle expectation errors', async () => {
-      const context = createContext();
-      const evalCase = createEvalCase();
-      const throwingExpectation = vi.fn().mockRejectedValue(new Error('Boom'));
+    it('should fail when schema is not found in registry', async () => {
+      const mcp = createMockMCP({
+        structuredContent: { data: 'test' },
+      });
+      const context = createContext(mcp);
+      const evalCase = createEvalCase({
+        expect: { schema: 'MissingSchema' },
+      });
 
-      const result = await runEvalCase(
-        evalCase,
-        { exact: throwingExpectation },
-        context
-      );
+      const result = await runEvalCase(evalCase, context, { schemas: {} });
 
       expect(result.pass).toBe(false);
-      expect(result.expectations.exact?.pass).toBe(false);
-      expect(result.expectations.exact?.details).toContain('threw error');
-      expect(result.expectations.exact?.details).toContain('Boom');
+      expect(result.expectations.schema?.details).toContain('not found');
+    });
+
+    it('should validate expect.matchesPattern', async () => {
+      const mcp = createMockMCP({
+        content: [{ type: 'text', text: 'Order #12345 confirmed' }],
+      });
+      const context = createContext(mcp);
+      const evalCase = createEvalCase({
+        expect: { matchesPattern: '#\\d+' },
+      });
+
+      const result = await runEvalCase(evalCase, context);
+
+      expect(result.pass).toBe(true);
+      expect(result.expectations.regex?.pass).toBe(true);
+    });
+
+    it('should validate expect.isError for error responses', async () => {
+      const mcp = createMockMCP({
+        content: [{ type: 'text', text: 'Error: something went wrong' }],
+        isError: true,
+      });
+      const context = createContext(mcp);
+      const evalCase = createEvalCase({
+        expect: { isError: true },
+      });
+
+      const result = await runEvalCase(evalCase, context);
+
+      expect(result.pass).toBe(true);
+      expect(result.expectations.error?.pass).toBe(true);
+    });
+
+    it('should validate expect.response for exact match', async () => {
+      const mcp = createMockMCP({
+        structuredContent: { status: 'ok', count: 42 },
+      });
+      const context = createContext(mcp);
+      const evalCase = createEvalCase({
+        expect: { response: { status: 'ok', count: 42 } },
+      });
+
+      const result = await runEvalCase(evalCase, context);
+
+      expect(result.pass).toBe(true);
+      expect(result.expectations.exact?.pass).toBe(true);
+    });
+
+    it('should validate multiple expectations together', async () => {
+      const mcp = createMockMCP({
+        content: [{ type: 'text', text: 'Order #12345 confirmed for John' }],
+      });
+      const context = createContext(mcp);
+      const evalCase = createEvalCase({
+        expect: {
+          containsText: ['Order', 'John'],
+          matchesPattern: '#\\d+',
+        },
+      });
+
+      const result = await runEvalCase(evalCase, context);
+
+      expect(result.pass).toBe(true);
+      expect(result.expectations.textContains?.pass).toBe(true);
+      expect(result.expectations.regex?.pass).toBe(true);
+    });
+
+    it('should fail if any expectation fails', async () => {
+      const mcp = createMockMCP({
+        content: [{ type: 'text', text: 'Order confirmed' }],
+      });
+      const context = createContext(mcp);
+      const evalCase = createEvalCase({
+        expect: {
+          containsText: 'Order',
+          matchesPattern: '#\\d+', // This will fail - no order number
+        },
+      });
+
+      const result = await runEvalCase(evalCase, context);
+
+      expect(result.pass).toBe(false);
+      expect(result.expectations.textContains?.pass).toBe(true);
+      expect(result.expectations.regex?.pass).toBe(false);
     });
 
     it('should fail when toolName is missing', async () => {
       const context = createContext();
       const evalCase = createEvalCase({ toolName: undefined });
 
-      const result = await runEvalCase(evalCase, {}, context);
+      const result = await runEvalCase(evalCase, context);
 
       expect(result.pass).toBe(false);
       expect(result.error).toContain('toolName is required');
@@ -162,7 +267,7 @@ describe('runEvalCase', () => {
       const context = createContext();
       const evalCase = createEvalCase({ args: undefined });
 
-      const result = await runEvalCase(evalCase, {}, context);
+      const result = await runEvalCase(evalCase, context);
 
       expect(result.pass).toBe(false);
       expect(result.error).toContain('args is required');
@@ -172,7 +277,7 @@ describe('runEvalCase', () => {
       const context = createContext();
       const evalCase = createEvalCase();
 
-      const result = await runEvalCase(evalCase, {}, context);
+      const result = await runEvalCase(evalCase, context);
 
       expect(result.durationMs).toBeGreaterThanOrEqual(0);
     });
@@ -181,7 +286,7 @@ describe('runEvalCase', () => {
       const context = createContext();
       const evalCase = createEvalCase();
 
-      const result = await runEvalCase(evalCase, {}, context, {
+      const result = await runEvalCase(evalCase, context, {
         datasetName: 'my-dataset',
       });
 
@@ -192,9 +297,28 @@ describe('runEvalCase', () => {
       const context = createContext();
       const evalCase = createEvalCase();
 
-      const result = await runEvalCase(evalCase, {}, context);
+      const result = await runEvalCase(evalCase, context);
 
       expect(result.datasetName).toBe('single-case');
+    });
+
+    it('should not run expectations when tool call errors', async () => {
+      const mcp = createMockMCP();
+      (mcp.callTool as ReturnType<typeof vi.fn>).mockRejectedValue(
+        new Error('Tool failed')
+      );
+
+      const context = createContext(mcp);
+      const evalCase = createEvalCase({
+        expect: { containsText: 'hello' },
+      });
+
+      const result = await runEvalCase(evalCase, context);
+
+      expect(result.error).toContain('Tool failed');
+      expect(result.pass).toBe(false);
+      // Expectations should be empty since tool call failed
+      expect(result.expectations.textContains).toBeUndefined();
     });
   });
 
@@ -207,7 +331,7 @@ describe('runEvalCase', () => {
         llmHostConfig: { provider: 'openai', model: 'gpt-4' },
       });
 
-      const result = await runEvalCase(evalCase, {}, context);
+      const result = await runEvalCase(evalCase, context);
 
       expect(result.pass).toBe(false);
       expect(result.error).toContain('scenario is required');
@@ -221,7 +345,7 @@ describe('runEvalCase', () => {
         llmHostConfig: undefined,
       });
 
-      const result = await runEvalCase(evalCase, {}, context);
+      const result = await runEvalCase(evalCase, context);
 
       expect(result.pass).toBe(false);
       expect(result.error).toContain('llmHostConfig is required');
@@ -245,7 +369,7 @@ describe('runEvalDataset', () => {
       createEvalCase({ id: 'case-3' }),
     ]);
 
-    const result = await runEvalDataset({ dataset, expectations: {} }, context);
+    const result = await runEvalDataset({ dataset }, context);
 
     expect(result.total).toBe(3);
     expect(result.caseResults).toHaveLength(3);
@@ -255,27 +379,17 @@ describe('runEvalDataset', () => {
   });
 
   it('should count passed and failed cases', async () => {
-    const context = createContext();
+    const mcp = createMockMCP({
+      content: [{ type: 'text', text: 'hello world' }],
+    });
+    const context = createContext(mcp);
     const dataset = createDataset([
-      createEvalCase({ id: 'case-1' }),
-      createEvalCase({ id: 'case-2' }),
-      createEvalCase({ id: 'case-3' }),
+      createEvalCase({ id: 'case-1', expect: { containsText: 'hello' } }),
+      createEvalCase({ id: 'case-2', expect: { containsText: 'hello' } }),
+      createEvalCase({ id: 'case-3', expect: { containsText: 'goodbye' } }), // fails
     ]);
 
-    // First two pass, third fails
-    const failOnThird: EvalExpectation = vi
-      .fn()
-      .mockImplementation((_: EvalExpectationContext, evalCase: EvalCase) =>
-        Promise.resolve({
-          pass: evalCase.id !== 'case-3',
-          details: evalCase.id === 'case-3' ? 'Failed' : 'Passed',
-        })
-      );
-
-    const result = await runEvalDataset(
-      { dataset, expectations: { exact: failOnThird } },
-      context
-    );
+    const result = await runEvalDataset({ dataset }, context);
 
     expect(result.passed).toBe(2);
     expect(result.failed).toBe(1);
@@ -289,7 +403,7 @@ describe('runEvalDataset', () => {
     ]);
     dataset.name = 'my-dataset';
 
-    const result = await runEvalDataset({ dataset, expectations: {} }, context);
+    const result = await runEvalDataset({ dataset }, context);
 
     expect(result.caseResults[0]!.datasetName).toBe('my-dataset');
     expect(result.caseResults[1]!.datasetName).toBe('my-dataset');
@@ -303,36 +417,27 @@ describe('runEvalDataset', () => {
     ]);
     const onCaseComplete = vi.fn();
 
-    await runEvalDataset(
-      { dataset, expectations: {}, onCaseComplete },
-      context
-    );
+    await runEvalDataset({ dataset, onCaseComplete }, context);
 
     expect(onCaseComplete).toHaveBeenCalledTimes(2);
-    expect((onCaseComplete.mock.calls[0]![0] as EvalCase).id).toBe('case-1');
-    expect((onCaseComplete.mock.calls[1]![0] as EvalCase).id).toBe('case-2');
+    // onCaseComplete receives EvalCaseResult, not EvalCase
+    expect(onCaseComplete.mock.calls[0]![0].id).toBe('case-1');
+    expect(onCaseComplete.mock.calls[1]![0].id).toBe('case-2');
   });
 
   it('should stop on failure when stopOnFailure is true', async () => {
-    const context = createContext();
+    const mcp = createMockMCP({
+      content: [{ type: 'text', text: 'hello' }],
+    });
+    const context = createContext(mcp);
     const dataset = createDataset([
-      createEvalCase({ id: 'case-1' }),
-      createEvalCase({ id: 'case-2' }),
-      createEvalCase({ id: 'case-3' }),
+      createEvalCase({ id: 'case-1', expect: { containsText: 'hello' } }),
+      createEvalCase({ id: 'case-2', expect: { containsText: 'goodbye' } }), // fails
+      createEvalCase({ id: 'case-3', expect: { containsText: 'hello' } }),
     ]);
 
-    // Fail on case-2
-    const failOnSecond: EvalExpectation = vi
-      .fn()
-      .mockImplementation((_: EvalExpectationContext, evalCase: EvalCase) =>
-        Promise.resolve({
-          pass: evalCase.id !== 'case-2',
-          details: evalCase.id === 'case-2' ? 'Failed' : 'Passed',
-        })
-      );
-
     const result = await runEvalDataset(
-      { dataset, expectations: { exact: failOnSecond }, stopOnFailure: true },
+      { dataset, stopOnFailure: true },
       context
     );
 
@@ -343,25 +448,18 @@ describe('runEvalDataset', () => {
   });
 
   it('should continue on failure when stopOnFailure is false', async () => {
-    const context = createContext();
+    const mcp = createMockMCP({
+      content: [{ type: 'text', text: 'hello' }],
+    });
+    const context = createContext(mcp);
     const dataset = createDataset([
-      createEvalCase({ id: 'case-1' }),
-      createEvalCase({ id: 'case-2' }),
-      createEvalCase({ id: 'case-3' }),
+      createEvalCase({ id: 'case-1', expect: { containsText: 'hello' } }),
+      createEvalCase({ id: 'case-2', expect: { containsText: 'goodbye' } }), // fails
+      createEvalCase({ id: 'case-3', expect: { containsText: 'hello' } }),
     ]);
 
-    // Fail on case-2
-    const failOnSecond: EvalExpectation = vi
-      .fn()
-      .mockImplementation((_: EvalExpectationContext, evalCase: EvalCase) =>
-        Promise.resolve({
-          pass: evalCase.id !== 'case-2',
-          details: evalCase.id === 'case-2' ? 'Failed' : 'Passed',
-        })
-      );
-
     const result = await runEvalDataset(
-      { dataset, expectations: { exact: failOnSecond }, stopOnFailure: false },
+      { dataset, stopOnFailure: false },
       context
     );
 
@@ -373,7 +471,7 @@ describe('runEvalDataset', () => {
     const context = createContext();
     const dataset = createDataset([createEvalCase()]);
 
-    const result = await runEvalDataset({ dataset, expectations: {} }, context);
+    const result = await runEvalDataset({ dataset }, context);
 
     expect(result.durationMs).toBeGreaterThanOrEqual(0);
   });
@@ -383,12 +481,11 @@ describe('runEvalDataset', () => {
       attach: vi.fn().mockResolvedValue(undefined),
     };
     const context = createContext();
-    context.testInfo =
-      mockTestInfo as unknown as EvalExpectationContext['testInfo'];
+    context.testInfo = mockTestInfo as unknown as EvalContext['testInfo'];
 
     const dataset = createDataset([createEvalCase()]);
 
-    await runEvalDataset({ dataset, expectations: {} }, context);
+    await runEvalDataset({ dataset }, context);
 
     expect(mockTestInfo.attach).toHaveBeenCalledWith('mcp-test-results', {
       contentType: 'application/json',
@@ -397,95 +494,26 @@ describe('runEvalDataset', () => {
     });
   });
 
-  it('should enrich context with judgeClient from options', async () => {
-    const mockJudgeClient = { evaluate: vi.fn() };
-    const judgeExpectation = vi
-      .fn()
-      .mockImplementation((ctx: EvalExpectationContext) => {
-        // Verify context has the judge client
-        return Promise.resolve({
-          pass: ctx.judgeClient === mockJudgeClient,
-          details: ctx.judgeClient ? 'Has judge' : 'No judge',
-        });
-      });
+  it('should merge schemas from dataset and options', async () => {
+    const mcp = createMockMCP({
+      structuredContent: { name: 'test' },
+    });
+    const context = createContext(mcp);
 
-    const context = createContext();
-    const dataset = createDataset([createEvalCase()]);
+    const DatasetSchema = z.object({ name: z.string() });
+    const OptionsSchema = z.object({ count: z.number() });
+
+    const dataset = createDataset([
+      createEvalCase({ id: 'case-1', expect: { schema: 'DatasetSchema' } }),
+    ]);
+    dataset.schemas = { DatasetSchema };
 
     const result = await runEvalDataset(
-      {
-        dataset,
-        expectations: { judge: judgeExpectation },
-        judgeClient:
-          mockJudgeClient as unknown as EvalExpectationContext['judgeClient'],
-      },
+      { dataset, schemas: { OptionsSchema } },
       context
     );
 
-    expect(result.caseResults[0]!.expectations.judge?.pass).toBe(true);
-  });
-});
-
-describe('expectation integration', () => {
-  it('should pass context to expectations', async () => {
-    const mcp = createMockMCP();
-    const context = createContext(mcp);
-    const expectation = vi.fn().mockResolvedValue({ pass: true });
-
-    await runEvalCase(createEvalCase(), { exact: expectation }, context);
-
-    expect(expectation).toHaveBeenCalledWith(
-      expect.objectContaining({ mcp }),
-      expect.any(Object),
-      expect.anything()
-    );
-  });
-
-  it('should pass evalCase to expectations', async () => {
-    const context = createContext();
-    const evalCase = createEvalCase({ id: 'my-case' });
-    const expectation = vi.fn().mockResolvedValue({ pass: true });
-
-    await runEvalCase(evalCase, { exact: expectation }, context);
-
-    expect(expectation).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ id: 'my-case' }),
-      expect.anything()
-    );
-  });
-
-  it('should pass response to expectations', async () => {
-    const mcp = createMockMCP({ structuredContent: { key: 'value' } });
-    const context = createContext(mcp);
-    const expectation = vi.fn().mockResolvedValue({ pass: true });
-
-    await runEvalCase(createEvalCase(), { exact: expectation }, context);
-
-    expect(expectation).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.anything(),
-      { key: 'value' }
-    );
-  });
-
-  it('should not run expectations when tool call errors', async () => {
-    const mcp = createMockMCP();
-    (mcp.callTool as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error('Tool failed')
-    );
-
-    const context = createContext(mcp);
-    const expectation = vi.fn().mockResolvedValue({ pass: true });
-
-    const result = await runEvalCase(
-      createEvalCase(),
-      { exact: expectation },
-      context
-    );
-
-    expect(expectation).not.toHaveBeenCalled();
-    expect(result.error).toContain('Tool failed');
-    expect(result.pass).toBe(false);
+    // Dataset schema should work
+    expect(result.caseResults[0]!.pass).toBe(true);
   });
 });

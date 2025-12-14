@@ -27,9 +27,14 @@ describe('datasetTypes', () => {
         description: 'Get weather for London',
         toolName: 'get_weather',
         args: { city: 'London' },
-        expectedExact: { temperature: 20 },
-        expectedSchemaName: 'weather-response',
-        judgeConfigId: 'weather-judge',
+        expect: {
+          response: { temperature: 20 },
+          schema: 'weather-response',
+          passesJudge: {
+            rubric: 'Should contain temperature',
+            configId: 'weather-judge',
+          },
+        },
         metadata: { priority: 'high' },
       };
 

@@ -9,9 +9,6 @@ import {
   closeMCPClient,
   loadEvalDataset,
   runEvalDataset,
-  createTextContainsExpectation,
-  createSnapshotExpectation,
-  createToolCallExpectation,
   runConformanceChecks,
   extractTextFromResponse,
 } from '@mcp-testing/server-tester';
@@ -212,28 +209,14 @@ test('Run SQLite MCP Server evaluation dataset', async ({ mcp }, testInfo) => {
     }
   );
 
+  // Run evals - the runner uses validators internally based on the 'expect' block
   const result = await runEvalDataset(
     {
       dataset,
-      expectations: {
-        textContains: createTextContainsExpectation(),
-        snapshot: createSnapshotExpectation(),
-        toolCalls: createToolCallExpectation(),
-
-        // Custom expectation: Validate record count for queries
-        recordCount: async (context, evalCase, response) => {
-          if (
-            evalCase.metadata?.expectedRecordCount !== undefined &&
-            evalCase.mode === 'direct' &&
-            evalCase.toolName === 'read_query'
-          ) {
-            return validateRecordCount(
-              response,
-              evalCase.metadata.expectedRecordCount
-            );
-          }
-          return { pass: true, details: 'N/A' };
-        },
+      schemas: {
+        queryResult: QueryResultSchema,
+        tableList: TableListSchema,
+        tableDescription: TableDescriptionSchema,
       },
     },
     { mcp, testInfo, expect }

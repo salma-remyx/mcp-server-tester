@@ -1,5 +1,16 @@
 import { z } from 'zod';
 import type { LLMHostConfig } from './llmHost/llmHostTypes.js';
+import type { SnapshotSanitizer } from '../assertions/validators/types.js';
+
+// Re-export sanitizer types from canonical source (validators/types.ts)
+// Note: For JSON datasets, the Zod schema below validates that patterns are strings.
+// The TypeScript types allow RegExp for runtime usage with Playwright matchers.
+export type {
+  BuiltInSanitizer,
+  SnapshotSanitizer,
+  RegexSanitizer,
+  FieldRemovalSanitizer,
+} from '../assertions/validators/types.js';
 
 /**
  * Evaluation mode
@@ -7,49 +18,10 @@ import type { LLMHostConfig } from './llmHost/llmHostTypes.js';
 export type EvalMode = 'direct' | 'llm_host';
 
 /**
- * Built-in sanitizer names for common variable patterns
- */
-export type BuiltInSanitizer =
-  | 'timestamp' // Unix timestamps (milliseconds and seconds)
-  | 'uuid' // UUIDs v1-v5
-  | 'iso-date' // ISO 8601 date strings
-  | 'objectId' // MongoDB ObjectIds
-  | 'jwt'; // JWT tokens
-
-/**
- * Custom regex-based sanitizer
- */
-export interface RegexSanitizer {
-  /** Regex pattern to match */
-  pattern: string;
-  /** Replacement string (default: "[SANITIZED]") */
-  replacement?: string;
-}
-
-/**
- * Field removal sanitizer - removes specified fields from objects
- */
-export interface FieldRemovalSanitizer {
-  /** Field paths to remove (supports dot notation for nested fields) */
-  remove: string[];
-}
-
-/**
- * Snapshot sanitizer configuration
- *
- * Sanitizers transform response data before snapshot comparison,
- * allowing variable content (timestamps, IDs, etc.) to be normalized.
- */
-export type SnapshotSanitizer =
-  | BuiltInSanitizer
-  | RegexSanitizer
-  | FieldRemovalSanitizer;
-
-/**
  * A single eval test case
  *
- * Note: toolName and args are required for backward compatibility
- * and for 'direct' mode. For 'llm_host' mode, use scenario instead.
+ * For 'direct' mode: toolName and args are required
+ * For 'llm_host' mode: scenario and llmHostConfig are required
  */
 export interface EvalCase {
   /**
@@ -96,103 +68,102 @@ export interface EvalCase {
   llmHostConfig?: LLMHostConfig;
 
   /**
-   * Expected exact response (for strict equality checks)
-   */
-  expectedExact?: unknown;
-
-  /**
-   * Name of the schema to validate against (for schema-based validation)
-   */
-  expectedSchemaName?: string;
-
-  /**
-   * ID of the judge configuration to use (for LLM-as-a-judge evaluation)
-   */
-  judgeConfigId?: string;
-
-  /**
-   * Expected text content (substring match)
-   * Can be a string or array of strings that must all be present in the response
-   */
-  expectedTextContains?: string | string[];
-
-  /**
-   * Expected regex pattern(s) that must match the response text
-   * Can be a string pattern or array of patterns
-   */
-  expectedRegex?: string | string[];
-
-  /**
-   * Snapshot name for Playwright snapshot testing
-   * When specified, uses expect(response).toMatchSnapshot(snapshotName)
-   * Use --update-snapshots flag to update snapshots
-   */
-  expectedSnapshot?: string;
-
-  /**
-   * Expected error response
-   *
-   * When set, the test expects the tool to return `isError: true`.
-   * This is useful for testing that tools properly validate input and return
-   * appropriate errors for invalid or missing parameters.
-   *
-   * - `true`: Expects any error (just validates `isError: true`)
-   * - `string`: Expects error AND message to contain this substring
-   * - `string[]`: Expects error AND message to contain all substrings
-   *
-   * Note: `args` is still required for the eval case, but you can omit
-   * tool-specific required parameters to test validation errors.
-   *
-   * @example
-   * ```json
-   * // Test that search requires a query parameter
-   * {
-   *   "id": "search-missing-query",
-   *   "toolName": "search",
-   *   "args": { "limit": 10 },
-   *   "expectedError": "query"
-   * }
-   *
-   * // Test that empty values are rejected with specific message
-   * {
-   *   "id": "search-empty-query",
-   *   "toolName": "search",
-   *   "args": { "query": "" },
-   *   "expectedError": ["query", "required"]
-   * }
-   * ```
-   */
-  expectedError?: boolean | string | string[];
-
-  /**
-   * Sanitizers to apply before snapshot comparison
-   *
-   * Sanitizers normalize variable content (timestamps, IDs, tokens) so that
-   * snapshots remain stable across test runs. Use when responses contain
-   * dynamic data that would otherwise cause snapshot mismatches.
-   *
-   * Built-in sanitizers: 'timestamp', 'uuid', 'iso-date', 'objectId', 'jwt'
-   *
-   * @example
-   * ```json
-   * {
-   *   "snapshotSanitizers": [
-   *     "uuid",
-   *     "iso-date",
-   *     { "pattern": "token_[a-zA-Z0-9]+", "replacement": "[TOKEN]" },
-   *     { "remove": ["lastLoginAt", "sessionId"] }
-   *   ]
-   * }
-   * ```
-   */
-  snapshotSanitizers?: SnapshotSanitizer[];
-
-  /**
    * Additional metadata for this test case
    *
    * For 'llm_host' mode, can include 'expectedToolCalls' for validation
    */
   metadata?: Record<string, unknown>;
+
+  /**
+   * Expectations to validate against the tool response
+   *
+   * Multiple expectations can be combined and will all be validated.
+   *
+   * @example
+   * ```json
+   * {
+   *   "id": "weather-london",
+   *   "toolName": "get_weather",
+   *   "args": { "city": "London" },
+   *   "expect": {
+   *     "containsText": ["temperature", "conditions"],
+   *     "schema": "WeatherResponse",
+   *     "responseSize": { "maxBytes": 10000 },
+   *     "isError": false
+   *   }
+   * }
+   * ```
+   */
+  expect?: EvalExpectBlock;
+}
+
+/**
+ * Unified expectation block for eval cases
+ *
+ * Mirrors the Playwright matcher API for consistency.
+ */
+export interface EvalExpectBlock {
+  /**
+   * Exact response match (toMatchToolResponse)
+   */
+  response?: unknown;
+
+  /**
+   * Name of schema to validate against (toMatchToolSchema)
+   */
+  schema?: string;
+
+  /**
+   * Text substring(s) that must be present (toContainToolText)
+   */
+  containsText?: string | string[];
+
+  /**
+   * Regex pattern(s) that must match (toMatchToolPattern)
+   */
+  matchesPattern?: string | string[];
+
+  /**
+   * Snapshot name for comparison (toMatchToolSnapshot)
+   */
+  snapshot?: string;
+
+  /**
+   * Snapshot sanitizers to apply
+   */
+  snapshotSanitizers?: SnapshotSanitizer[];
+
+  /**
+   * Error expectation (toBeToolError)
+   * - true: expects any error
+   * - false: expects no error
+   * - string: expects error containing this message
+   */
+  isError?: boolean | string | string[];
+
+  /**
+   * LLM-as-judge evaluation (toPassToolJudge)
+   */
+  passesJudge?: {
+    /** Evaluation rubric/criteria */
+    rubric: string;
+    /** Reference response to compare against */
+    reference?: unknown;
+    /** Score threshold for passing (0-1, default: 0.7) */
+    threshold?: number;
+    /** Judge configuration ID */
+    configId?: string;
+  };
+
+  /**
+   * Response size validation (toHaveToolResponseSize)
+   */
+  responseSize?: {
+    /** Maximum allowed size in bytes */
+    maxBytes?: number;
+    /** Minimum required size in bytes */
+    minBytes?: number;
+  };
 }
 
 /**
@@ -255,6 +226,33 @@ const SnapshotSanitizerSchema = z.union([
 ]);
 
 /**
+ * Zod schema for EvalExpectBlock
+ */
+const EvalExpectBlockSchema = z.object({
+  response: z.unknown().optional(),
+  schema: z.string().optional(),
+  containsText: z.union([z.string(), z.array(z.string())]).optional(),
+  matchesPattern: z.union([z.string(), z.array(z.string())]).optional(),
+  snapshot: z.string().optional(),
+  snapshotSanitizers: z.array(SnapshotSanitizerSchema).optional(),
+  isError: z.union([z.boolean(), z.string(), z.array(z.string())]).optional(),
+  passesJudge: z
+    .object({
+      rubric: z.string(),
+      reference: z.unknown().optional(),
+      threshold: z.number().min(0).max(1).optional(),
+      configId: z.string().optional(),
+    })
+    .optional(),
+  responseSize: z
+    .object({
+      maxBytes: z.number().optional(),
+      minBytes: z.number().optional(),
+    })
+    .optional(),
+});
+
+/**
  * Zod schema for EvalCase
  *
  * toolName and args are optional for llm_host mode (which uses scenario instead)
@@ -267,17 +265,8 @@ export const EvalCaseSchema = z.object({
   args: z.record(z.unknown()).optional(),
   scenario: z.string().optional(),
   llmHostConfig: LLMHostConfigSchema.optional(),
-  expectedExact: z.unknown().optional(),
-  expectedSchemaName: z.string().optional(),
-  judgeConfigId: z.string().optional(),
-  expectedTextContains: z.union([z.string(), z.array(z.string())]).optional(),
-  expectedRegex: z.union([z.string(), z.array(z.string())]).optional(),
-  expectedSnapshot: z.string().optional(),
-  expectedError: z
-    .union([z.boolean(), z.string(), z.array(z.string())])
-    .optional(),
-  snapshotSanitizers: z.array(SnapshotSanitizerSchema).optional(),
   metadata: z.record(z.unknown()).optional(),
+  expect: EvalExpectBlockSchema.optional(),
 });
 
 /**

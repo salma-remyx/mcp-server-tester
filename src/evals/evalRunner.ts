@@ -1,7 +1,8 @@
 import type { MCPFixtureApi } from '../mcp/fixtures/mcpFixture.js';
-import type { LLMJudgeClient } from '../judge/judgeTypes.js';
-import type { EvalDataset, EvalCase } from './datasetTypes.js';
+import type { JudgeConfig } from '../judge/judgeTypes.js';
+import type { EvalDataset, EvalCase, EvalExpectBlock } from './datasetTypes.js';
 import type { TestInfo, Expect } from '@playwright/test';
+import type { ZodType } from 'zod';
 import { simulateLLMHost } from './llmHost/llmHostSimulation.js';
 import type {
   AuthType,
@@ -9,20 +10,24 @@ import type {
   ExpectationType,
   EvalExpectationResult,
 } from '../types/index.js';
+import {
+  validateResponse,
+  validateSchema,
+  validateText,
+  validatePattern,
+  validateError,
+  validateSize,
+} from '../assertions/validators/index.js';
+import { createJudge } from '../judge/judgeClient.js';
 
 /**
- * Context passed to expectation functions
+ * Context passed to the eval runner
  */
-export interface EvalExpectationContext {
+export interface EvalContext {
   /**
    * MCP fixture API for interacting with the server
    */
   mcp: MCPFixtureApi;
-
-  /**
-   * Optional LLM judge client for semantic evaluation
-   */
-  judgeClient?: LLMJudgeClient | null;
 
   /**
    * Optional Playwright TestInfo for reporter integration
@@ -37,31 +42,7 @@ export interface EvalExpectationContext {
   expect?: Expect;
 }
 
-// EvalExpectationResult is now imported from '../types/index.js'
-// Re-export for backwards compatibility
 export type { EvalExpectationResult } from '../types/index.js';
-
-/**
- * Expectation function type
- */
-export type EvalExpectation = (
-  context: EvalExpectationContext,
-  evalCase: EvalCase,
-  response: unknown
-) => Promise<EvalExpectationResult>;
-
-/**
- * Map of expectation names to expectation functions
- */
-export type ExpectationMap = {
-  exact?: EvalExpectation;
-  schema?: EvalExpectation;
-  textContains?: EvalExpectation;
-  regex?: EvalExpectation;
-  snapshot?: EvalExpectation;
-  judge?: EvalExpectation;
-  error?: EvalExpectation;
-};
 
 /**
  * Result of a single eval case
@@ -172,14 +153,28 @@ export interface EvalRunnerOptions {
   dataset: EvalDataset;
 
   /**
-   * Expectation functions to apply
+   * Schema registry for schema validation by name
+   *
+   * Maps schema names to Zod schemas for use with expect.schema
+   *
+   * @example
+   * ```typescript
+   * {
+   *   schemas: {
+   *     WeatherResponse: z.object({ temperature: z.number() }),
+   *     ErrorResponse: z.object({ error: z.string() }),
+   *   }
+   * }
+   * ```
    */
-  expectations: ExpectationMap;
+  schemas?: Record<string, ZodType>;
 
   /**
-   * Optional judge client for LLM-as-a-judge evaluation
+   * Judge configuration registry by ID
+   *
+   * Maps config IDs to JudgeConfig for use with expect.passesJudge.configId
    */
-  judgeClient?: LLMJudgeClient | null;
+  judgeConfigs?: Record<string, JudgeConfig>;
 
   /**
    * Whether to stop on first failure
@@ -201,6 +196,16 @@ export interface EvalCaseOptions {
    * Dataset name for the result (defaults to 'single-case')
    */
   datasetName?: string;
+
+  /**
+   * Schema registry for schema validation by name
+   */
+  schemas?: Record<string, ZodType>;
+
+  /**
+   * Judge configuration registry by ID
+   */
+  judgeConfigs?: Record<string, JudgeConfig>;
 }
 
 async function executeToolCall(
@@ -252,7 +257,7 @@ async function executeToolCall(
 
       // For error expectations, return the full result so isError can be checked
       // For other expectations, return the content (backwards compatible)
-      if (evalCase.expectedError !== undefined) {
+      if (evalCase.expect?.isError !== undefined) {
         return { response: result };
       }
       return { response: result.structuredContent ?? result.content };
@@ -263,35 +268,6 @@ async function executeToolCall(
       error: err instanceof Error ? err.message : String(err),
     };
   }
-}
-
-/**
- * Runs all expectations against a response
- */
-async function runExpectations(
-  expectations: ExpectationMap,
-  context: EvalExpectationContext,
-  evalCase: EvalCase,
-  response: unknown
-): Promise<EvalCaseResult['expectations']> {
-  const results: EvalCaseResult['expectations'] = {};
-
-  type ExpectationKey = keyof EvalCaseResult['expectations'];
-  for (const [name, expectation] of Object.entries(expectations)) {
-    if (expectation) {
-      const key = name as ExpectationKey;
-      try {
-        results[key] = await expectation(context, evalCase, response);
-      } catch (err) {
-        results[key] = {
-          pass: false,
-          details: `${name} expectation threw error: ${String(err)}`,
-        };
-      }
-    }
-  }
-
-  return results;
 }
 
 /**
@@ -310,23 +286,168 @@ function didCasePass(
 }
 
 /**
+ * Configuration for processing expect blocks
+ */
+interface ExpectBlockConfig {
+  schemas?: Record<string, ZodType>;
+  judgeConfigs?: Record<string, JudgeConfig>;
+  playwrightExpect?: Expect;
+}
+
+/**
+ * Processes the new unified expect block using validators
+ *
+ * This function translates the expect block into validation results,
+ * calling the appropriate validators for each field.
+ */
+async function runExpectBlockValidations(
+  expectBlock: EvalExpectBlock,
+  response: unknown,
+  config: ExpectBlockConfig
+): Promise<EvalCaseResult['expectations']> {
+  const results: EvalCaseResult['expectations'] = {};
+
+  // response (toMatchToolResponse)
+  if (expectBlock.response !== undefined) {
+    const validation = validateResponse(response, expectBlock.response);
+    results.exact = {
+      pass: validation.pass,
+      details: validation.message,
+    };
+  }
+
+  // schema (toMatchToolSchema)
+  if (expectBlock.schema !== undefined) {
+    const schema = config.schemas?.[expectBlock.schema];
+    if (!schema) {
+      results.schema = {
+        pass: false,
+        details: `Schema "${expectBlock.schema}" not found in schemas registry`,
+      };
+    } else {
+      const validation = validateSchema(response, schema);
+      results.schema = {
+        pass: validation.pass,
+        details: validation.message,
+      };
+    }
+  }
+
+  // containsText (toContainToolText)
+  if (expectBlock.containsText !== undefined) {
+    const validation = validateText(response, expectBlock.containsText);
+    results.textContains = {
+      pass: validation.pass,
+      details: validation.message,
+    };
+  }
+
+  // matchesPattern (toMatchToolPattern)
+  if (expectBlock.matchesPattern !== undefined) {
+    const validation = validatePattern(response, expectBlock.matchesPattern);
+    results.regex = {
+      pass: validation.pass,
+      details: validation.message,
+    };
+  }
+
+  // isError (toBeToolError)
+  if (expectBlock.isError !== undefined) {
+    const validation = validateError(response, expectBlock.isError);
+    results.error = {
+      pass: validation.pass,
+      details: validation.message,
+    };
+  }
+
+  // responseSize (toHaveToolResponseSize)
+  if (expectBlock.responseSize !== undefined) {
+    const validation = validateSize(response, expectBlock.responseSize);
+    results.size = {
+      pass: validation.pass,
+      details: validation.message,
+    };
+  }
+
+  // passesJudge (toPassToolJudge)
+  if (expectBlock.passesJudge !== undefined) {
+    const {
+      rubric,
+      reference,
+      threshold = 0.7,
+      configId,
+    } = expectBlock.passesJudge;
+
+    // Get judge config
+    const judgeConfig = configId ? (config.judgeConfigs?.[configId] ?? {}) : {};
+
+    try {
+      const judge = createJudge(judgeConfig);
+      const judgeResult = await judge.evaluate(
+        response,
+        reference ?? null,
+        rubric
+      );
+      const score = judgeResult.score ?? (judgeResult.pass ? 1.0 : 0.0);
+      const passed = score >= threshold;
+
+      results.judge = {
+        pass: passed,
+        details: passed
+          ? `Judge passed with score ${score.toFixed(2)}`
+          : `Judge failed with score ${score.toFixed(2)} (threshold: ${threshold}). ${judgeResult.reasoning ?? ''}`,
+      };
+    } catch (err) {
+      results.judge = {
+        pass: false,
+        details: `Judge evaluation error: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
+  }
+
+  // snapshot (toMatchToolSnapshot) - requires Playwright expect
+  if (expectBlock.snapshot !== undefined) {
+    if (!config.playwrightExpect) {
+      results.snapshot = {
+        pass: false,
+        details: 'Snapshot testing requires expect in context',
+      };
+    } else {
+      try {
+        // eslint-disable-next-line @typescript-eslint/await-thenable
+        await config
+          .playwrightExpect(response)
+          .toMatchSnapshot(expectBlock.snapshot);
+        results.snapshot = {
+          pass: true,
+          details: `Matches snapshot "${expectBlock.snapshot}"`,
+        };
+      } catch (err) {
+        results.snapshot = {
+          pass: false,
+          details: err instanceof Error ? err.message : String(err),
+        };
+      }
+    }
+  }
+
+  return results;
+}
+
+/**
  * Runs a single eval case and returns the result
  *
  * @param evalCase - The eval case to run
- * @param expectations - Map of expectation name to expectation function
  * @param context - Context containing mcp, testInfo, expect
- * @param options - Optional configuration (datasetName, etc.)
+ * @param options - Optional configuration (datasetName, schemas, judgeConfigs)
  * @returns The result of running the eval case
  *
  * @example
  * ```typescript
  * const result = await runEvalCase(
  *   evalCase,
- *   {
- *     textContains: createTextContainsExpectation(),
- *     exact: createExactExpectation(),
- *   },
- *   { mcp, testInfo, expect }
+ *   { mcp, testInfo, expect },
+ *   { schemas: { WeatherResponse: WeatherSchema } }
  * );
  *
  * expect(result.pass).toBe(true);
@@ -334,8 +455,7 @@ function didCasePass(
  */
 export async function runEvalCase(
   evalCase: EvalCase,
-  expectations: ExpectationMap,
-  context: EvalExpectationContext,
+  context: EvalContext,
   options: EvalCaseOptions = {}
 ): Promise<EvalCaseResult> {
   const startTime = Date.now();
@@ -344,10 +464,20 @@ export async function runEvalCase(
   // Execute tool call
   const { response, error } = await executeToolCall(evalCase, context.mcp);
 
-  // Run expectations if no error
-  const expectationResults = error
-    ? {}
-    : await runExpectations(expectations, context, evalCase, response);
+  // Collect expectation results from expect block
+  let expectationResults: EvalCaseResult['expectations'] = {};
+
+  if (!error && evalCase.expect) {
+    expectationResults = await runExpectBlockValidations(
+      evalCase.expect,
+      response,
+      {
+        schemas: options.schemas,
+        judgeConfigs: options.judgeConfigs,
+        playwrightExpect: context.expect,
+      }
+    );
+  }
 
   // Build result - use test context for authType and project (Playwright is source of truth)
   return {
@@ -372,8 +502,8 @@ export async function runEvalCase(
  * This function composes runEvalCase() for each case in the dataset,
  * adding dataset-level features like stopOnFailure and callbacks.
  *
- * @param options - Eval runner options
- * @param context - Eval context (mcp fixture, optional judge client, optional testInfo)
+ * @param options - Eval runner options (dataset, schemas, judgeConfigs)
+ * @param context - Eval context (mcp fixture, optional testInfo, optional expect)
  * @returns Eval results
  *
  * @example
@@ -381,10 +511,7 @@ export async function runEvalCase(
  * const result = await runEvalDataset(
  *   {
  *     dataset,
- *     expectations: {
- *       exact: createExactExpectation(),
- *       schema: createSchemaExpectation(dataset),
- *     },
+ *     schemas: { WeatherResponse: WeatherSchema },
  *   },
  *   { mcp }
  * );
@@ -393,19 +520,19 @@ export async function runEvalCase(
  * // With MCP reporter integration
  * test('eval dataset', async ({ mcp }, testInfo) => {
  *   const result = await runEvalDataset(
- *     { dataset, expectations },
+ *     { dataset },
  *     { mcp, testInfo }  // testInfo enables MCP reporter
  *   );
  * });
  */
 export async function runEvalDataset(
   options: EvalRunnerOptions,
-  context: EvalExpectationContext
+  context: EvalContext
 ): Promise<EvalRunnerResult> {
   const {
     dataset,
-    expectations,
-    judgeClient,
+    schemas,
+    judgeConfigs,
     stopOnFailure = false,
     onCaseComplete,
   } = options;
@@ -413,16 +540,21 @@ export async function runEvalDataset(
   const startTime = Date.now();
   const caseResults: EvalCaseResult[] = [];
 
-  // Enrich context with judge client
-  const enrichedContext: EvalExpectationContext = {
-    ...context,
-    judgeClient: judgeClient ?? context.judgeClient ?? null,
+  // Context is used as-is (judge is handled via judgeConfigs in expect block)
+  const enrichedContext = context;
+
+  // Merge schemas from dataset and options
+  const allSchemas = {
+    ...dataset.schemas,
+    ...schemas,
   };
 
   // Run each case
   for (const evalCase of dataset.cases) {
-    const result = await runEvalCase(evalCase, expectations, enrichedContext, {
+    const result = await runEvalCase(evalCase, enrichedContext, {
       datasetName: dataset.name,
+      schemas: allSchemas,
+      judgeConfigs,
     });
 
     caseResults.push(result);

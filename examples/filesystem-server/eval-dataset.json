@@ -3,35 +3,44 @@
   "description": "Comprehensive evaluation suite for the official Filesystem MCP server, demonstrating both direct and LLM host testing modes",
   "cases": [
     {
-      "id": "should read readme.txt file",
-      "description": "Direct API call to read readme.txt",
+      "id": "should read readme.txt file (NEW expect block)",
+      "description": "Direct API call to read readme.txt - using NEW expect block format",
       "mode": "direct",
       "toolName": "read_file",
       "args": {
         "path": "readme.txt"
       },
-      "expectedTextContains": "Hello World"
+      "expect": {
+        "containsText": "Hello World",
+        "isError": false
+      }
     },
     {
-      "id": "should read and validate config.json structure",
-      "description": "Read config.json and validate structure",
+      "id": "should read and validate config.json structure (NEW expect block)",
+      "description": "Read config.json and validate structure - using NEW expect block format",
       "mode": "direct",
       "toolName": "read_file",
       "args": {
         "path": "config.json"
       },
-      "expectedTextContains": ["version", "1.0.0", "features"],
-      "expectedSchemaName": "configFile"
+      "expect": {
+        "containsText": ["version", "1.0.0", "features"],
+        "matchesPattern": "\\d+\\.\\d+\\.\\d+"
+      }
     },
     {
-      "id": "should list files in docs directory",
-      "description": "List files in the docs directory",
+      "id": "should list files in docs directory (NEW expect block)",
+      "description": "List files in the docs directory - using NEW expect block format",
       "mode": "direct",
       "toolName": "list_directory",
       "args": {
         "path": "docs"
       },
-      "expectedTextContains": ["guide.md", "api.md"]
+      "expect": {
+        "containsText": ["guide.md", "api.md"],
+        "isError": false,
+        "responseSize": { "maxBytes": 10000 }
+      }
     },
     {
       "id": "should read nested file in subdirectory",
@@ -41,7 +50,9 @@
       "args": {
         "path": "docs/guide.md"
       },
-      "expectedTextContains": ["# User Guide", "guide"]
+      "expect": {
+        "containsText": ["# User Guide", "guide"]
+      }
     },
     {
       "id": "should list root directory contents",
@@ -51,7 +62,9 @@
       "args": {
         "path": "."
       },
-      "expectedTextContains": ["readme.txt", "config.json", "docs", "data"]
+      "expect": {
+        "containsText": ["readme.txt", "config.json", "docs", "data"]
+      }
     },
     {
       "id": "should discover docs directory using OpenAI",
@@ -66,7 +79,9 @@
         "temperature": 0.0,
         "maxTokens": 1000
       },
-      "expectedTextContains": ["guide.md", "api.md"],
+      "expect": {
+        "containsText": ["guide.md", "api.md"]
+      },
       "metadata": {
         "expectedToolCalls": [
           {
@@ -92,7 +107,9 @@
         "temperature": 0.0,
         "maxTokens": 1000
       },
-      "expectedTextContains": "1.0.0",
+      "expect": {
+        "containsText": "1.0.0"
+      },
       "metadata": {
         "expectedToolCalls": [
           {
@@ -117,7 +134,9 @@
         "model": "gpt-4o",
         "temperature": 0.0
       },
-      "expectedTextContains": [".md"],
+      "expect": {
+        "containsText": [".md"]
+      },
       "metadata": {
         "expectedToolCalls": [
           {
@@ -142,7 +161,9 @@
         "model": "claude-3-5-sonnet-20241022",
         "temperature": 0.0
       },
-      "expectedTextContains": ["2", "Alice", "Bob"],
+      "expect": {
+        "containsText": ["2", "Alice", "Bob"]
+      },
       "metadata": {
         "expectedToolCalls": [
           {
@@ -184,8 +205,10 @@
       "args": {
         "path": "readme.txt"
       },
-      "expectedExact": {
-        "content": "Hello World"
+      "expect": {
+        "response": {
+          "content": "Hello World"
+        }
       }
     },
     {
@@ -196,7 +219,9 @@
       "args": {
         "path": "readme.txt"
       },
-      "expectedSnapshot": "readme-content.txt"
+      "expect": {
+        "snapshot": "readme-content.txt"
+      }
     },
     {
       "id": "should match config structure snapshot",
@@ -206,7 +231,9 @@
       "args": {
         "path": "config.json"
       },
-      "expectedSnapshot": "config-structure.json"
+      "expect": {
+        "snapshot": "config-structure.json"
+      }
     }
   ],
   "metadata": {

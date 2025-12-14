@@ -43,9 +43,13 @@ export function createOpenAIAdapter(): LLMAdapter {
 
     async createClient(config: LLMHostConfig): Promise<unknown> {
       // Dynamic import for optional dependency
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       let OpenAI;
       try {
+        // @ts-expect-error - Optional dependency, dynamically imported
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const module = await import('openai');
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         OpenAI = module.OpenAI;
       } catch {
         throw new Error(
@@ -63,6 +67,7 @@ export function createOpenAIAdapter(): LLMAdapter {
         );
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       return new OpenAI({ apiKey });
     },
 

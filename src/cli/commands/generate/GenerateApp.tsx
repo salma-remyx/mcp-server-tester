@@ -277,7 +277,9 @@ export function GenerateApp({ options }: GenerateAppProps) {
 
   async function saveDataset() {
     try {
-      const serialized: SerializedEvalDataset = {
+      // Note: We use the EvalDataset type for building, then serialize.
+      // The CLI only creates string patterns, so this is JSON-safe.
+      const serialized = {
         name: dataset.name,
         description: dataset.description,
         cases: dataset.cases,
@@ -751,7 +753,7 @@ export function GenerateApp({ options }: GenerateAppProps) {
                   description: value || undefined,
                   toolName: currentCase.toolName!,
                   args: currentCase.args!,
-                  expectedSnapshot: currentCase.id!,
+                  expect: { snapshot: currentCase.id! },
                 };
                 setDataset((d) => ({ ...d, cases: [...d.cases, newCase] }));
                 setStep('askContinue');
@@ -774,7 +776,10 @@ export function GenerateApp({ options }: GenerateAppProps) {
             onConfirm={() => {
               setCurrentCase((c) => ({
                 ...c,
-                expectedTextContains: suggestions.textContains,
+                expect: {
+                  ...c.expect,
+                  containsText: suggestions.textContains,
+                },
               }));
               setStep('useRegex');
             }}
@@ -794,7 +799,10 @@ export function GenerateApp({ options }: GenerateAppProps) {
             onConfirm={() => {
               setCurrentCase((c) => ({
                 ...c,
-                expectedRegex: suggestions.regex,
+                expect: {
+                  ...c.expect,
+                  matchesPattern: suggestions.regex,
+                },
               }));
               setStep('useExact');
             }}
@@ -809,7 +817,13 @@ export function GenerateApp({ options }: GenerateAppProps) {
           <Text>Add exact match expectation?</Text>
           <ConfirmInput
             onConfirm={() => {
-              setCurrentCase((c) => ({ ...c, expectedExact: response }));
+              setCurrentCase((c) => ({
+                ...c,
+                expect: {
+                  ...c.expect,
+                  response,
+                },
+              }));
               setStep('useSnapshot');
             }}
             onCancel={() => setStep('useSnapshot')}
@@ -828,10 +842,10 @@ export function GenerateApp({ options }: GenerateAppProps) {
                 description: currentCase.description,
                 toolName: currentCase.toolName!,
                 args: currentCase.args!,
-                expectedTextContains: currentCase.expectedTextContains,
-                expectedRegex: currentCase.expectedRegex,
-                expectedExact: currentCase.expectedExact,
-                expectedSnapshot: currentCase.id!,
+                expect: {
+                  ...currentCase.expect,
+                  snapshot: currentCase.id!,
+                },
               };
               setDataset((d) => ({ ...d, cases: [...d.cases, newCase] }));
               setStep('askContinue');
@@ -842,9 +856,7 @@ export function GenerateApp({ options }: GenerateAppProps) {
                 description: currentCase.description,
                 toolName: currentCase.toolName!,
                 args: currentCase.args!,
-                expectedTextContains: currentCase.expectedTextContains,
-                expectedRegex: currentCase.expectedRegex,
-                expectedExact: currentCase.expectedExact,
+                expect: currentCase.expect,
               };
               setDataset((d) => ({ ...d, cases: [...d.cases, newCase] }));
               setStep('askContinue');
@@ -897,7 +909,7 @@ export function GenerateApp({ options }: GenerateAppProps) {
           <Text> </Text>
           <Text color="cyan">Next steps:</Text>
           <Text dimColor> npx playwright test</Text>
-          {dataset.cases.some((c) => c.expectedSnapshot) && (
+          {dataset.cases.some((c) => c.expect?.snapshot) && (
             <>
               <Text> </Text>
               <Text color="cyan">Snapshot testing:</Text>

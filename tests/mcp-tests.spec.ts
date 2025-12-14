@@ -2,10 +2,6 @@ import { test, expect } from '../src/fixtures/mcp.js';
 import { runConformanceChecks } from '../src/spec/conformanceChecks.js';
 import { loadEvalDataset } from '../src/evals/datasetLoader.js';
 import { runEvalDataset } from '../src/evals/evalRunner.js';
-import { createExactExpectation } from '../src/evals/expectations/exactExpectation.js';
-import { createSchemaExpectation } from '../src/evals/expectations/schemaExpectation.js';
-import { createTextContainsExpectation } from '../src/evals/expectations/textContainsExpectation.js';
-import { createRegexExpectation } from '../src/evals/expectations/regexExpectation.js';
 import { z } from 'zod';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -51,7 +47,7 @@ test.describe('MCP Server Tests', () => {
       conditions: z.string(),
     });
 
-    // Load dataset
+    // Load dataset - schemas are provided via options
     const dataset = await loadEvalDataset(
       join(__dirname, '../data/eval_dataset.json'),
       {
@@ -61,15 +57,13 @@ test.describe('MCP Server Tests', () => {
       }
     );
 
-    // Run evals (only the ones our mock server supports)
+    // Run evals - eval runner now uses expect blocks in each case
+    // Schemas can be passed via options for cases that reference them
     const result = await runEvalDataset(
       {
         dataset,
-        expectations: {
-          exact: createExactExpectation(),
-          schema: createSchemaExpectation(dataset),
-          textContains: createTextContainsExpectation(),
-          regex: createRegexExpectation(),
+        schemas: {
+          'weather-response': WeatherResponseSchema,
         },
       },
       { mcp }
