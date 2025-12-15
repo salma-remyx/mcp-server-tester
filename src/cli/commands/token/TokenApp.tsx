@@ -88,7 +88,8 @@ export function TokenApp({ serverUrl, options }: TokenAppProps) {
           <Text dimColor>Expected location: {stateDir}/tokens.json</Text>
           <Text> </Text>
           <Text dimColor>
-            Run &apos;mcp-server-tester login {serverUrl}&apos; to authenticate first.
+            Run &apos;mcp-server-tester login {serverUrl}&apos; to authenticate
+            first.
           </Text>
         </Box>
       );

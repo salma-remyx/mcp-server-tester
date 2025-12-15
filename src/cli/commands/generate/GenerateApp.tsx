@@ -459,7 +459,9 @@ export function GenerateApp({ options }: GenerateAppProps) {
             <>
               <Text>
                 Run:{' '}
-                <Text color="cyan">mcp-server-tester login {mcpConfig.serverUrl}</Text>
+                <Text color="cyan">
+                  mcp-server-tester login {mcpConfig.serverUrl}
+                </Text>
               </Text>
               <Text> </Text>
               <Text dimColor>Then retry: mcp-server-tester generate</Text>
