@@ -36,11 +36,37 @@ npm run format:check        # Check formatting
 - **`config/`** - `MCPConfig` types and Zod validation for stdio/HTTP transports
 - **`mcp/`** - Client factory (`createMCPClientForConfig`), fixtures (`MCPFixtureApi`), and response normalization
 - **`auth/`** - OAuth 2.1 with PKCE (`PlaywrightOAuthClientProvider`) and static token utilities
-- **`evals/`** - Dataset types, loader, runner, and expectations (exact, schema, textContains, regex, snapshot, judge)
-- **`judge/`** - LLM-as-a-judge implementations (OpenAI, Anthropic)
+- **`assertions/`** - Unified assertion architecture (see below)
+- **`evals/`** - Dataset types, loader, and runner (uses validators internally)
+- **`judge/`** - LLM-as-a-judge via Claude Agent SDK
 - **`spec/`** - MCP protocol conformance checks
 - **`reporters/`** - Custom Playwright reporter with React-based UI
 - **`cli/`** - `mcp-test init` and `mcp-test generate` commands
+
+### Assertions Module (`src/assertions/`)
+
+The assertion architecture provides a single API for both inline tests and data-driven evals:
+
+- **`validators/`** - Pure validation functions: `validateText`, `validateSchema`, `validatePattern`, `validateError`, `validateSize`, `validateResponse`
+- **`matchers/`** - Playwright custom matchers: `toContainToolText`, `toMatchToolSchema`, `toMatchToolPattern`, `toBeToolError`, `toHaveToolResponseSize`, `toMatchToolResponse`, `toMatchToolSnapshot`, `toPassToolJudge`, `toSatisfyToolPredicate`
+
+```typescript
+// Inline test usage
+import { expect } from '@mcp-testing/server-tester';
+
+test('weather tool', async ({ mcp }) => {
+  const result = await mcp.callTool('get_weather', { city: 'London' });
+  expect(result).toContainToolText('temperature');
+  expect(result).toMatchToolSchema(WeatherSchema);
+  expect(result).not.toBeToolError();
+});
+
+// Programmatic validation
+import { validateText } from '@mcp-testing/server-tester';
+
+const result = validateText(response, ['temperature']);
+if (!result.pass) console.log(result.message);
+```
 
 ### Playwright Fixtures (`src/fixtures/mcp.ts`)
 
@@ -97,7 +123,7 @@ The UI types in `src/reporters/ui-src/types.ts` must manually stay in sync with 
 
 - Use function declarations, not arrow function expressions for exports
 - Use explicit `null` in ternaries instead of short-circuit (`condition ? 'value' : null`)
-- Descriptive type names (e.g., `EvalDataset`, `MCPFixtureApi`, `LLMJudgeClient`)
+- Descriptive type names (e.g., `EvalDataset`, `MCPFixtureApi`, `Judge`, `ValidationResult`)
 - No `any` types - TypeScript strict mode is enabled
 - Keep `async` keyword even if no `await` currently used
 
@@ -107,16 +133,23 @@ Use conventional commits: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore
 
 ## Adding New Features
 
-### New Expectation Type
+### New Validator
 
-1. Create `src/evals/expectations/myExpectation.ts` returning `EvalExpectation`
-2. Export from `src/index.ts`
-3. Add unit tests (`*.test.ts`)
+1. Create `src/assertions/validators/myValidator.ts` returning `ValidationResult`
+2. Export from `src/assertions/validators/index.ts`
+3. Add unit tests in `src/assertions/validators/validators.test.ts`
+
+### New Matcher
+
+1. Create `src/assertions/matchers/toMyMatcher.ts` using a validator
+2. Register in `src/assertions/matchers/index.ts`
+3. Add TypeScript declaration in `src/assertions/matchers/types.ts`
+4. Export from `src/index.ts`
 
 ### New LLM Judge Provider
 
-1. Add to `LLMProviderKind` in `src/judge/judgeTypes.ts`
-2. Implement `LLMJudgeClient` interface in `src/judge/myProviderJudge.ts`
+1. Add to `ProviderKind` in `src/judge/judgeTypes.ts`
+2. Implement `Judge` interface in `src/judge/myProviderJudge.ts`
 3. Add to switch in `src/judge/judgeClient.ts`
 
 ### New Transport Type
