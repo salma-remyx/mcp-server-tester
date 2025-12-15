@@ -64,7 +64,7 @@ export default defineConfig({
 }
 ```
 
-> **Debug Logging:** Enable with `DEBUG=mcp-testing:* npm test`
+> **Debug Logging:** Enable with `DEBUG=mcp-server-tester:* npm test`
 
 ### Examples
 
@@ -130,7 +130,7 @@ mcpConfig: {
 
 ```bash
 # Enable debug logging via environment variable
-DEBUG=mcp-testing:* npm test
+DEBUG=mcp-server-tester:* npm test
 ```
 
 ### Process Management
@@ -404,7 +404,7 @@ Error: Command not found: node server.js
 
 **Solutions:**
 
-- Enable debug logging: `DEBUG=mcp-testing:* npm test`
+- Enable debug logging: `DEBUG=mcp-server-tester:* npm test`
 - Check server logs for errors
 - Verify server writes to stdout (not stderr)
 - Ensure server follows MCP protocol

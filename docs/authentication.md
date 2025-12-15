@@ -671,13 +671,13 @@ Enable debug logging to see MCP protocol messages:
 
 ```bash
 # Enable debug logging via environment variable
-DEBUG=mcp-testing:* npm test
+DEBUG=mcp-server-tester:* npm test
 
 # Or just OAuth logs
-DEBUG=mcp-testing:oauth npm test
+DEBUG=mcp-server-tester:oauth npm test
 
 # Or just client connection logs
-DEBUG=mcp-testing:client npm test
+DEBUG=mcp-server-tester:client npm test
 ```
 
 ### Common IdP Selector Examples

@@ -30,7 +30,7 @@ import {
 } from './storage.js';
 import type { StoredTokens, StoredClientInfo, TokenResult } from './types.js';
 
-const debug = createDebug('mcp-testing:cli-oauth');
+const debug = createDebug('mcp-server-tester:cli-oauth');
 
 /**
  * Configuration for CLI OAuth client
