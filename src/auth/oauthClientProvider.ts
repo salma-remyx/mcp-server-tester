@@ -353,7 +353,7 @@ export async function loadOAuthState(
  * This function writes to Playwright's single-file auth state format.
  * Used by `performOAuthSetup` in globalSetup.
  *
- * **Note:** This does NOT work with the CLI storage format (`mcp-test login`).
+ * **Note:** This does NOT work with the CLI storage format (`mcp-server-tester login`).
  * For programmatic token injection compatible with CLI, use `injectTokens(serverUrl, tokens)`.
  *
  * @param storagePath - Path to the auth state file (e.g., 'playwright/.auth/oauth-state.json')

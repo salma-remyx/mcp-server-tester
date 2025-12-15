@@ -120,7 +120,7 @@ export const test = base.extend<MCPFixtures>({
     }
 
     // If HTTP transport with no explicit auth, try to use CLI-stored tokens
-    // This enables the simple flow: `mcp-test login <url>` then run tests
+    // This enables the simple flow: `mcp-server-tester login <url>` then run tests
     if (
       isHttpConfig(mcpConfig) &&
       !mcpConfig.auth?.accessToken &&
