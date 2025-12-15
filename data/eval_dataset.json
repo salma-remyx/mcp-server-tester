@@ -9,7 +9,9 @@
       "args": {
         "city": "London"
       },
-      "expectedSchemaName": "weather-response"
+      "expect": {
+        "schema": "weather-response"
+      }
     },
     {
       "id": "get-weather-tokyo",
@@ -18,7 +20,9 @@
       "args": {
         "city": "Tokyo"
       },
-      "expectedSchemaName": "weather-response"
+      "expect": {
+        "schema": "weather-response"
+      }
     },
     {
       "id": "search-docs-mcp",
@@ -28,7 +32,12 @@
         "query": "Model Context Protocol",
         "limit": 5
       },
-      "judgeConfigId": "search-relevance"
+      "expect": {
+        "passesJudge": {
+          "rubric": "Search results should be relevant to MCP",
+          "configId": "search-relevance"
+        }
+      }
     },
     {
       "id": "calculate-sum",
@@ -39,8 +48,10 @@
         "a": 10,
         "b": 20
       },
-      "expectedExact": {
-        "result": 30
+      "expect": {
+        "response": {
+          "result": 30
+        }
       }
     },
     {
@@ -50,12 +61,14 @@
       "args": {
         "city": "London"
       },
-      "expectedTextContains": [
-        "## City Information",
-        "**City:** London",
-        "### Features",
-        "- Public Transportation"
-      ]
+      "expect": {
+        "containsText": [
+          "## City Information",
+          "**City:** London",
+          "### Features",
+          "- Public Transportation"
+        ]
+      }
     },
     {
       "id": "city-info-markdown-regex",
@@ -64,15 +77,17 @@
       "args": {
         "city": "London"
       },
-      "expectedRegex": [
-        "^## City Information",
-        "\\*\\*City:\\*\\* \\w+",
-        "\\*\\*Population:\\*\\* [\\d.]+M",
-        "^### Features",
-        "^- [\\w\\s]+",
-        "Temperature: \\d+°C",
-        "\\d{4}-\\d{2}-\\d{2}"
-      ]
+      "expect": {
+        "matchesPattern": [
+          "^## City Information",
+          "\\*\\*City:\\*\\* \\w+",
+          "\\*\\*Population:\\*\\* [\\d.]+M",
+          "^### Features",
+          "^- [\\w\\s]+",
+          "Temperature: \\d+°C",
+          "\\d{4}-\\d{2}-\\d{2}"
+        ]
+      }
     }
   ],
   "metadata": {

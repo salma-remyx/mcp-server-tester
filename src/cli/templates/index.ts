@@ -82,12 +82,7 @@ import {
   runConformanceChecks,
   loadEvalDataset,
   runEvalDataset,
-  createExactExpectation,
-  createSchemaExpectation,
-  createTextContainsExpectation,
-  createRegexExpectation,
 } from '@mcp-testing/server-tester';
-import { z } from 'zod';
 
 test.describe('MCP Server Tests', () => {
   test('should connect to MCP server', async ({ mcp }) => {
@@ -110,27 +105,14 @@ test.describe('MCP Server Tests', () => {
   });
 
   test('should run eval dataset', async ({ mcp }, testInfo) => {
-    // Load dataset
+    // Load dataset (the dataset JSON uses the 'expect' block for assertions)
     const dataset = await loadEvalDataset('./data/example-dataset.json');
 
-    // Run evals
+    // Run evals - the runner uses validators internally based on 'expect' block
     const result = await runEvalDataset(
-      {
-        dataset,
-        expectations: {
-          exact: createExactExpectation(),
-          textContains: createTextContainsExpectation(),
-          regex: createRegexExpectation(),
-        },
-      },
-      { mcp }
+      { dataset },
+      { mcp, testInfo, expect }
     );
-
-    // Attach results for MCP Eval Reporter
-    await testInfo.attach('mcp-test-results', {
-      body: JSON.stringify(result),
-      contentType: 'application/json',
-    });
 
     expect(result.passed).toBeGreaterThan(0);
   });
@@ -150,9 +132,10 @@ export function getDatasetTemplate(_answers: ProjectAnswers): string {
       "args": {
         "param1": "value1"
       },
-      "expectedTextContains": [
-        "expected text"
-      ]
+      "expect": {
+        "containsText": ["expected text"],
+        "isError": false
+      }
     }
   ],
   "metadata": {

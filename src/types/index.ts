@@ -34,7 +34,8 @@ export type ExpectationType =
   | 'regex'
   | 'snapshot'
   | 'judge'
-  | 'error';
+  | 'error'
+  | 'size';
 
 /**
  * Result of an expectation check

@@ -329,6 +329,7 @@ export default class MCPReporter implements Reporter {
       snapshot: 0,
       judge: 0,
       error: 0,
+      size: 0,
     };
 
     let passed = 0;

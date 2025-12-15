@@ -10,7 +10,9 @@
       "args": {
         "query": "SELECT * FROM users ORDER BY id"
       },
-      "expectedTextContains": ["Alice", "Bob", "Charlie", "Diana"]
+      "expect": {
+        "containsText": ["Alice", "Bob", "Charlie", "Diana"]
+      }
     },
     {
       "id": "should count total users",
@@ -20,7 +22,9 @@
       "args": {
         "query": "SELECT COUNT(*) as count FROM users"
       },
-      "expectedTextContains": "4"
+      "expect": {
+        "containsText": "4"
+      }
     },
     {
       "id": "should list all database tables",
@@ -28,7 +32,9 @@
       "mode": "direct",
       "toolName": "list_tables",
       "args": {},
-      "expectedTextContains": ["users", "posts"]
+      "expect": {
+        "containsText": ["users", "posts"]
+      }
     },
     {
       "id": "should describe users table schema",
@@ -38,7 +44,9 @@
       "args": {
         "table_name": "users"
       },
-      "expectedTextContains": ["id", "name", "email", "role", "INTEGER", "TEXT"]
+      "expect": {
+        "containsText": ["id", "name", "email", "role", "INTEGER", "TEXT"]
+      }
     },
     {
       "id": "should query admin users",
@@ -48,7 +56,9 @@
       "args": {
         "query": "SELECT name, role FROM users WHERE role = 'admin'"
       },
-      "expectedTextContains": ["Alice", "admin"]
+      "expect": {
+        "containsText": ["Alice", "admin"]
+      }
     },
     {
       "id": "should join users and posts tables",
@@ -58,7 +68,9 @@
       "args": {
         "query": "SELECT u.name, p.title FROM users u JOIN posts p ON u.id = p.user_id WHERE p.published = 1"
       },
-      "expectedTextContains": ["Alice", "Bob", "Charlie"]
+      "expect": {
+        "containsText": ["Alice", "Bob", "Charlie"]
+      }
     },
     {
       "id": "should count published posts",
@@ -68,7 +80,9 @@
       "args": {
         "query": "SELECT COUNT(*) as count FROM posts WHERE published = 1"
       },
-      "expectedTextContains": "4"
+      "expect": {
+        "containsText": "4"
+      }
     },
     {
       "id": "should count posts per user",
@@ -78,7 +92,9 @@
       "args": {
         "query": "SELECT u.name, COUNT(p.id) as post_count FROM users u LEFT JOIN posts p ON u.id = p.user_id GROUP BY u.id ORDER BY post_count DESC"
       },
-      "expectedTextContains": ["Bob", "Alice", "Charlie"]
+      "expect": {
+        "containsText": ["Bob", "Alice", "Charlie"]
+      }
     },
     {
       "id": "should describe posts table schema",
@@ -88,7 +104,9 @@
       "args": {
         "table_name": "posts"
       },
-      "expectedTextContains": ["id", "user_id", "title", "published", "content"]
+      "expect": {
+        "containsText": ["id", "user_id", "title", "published", "content"]
+      }
     },
     {
       "id": "should query only published posts",
@@ -98,11 +116,13 @@
       "args": {
         "query": "SELECT title, published FROM posts WHERE published = 1 ORDER BY id"
       },
-      "expectedTextContains": [
-        "Getting Started",
-        "Database Best Practices",
-        "Performance Tuning"
-      ]
+      "expect": {
+        "containsText": [
+          "Getting Started",
+          "Database Best Practices",
+          "Performance Tuning"
+        ]
+      }
     },
     {
       "id": "should find moderator users",
@@ -112,7 +132,9 @@
       "args": {
         "query": "SELECT name, email FROM users WHERE role = 'moderator'"
       },
-      "expectedTextContains": ["Bob", "bob@example.com"]
+      "expect": {
+        "containsText": ["Bob", "bob@example.com"]
+      }
     },
     {
       "id": "should get all posts by Alice",
@@ -122,7 +144,9 @@
       "args": {
         "query": "SELECT title, published FROM posts WHERE user_id = 1 ORDER BY id"
       },
-      "expectedTextContains": ["Getting Started", "Draft: Advanced Topics"]
+      "expect": {
+        "containsText": ["Getting Started", "Draft: Advanced Topics"]
+      }
     },
     {
       "id": "should calculate published vs draft ratio",
@@ -132,7 +156,9 @@
       "args": {
         "query": "SELECT SUM(CASE WHEN published = 1 THEN 1 ELSE 0 END) as published, SUM(CASE WHEN published = 0 THEN 1 ELSE 0 END) as drafts FROM posts"
       },
-      "expectedTextContains": ["published", "drafts"]
+      "expect": {
+        "containsText": ["published", "drafts"]
+      }
     },
     {
       "id": "should handle invalid SQL syntax gracefully",
@@ -142,7 +168,9 @@
       "args": {
         "query": "SELECT * FORM users"
       },
-      "expectedTextContains": "error"
+      "expect": {
+        "isError": true
+      }
     },
     {
       "id": "should handle non-existent table query",
@@ -152,7 +180,9 @@
       "args": {
         "table_name": "nonexistent_table"
       },
-      "expectedTextContains": "[]"
+      "expect": {
+        "containsText": "[]"
+      }
     },
     {
       "id": "should exactly match user count",
@@ -162,7 +192,9 @@
       "args": {
         "query": "SELECT COUNT(*) as count FROM users"
       },
-      "expectedTextContains": ["count", "4"]
+      "expect": {
+        "containsText": ["count", "4"]
+      }
     },
     {
       "id": "should introspect database tables",
@@ -170,7 +202,9 @@
       "mode": "direct",
       "toolName": "list_tables",
       "args": {},
-      "expectedTextContains": ["users", "posts"]
+      "expect": {
+        "containsText": ["users", "posts"]
+      }
     },
     {
       "id": "should show detailed users table structure",
@@ -180,15 +214,17 @@
       "args": {
         "table_name": "users"
       },
-      "expectedTextContains": [
-        "id",
-        "name",
-        "email",
-        "role",
-        "created_at",
-        "INTEGER",
-        "TEXT"
-      ]
+      "expect": {
+        "containsText": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "created_at",
+          "INTEGER",
+          "TEXT"
+        ]
+      }
     },
     {
       "id": "should match users list snapshot",
@@ -198,8 +234,10 @@
       "args": {
         "query": "SELECT * FROM users ORDER BY id"
       },
-      "expectedSnapshot": "users-list.json",
-      "snapshotSanitizers": ["timestamp"]
+      "expect": {
+        "snapshot": "users-list.json",
+        "snapshotSanitizers": ["timestamp"]
+      }
     },
     {
       "id": "should match posts with users snapshot",
@@ -209,7 +247,9 @@
       "args": {
         "query": "SELECT posts.id, posts.title, users.name as author FROM posts JOIN users ON posts.user_id = users.id ORDER BY posts.id"
       },
-      "expectedSnapshot": "posts-with-users.json"
+      "expect": {
+        "snapshot": "posts-with-users.json"
+      }
     },
     {
       "id": "should match table list snapshot",
@@ -217,7 +257,9 @@
       "mode": "direct",
       "toolName": "list_tables",
       "args": {},
-      "expectedSnapshot": "table-list.json"
+      "expect": {
+        "snapshot": "table-list.json"
+      }
     }
   ],
   "metadata": {

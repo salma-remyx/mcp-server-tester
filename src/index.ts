@@ -81,6 +81,40 @@ export {
 export type { ContentBlock, NormalizedToolResponse } from './mcp/response.js';
 export { normalizeToolResponse, extractText } from './mcp/response.js';
 
+// Assertions - Matchers (primary API)
+// The extended expect with MCP tool matchers is exported via fixtures
+// Use: import { expect } from '@mcp-testing/server-tester'
+
+// Assertions - Validators (for programmatic use)
+export {
+  validateResponse,
+  validateSchema,
+  validateText,
+  validatePattern,
+  validateError,
+  validateSize,
+  getResponseSizeBytes,
+} from './assertions/validators/index.js';
+
+export type {
+  ValidationResult,
+  TextValidatorOptions,
+  SizeValidatorOptions,
+  SchemaValidatorOptions,
+  PatternValidatorOptions,
+  SnapshotSanitizer,
+  BuiltInSanitizer,
+  RegexSanitizer,
+  FieldRemovalSanitizer,
+  SchemaRegistry,
+} from './assertions/validators/types.js';
+
+export type {
+  JudgeMatcherOptions,
+  ToolPredicate,
+  PredicateResult,
+} from './assertions/matchers/types.js';
+
 // Fixtures
 export type {
   MCPFixtureApi,
@@ -98,22 +132,13 @@ export type {
   ExpectationResultMap,
 } from './types/index.js';
 
-// Backwards compatibility (deprecated)
-/** @deprecated Use createMCPFixture instead */
-export { createMCPFixture as createMCPFixtureApi } from './mcp/fixtures/mcpFixture.js';
-/** @deprecated Use createMCPFixture instead */
-export { createMCPFixture as createMCPFixtureApiWithTracking } from './mcp/fixtures/mcpFixture.js';
-
 // Eval Dataset
 export type {
   EvalCase,
   EvalDataset,
+  EvalExpectBlock,
   SerializedEvalDataset,
   EvalMode,
-  SnapshotSanitizer,
-  BuiltInSanitizer,
-  RegexSanitizer,
-  FieldRemovalSanitizer,
 } from './evals/datasetTypes.js';
 export {
   EvalCaseSchema,
@@ -131,39 +156,13 @@ export {
 
 // Eval Runner
 export type {
-  EvalExpectationContext,
+  EvalContext,
   EvalExpectationResult,
-  EvalExpectation,
   EvalCaseResult,
   EvalRunnerResult,
   EvalRunnerOptions,
 } from './evals/evalRunner.js';
 export { runEvalDataset, runEvalCase } from './evals/evalRunner.js';
-
-// Expectations
-export { createExactExpectation } from './evals/expectations/exactExpectation.js';
-export { createSchemaExpectation } from './evals/expectations/schemaExpectation.js';
-export {
-  createJudgeExpectation,
-  type JudgeConfigs,
-} from './evals/expectations/judgeExpectation.js';
-export {
-  createTextContainsExpectation,
-  type TextContainsExpectationOptions,
-} from './evals/expectations/textContainsExpectation.js';
-export { createRegexExpectation } from './evals/expectations/regexExpectation.js';
-export {
-  createSnapshotExpectation,
-  applySanitizers,
-  BUILT_IN_PATTERNS,
-} from './evals/expectations/snapshotExpectation.js';
-export { createErrorExpectation } from './evals/expectations/errorExpectation.js';
-export {
-  extractTextFromResponse,
-  normalizeWhitespace,
-  findMissingSubstrings,
-  findFailedPatterns,
-} from './evals/expectations/textUtils.js';
 
 // LLM Host Simulation
 export type {
@@ -174,24 +173,24 @@ export type {
   LLMHostSimulator,
   ExpectedToolCall,
   ToolCallValidationResult,
+  ToolCallValidator,
 } from './evals/llmHost/index.js';
 export {
   simulateLLMHost,
   isProviderAvailable,
   getMissingDependencyMessage,
+  createToolCallValidator,
 } from './evals/llmHost/index.js';
-export { createToolCallExpectation } from './evals/llmHost/index.js';
 
 // Judge
 export type {
-  LLMProviderKind,
-  LLMJudgeConfig,
-  LLMJudgeResult,
-  LLMJudgeClient,
+  JudgeConfig,
+  Judge,
+  JudgeResult,
+  UsageMetrics,
+  ProviderKind,
 } from './judge/judgeTypes.js';
-export { createLLMJudgeClient } from './judge/judgeClient.js';
-export { createOpenAIJudge } from './judge/openaiJudge.js';
-export { createAnthropicJudge } from './judge/anthropicJudge.js';
+export { createJudge } from './judge/judgeClient.js';
 
 // Conformance
 export type {

@@ -3,7 +3,7 @@
  */
 
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { extractTextFromResponse } from '../../evals/expectations/textUtils.js';
+import { extractText } from '../../mcp/response.js';
 
 export interface ExpectationSuggestions {
   textContains: string[];
@@ -27,7 +27,7 @@ export function suggestExpectations(
   };
 
   // Extract text from response
-  const text = extractTextFromResponse(response);
+  const text = extractText(response);
 
   // Suggest text contains expectations
   suggestions.textContains = suggestTextContains(text, tool);

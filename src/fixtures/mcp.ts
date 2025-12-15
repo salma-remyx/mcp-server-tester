@@ -1,4 +1,5 @@
-import { test as base, expect } from '@playwright/test';
+import { test as base } from '@playwright/test';
+import { expect } from '../assertions/matchers/index.js';
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js';
 import {
@@ -183,6 +184,13 @@ export const test = base.extend<MCPFixtures>({
 });
 
 /**
- * Re-export expect from Playwright for convenience
+ * Re-export extended expect with MCP tool matchers
+ *
+ * @example
+ * ```typescript
+ * expect(result).toContainToolText('temperature');
+ * expect(result).toMatchToolSchema(WeatherSchema);
+ * expect(result).not.toBeToolError();
+ * ```
  */
 export { expect };

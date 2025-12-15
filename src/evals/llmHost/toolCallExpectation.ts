@@ -1,11 +1,20 @@
 /**
- * Tool call expectation for LLM host mode
+ * Tool call validator for LLM host mode
  *
  * Validates that the LLM made the expected tool calls with correct arguments
  */
 
-import type { EvalExpectation } from '../evalRunner.js';
+import type { EvalExpectationResult } from '../../types/index.js';
+import type { EvalCase } from '../datasetTypes.js';
 import type { ExpectedToolCall, LLMToolCall } from './llmHostTypes.js';
+
+/**
+ * Tool call validation function signature
+ */
+export type ToolCallValidator = (
+  evalCase: EvalCase,
+  response: unknown
+) => Promise<EvalExpectationResult>;
 
 /**
  * Checks if two argument objects match (partial match)
@@ -65,12 +74,12 @@ function findMatchingCall(
 }
 
 /**
- * Creates a tool call expectation for LLM host mode
+ * Creates a tool call validator for LLM host mode
  *
  * Validates that the LLM made the expected tool calls with correct arguments.
  * Supports partial argument matching and optional calls.
  *
- * @returns Expectation function
+ * @returns Validator function
  *
  * @example
  * ```typescript
@@ -89,8 +98,8 @@ function findMatchingCall(
  * }
  * ```
  */
-export function createToolCallExpectation(): EvalExpectation {
-  return async (_context, evalCase, response) => {
+export function createToolCallValidator(): ToolCallValidator {
+  return async (evalCase: EvalCase, response: unknown) => {
     // Extract expected tool calls from eval case metadata
     const expectedCalls = evalCase.metadata?.expectedToolCalls as
       | Array<ExpectedToolCall>

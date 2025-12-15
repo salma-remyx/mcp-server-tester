@@ -5,7 +5,7 @@
  * and LLM host simulation (E2E).
  */
 
-import { test as base, expect } from '@playwright/test';
+import { test as base } from '@playwright/test';
 import { Project } from 'fixturify-project';
 import {
   createMCPClientForConfig,
@@ -17,14 +17,12 @@ import {
   runEvalDataset,
   runEvalCase,
   type EvalCase,
-  createTextContainsExpectation,
-  createRegexExpectation,
-  createSnapshotExpectation,
-  createExactExpectation,
   runConformanceChecks,
   simulateLLMHost,
   extractTextFromResponse,
   normalizeWhitespace,
+  // Extended expect with MCP tool matchers
+  expect,
 } from '@mcp-testing/server-tester';
 import { ConfigFileSchema } from '../schemas/fileContentSchema.js';
 import path from 'path';
@@ -173,9 +171,10 @@ test.describe('Inline Eval Cases', () => {
         id: 'inline-config-check',
         toolName: 'read_file',
         args: { path: 'config.json' },
-        expectedTextContains: ['version', '1.0.0', 'features'],
+        expect: {
+          containsText: ['version', '1.0.0', 'features'],
+        },
       },
-      { textContains: createTextContainsExpectation() },
       { mcp }
     );
 
@@ -189,12 +188,10 @@ test.describe('Inline Eval Cases', () => {
         id: 'inline-docs-listing',
         toolName: 'list_directory',
         args: { path: 'docs' },
-        expectedTextContains: ['guide.md', 'api.md'],
-        expectedRegex: ['\\.md'],
-      },
-      {
-        textContains: createTextContainsExpectation(),
-        regex: createRegexExpectation(),
+        expect: {
+          containsText: ['guide.md', 'api.md'],
+          matchesPattern: ['\\.md'],
+        },
       },
       { mcp }
     );
@@ -214,16 +211,9 @@ test.describe('Eval Dataset (Batch)', () => {
     );
     const directDataset = { ...dataset, cases: directCases };
 
+    // The runner uses validators internally based on the 'expect' block
     const result = await runEvalDataset(
-      {
-        dataset: directDataset,
-        expectations: {
-          textContains: createTextContainsExpectation({ caseSensitive: false }),
-          regex: createRegexExpectation(),
-          exact: createExactExpectation(),
-          snapshot: createSnapshotExpectation(),
-        },
-      },
+      { dataset: directDataset },
       { mcp, testInfo, expect }
     );
 
@@ -239,16 +229,12 @@ test.describe('Eval: Direct Mode', () => {
 
   for (const evalCase of directCases) {
     test(evalCase.id, async ({ mcp }, testInfo) => {
-      const result = await runEvalCase(
-        evalCase as EvalCase,
-        {
-          textContains: createTextContainsExpectation({ caseSensitive: false }),
-          regex: createRegexExpectation(),
-          exact: createExactExpectation(),
-          snapshot: createSnapshotExpectation(),
-        },
-        { mcp, testInfo, expect }
-      );
+      // The runner uses validators internally based on the 'expect' block
+      const result = await runEvalCase(evalCase as EvalCase, {
+        mcp,
+        testInfo,
+        expect,
+      });
 
       if (!result.pass) {
         const failures = Object.entries(result.expectations || {})
@@ -325,14 +311,12 @@ test.describe('Eval: LLM Host Mode', () => {
         return;
       }
 
-      const result = await runEvalCase(
-        evalCase as EvalCase,
-        {
-          textContains: createTextContainsExpectation({ caseSensitive: false }),
-          regex: createRegexExpectation(),
-        },
-        { mcp, testInfo, expect }
-      );
+      // The runner uses validators internally based on the 'expect' block
+      const result = await runEvalCase(evalCase as EvalCase, {
+        mcp,
+        testInfo,
+        expect,
+      });
 
       if (!result.pass && result.error) {
         if (result.error.includes('429') || result.error.includes('quota')) {
@@ -377,5 +361,71 @@ test.describe('Text Utilities', () => {
 
     expect(normalized).toContain('# User Guide');
     expect(normalized).toContain('Complete guide here');
+  });
+});
+
+/**
+ * NEW: Matcher-Based API (Preferred)
+ *
+ * These tests demonstrate the new Playwright matcher-based approach.
+ * This is the recommended pattern for new tests - it's cleaner and follows
+ * standard Playwright conventions.
+ *
+ * Available matchers:
+ * - expect(result).toContainToolText(['text1', 'text2'])
+ * - expect(result).toMatchToolPattern([/regex1/, /regex2/])
+ * - expect(result).toMatchToolSchema(zodSchema)
+ * - expect(result).toBeToolError() / expect(result).not.toBeToolError()
+ * - expect(result).toHaveToolResponseSize({ maxBytes: 10000 })
+ */
+test.describe('Matcher-Based Tests (NEW)', () => {
+  test('reads file and validates with matchers', async ({ mcp }) => {
+    const result = await mcp.callTool('read_file', { path: 'readme.txt' });
+
+    // Use new matchers - cleaner than extracting text manually
+    expect(result).not.toBeToolError();
+    expect(result).toContainToolText('Hello World');
+  });
+
+  test('validates config with multiple matchers', async ({ mcp }) => {
+    const result = await mcp.callTool('read_file', { path: 'config.json' });
+
+    expect(result).not.toBeToolError();
+    expect(result).toContainToolText(['version', '1.0.0', 'features']);
+    expect(result).toMatchToolPattern(/\d+\.\d+\.\d+/); // semver pattern
+  });
+
+  test('validates directory listing with patterns', async ({ mcp }) => {
+    const result = await mcp.callTool('list_directory', { path: 'docs' });
+
+    expect(result).not.toBeToolError();
+    expect(result).toContainToolText(['guide.md', 'api.md']);
+    expect(result).toMatchToolPattern([/\.md$/m, /guide/i]);
+  });
+
+  test('handles errors gracefully with matchers', async ({ mcp }) => {
+    const result = await mcp.callTool('read_file', {
+      path: 'does-not-exist.txt',
+    });
+
+    // Check that it's an error response
+    expect(result).toBeToolError();
+  });
+
+  test('validates response size', async ({ mcp }) => {
+    const result = await mcp.callTool('read_file', { path: 'readme.txt' });
+
+    expect(result).not.toBeToolError();
+    expect(result).toHaveToolResponseSize({ maxBytes: 1000 });
+  });
+
+  test('validates schema with Zod', async ({ mcp }) => {
+    const result = await mcp.callTool('read_file', { path: 'config.json' });
+
+    expect(result).not.toBeToolError();
+    // Parse the JSON content and validate against schema
+    const text = extractTextFromResponse(result);
+    const config = JSON.parse(text);
+    expect(config).toMatchToolSchema(ConfigFileSchema);
   });
 });
