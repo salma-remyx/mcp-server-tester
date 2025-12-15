@@ -20,7 +20,7 @@
     "url": "https://github.com/gleanwork/mcp-server-tester.git"
   },
   "license": "MIT",
-  "author": "MCP Testing Contributors",
+  "author": "Glean Contributors",
   "type": "module",
   "exports": {
     ".": {
