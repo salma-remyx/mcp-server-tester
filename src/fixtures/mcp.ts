@@ -79,7 +79,7 @@ export const test = base.extend<MCPFixtures>({
    * Authentication resolution order:
    * 1. Explicit authStatePath → uses PlaywrightOAuthClientProvider
    * 2. Explicit accessToken → uses static Bearer token
-   * 3. HTTP transport with no auth → tries CLI-stored tokens (from `mcp-test login`)
+   * 3. HTTP transport with no auth → tries CLI-stored tokens (from `mcp-server-tester login`)
    *    with automatic token refresh
    */
   mcpClient: async ({ _mcpFixtureState }, use, testInfo) => {

@@ -41,7 +41,7 @@ npm run format:check        # Check formatting
 - **`judge/`** - LLM-as-a-judge via Claude Agent SDK
 - **`spec/`** - MCP protocol conformance checks
 - **`reporters/`** - Custom Playwright reporter with React-based UI
-- **`cli/`** - `mcp-test init` and `mcp-test generate` commands
+- **`cli/`** - `mcp-server-tester init` and `mcp-server-tester generate` commands
 
 ### Assertions Module (`src/assertions/`)
 

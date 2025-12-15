@@ -648,7 +648,7 @@ npx mcp-server-tester token https://api.example.com/mcp
 #
 # Expected location: ~/.local/state/mcp-tests/api.example.com_mcp/tokens.json
 #
-# Run 'mcp-test login https://api.example.com/mcp' to authenticate first.
+# Run 'mcp-server-tester login https://api.example.com/mcp' to authenticate first.
 ```
 
 ## Next Steps

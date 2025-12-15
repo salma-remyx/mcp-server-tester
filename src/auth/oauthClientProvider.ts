@@ -321,7 +321,7 @@ export class PlaywrightOAuthClientProvider implements OAuthClientProvider {
  * This function reads from Playwright's single-file auth state format,
  * typically created by `performOAuthSetup` in globalSetup.
  *
- * **Note:** This does NOT work with tokens stored by the CLI (`mcp-test login`).
+ * **Note:** This does NOT work with tokens stored by the CLI (`mcp-server-tester login`).
  * For CLI-stored tokens, use `loadTokens(serverUrl)` instead.
  *
  * @param storagePath - Path to the auth state file (e.g., 'playwright/.auth/oauth-state.json')
