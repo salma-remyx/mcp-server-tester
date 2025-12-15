@@ -1,5 +1,5 @@
 /**
- * Canonical type definitions for @mcp-testing/server-tester
+ * Canonical type definitions for @gleanwork/mcp-server-tester
  *
  * This module is the single source of truth for shared types.
  * All other modules should import from here rather than defining their own.

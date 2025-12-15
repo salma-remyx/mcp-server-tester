@@ -32,7 +32,7 @@ export default defineConfig({
     ['list'],
     ['html', { open: 'never' }],
     [
-      '@mcp-testing/server-tester/reporters/mcpReporter',
+      '@gleanwork/mcp-server-tester/reporters/mcpReporter',
       {
         outputDir: '.mcp-test-results',
         autoOpen: !process.env.CI,

@@ -30,7 +30,7 @@ import type { MCPConformanceCheck } from '../spec/conformanceChecks.js';
  * // playwright.config.ts
  * export default defineConfig({
  *   reporter: [
- *     ['@mcp-testing/server-tester/reporters/mcpReporter', {
+ *     ['@gleanwork/mcp-server-tester/reporters/mcpReporter', {
  *       outputDir: '.mcp-test-results',
  *       autoOpen: true,
  *       historyLimit: 10

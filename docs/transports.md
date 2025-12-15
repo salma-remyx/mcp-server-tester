@@ -13,7 +13,7 @@ MCP servers can be accessed via different transport mechanisms. This guide cover
 
 ## Transport Types
 
-`@mcp-testing/server-tester` supports two transport types:
+`@gleanwork/mcp-server-tester` supports two transport types:
 
 1. **stdio** - Local server processes (via stdin/stdout)
 2. **HTTP** - Remote servers (via HTTP/SSE)

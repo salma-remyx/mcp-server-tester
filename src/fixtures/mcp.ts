@@ -49,7 +49,7 @@ type MCPFixtures = {
  * Extended Playwright test with MCP fixtures
  *
  * @example
- * import { test, expect } from '@mcp-testing/server-tester';
+ * import { test, expect } from '@gleanwork/mcp-server-tester';
  *
  * test('lists tools from MCP server', async ({ mcp }) => {
  *   const tools = await mcp.listTools();
@@ -153,7 +153,7 @@ export const test = base.extend<MCPFixtures>({
     // Create and connect client
     const client = await createMCPClientForConfig(effectiveConfig, {
       clientInfo: {
-        name: '@mcp-testing/server-tester',
+        name: '@gleanwork/mcp-server-tester',
         version: '0.1.0',
       },
       authProvider,

@@ -1,5 +1,5 @@
 /**
- * @mcp-testing/server-tester
+ * @gleanwork/mcp-server-tester
  *
  * Playwright-based testing framework for MCP servers
  *
@@ -83,7 +83,7 @@ export { normalizeToolResponse, extractText } from './mcp/response.js';
 
 // Assertions - Matchers (primary API)
 // The extended expect with MCP tool matchers is exported via fixtures
-// Use: import { expect } from '@mcp-testing/server-tester'
+// Use: import { expect } from '@gleanwork/mcp-server-tester'
 
 // Assertions - Validators (for programmatic use)
 export {

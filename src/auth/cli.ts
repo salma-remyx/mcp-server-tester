@@ -120,7 +120,7 @@ const DEFAULT_TIMEOUT_MS = 300_000;
 /**
  * Default client name for DCR
  */
-const DEFAULT_CLIENT_NAME = '@mcp-testing/server-tester';
+const DEFAULT_CLIENT_NAME = '@gleanwork/mcp-server-tester';
 
 /**
  * Default TTL for cached server metadata (24 hours)

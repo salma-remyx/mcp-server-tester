@@ -14,7 +14,7 @@ This guide covers authentication options for testing MCP servers that require au
 
 ## Overview
 
-`@mcp-testing/server-tester` supports two authentication modes:
+`@gleanwork/mcp-server-tester` supports two authentication modes:
 
 | Mode             | Use Case                                   | Setup Complexity |
 | ---------------- | ------------------------------------------ | ---------------- |
@@ -78,7 +78,7 @@ import {
   validateAccessToken,
   isTokenExpired,
   isTokenExpiringSoon,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 
 // Create auth headers
 const headers = createTokenAuthHeaders(process.env.MCP_ACCESS_TOKEN);
@@ -219,7 +219,7 @@ import { chromium } from '@playwright/test';
 import {
   performOAuthSetupIfNeeded,
   type OAuthSetupConfig,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 
 export default async function globalSetup() {
   const config: OAuthSetupConfig = {
@@ -276,7 +276,7 @@ import {
   buildAuthorizationUrl,
   exchangeCodeForTokens,
   saveOAuthState,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 
 export default async function globalSetup() {
   // 1. Discover OAuth metadata
@@ -524,7 +524,7 @@ import type {
   MCPOAuthConfig,
   StoredOAuthState,
   OAuthSetupConfig,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 ```
 
 ### OAuth Flow Functions
@@ -553,13 +553,13 @@ import {
   // Setup Helpers
   performOAuthSetup,
   performOAuthSetupIfNeeded,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 ```
 
 ### OAuth Client Provider
 
 ```typescript
-import { PlaywrightOAuthClientProvider } from '@mcp-testing/server-tester';
+import { PlaywrightOAuthClientProvider } from '@gleanwork/mcp-server-tester';
 
 // Create provider for MCP SDK
 const provider = new PlaywrightOAuthClientProvider({
@@ -580,7 +580,7 @@ const transport = new StreamableHTTPClientTransport(serverUrl, {
 ### Auth Fixture
 
 ```typescript
-import { test, expect } from '@mcp-testing/server-tester/fixtures/mcpAuth';
+import { test, expect } from '@gleanwork/mcp-server-tester/fixtures/mcpAuth';
 
 test('uses auth provider from environment', async ({ mcpAuthProvider }) => {
   // mcpAuthProvider is automatically configured from env vars:

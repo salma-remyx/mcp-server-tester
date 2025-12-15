@@ -36,7 +36,7 @@ This guide helps you migrate from the factory-based expectations API to the unif
 ### Before (v0.10.x)
 
 ```typescript
-import { test } from '@mcp-testing/server-tester';
+import { test } from '@gleanwork/mcp-server-tester';
 
 test('weather tool returns data', async ({ mcp }) => {
   const result = await mcp.callTool('get_weather', { city: 'London' });
@@ -51,7 +51,7 @@ test('weather tool returns data', async ({ mcp }) => {
 ### After (v0.11.0)
 
 ```typescript
-import { test, expect } from '@mcp-testing/server-tester';
+import { test, expect } from '@gleanwork/mcp-server-tester';
 
 test('weather tool returns data', async ({ mcp }) => {
   const result = await mcp.callTool('get_weather', { city: 'London' });
@@ -65,7 +65,7 @@ test('weather tool returns data', async ({ mcp }) => {
 ### More Examples
 
 ```typescript
-import { test, expect } from '@mcp-testing/server-tester';
+import { test, expect } from '@gleanwork/mcp-server-tester';
 import { z } from 'zod';
 
 const WeatherSchema = z.object({
@@ -185,7 +185,7 @@ import {
   createRegexExpectation,
   createJudgeExpectation,
   createLLMJudgeClient,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 
 test('run evals', async ({ mcp, testInfo, expect }) => {
   const dataset = await loadEvalDataset('./evals.json', {
@@ -222,7 +222,7 @@ import {
   loadEvalDataset,
   runEvalDataset,
   createJudge,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 
 test('run evals', async ({ mcp }) => {
   const dataset = await loadEvalDataset('./evals.json', {
@@ -256,7 +256,7 @@ import {
   validateError,
   validateSize,
   validateResponse,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 
 // Each validator returns { pass: boolean, message: string }
 
@@ -356,7 +356,7 @@ expect(result).toHaveToolResponseSize({ maxBytes: 5000 });
 import type {
   EvalExpectation,
   ExpectationResult,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 ```
 
 ### After
@@ -367,11 +367,11 @@ import type {
   TextValidatorOptions,
   SchemaValidatorOptions,
   JudgeMatcherOptions,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 ```
 
 ## Need Help?
 
 - See the [Assertions Guide](./assertions.md) for complete matcher documentation
 - Check [API Reference](./api-reference.md) for function signatures
-- File issues at [GitHub](https://github.com/mcp-testing/server-tester/issues)
+- File issues at [GitHub](https://github.com/gleanwork/mcp-server-tester/issues)

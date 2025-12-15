@@ -72,7 +72,7 @@ export async function createMCPClientForConfig(
   // Create client with info
   const client = new Client(
     {
-      name: options?.clientInfo?.name ?? '@mcp-testing/server-tester',
+      name: options?.clientInfo?.name ?? '@gleanwork/mcp-server-tester',
       version: options?.clientInfo?.version ?? '0.1.0',
     },
     {

@@ -46,7 +46,7 @@ export function createJudge(config: JudgeConfig = {}): Judge {
       throw new Error(
         'OpenAI provider is no longer supported. ' +
           'Please use createJudge() without specifying provider, or use provider: "claude". ' +
-          'See migration guide at https://github.com/mcp-testing/server-tester/blob/main/docs/migration-v0.11.md'
+          'See migration guide at https://github.com/gleanwork/mcp-server-tester/blob/main/docs/migration-v0.11.md'
       );
 
     case 'custom-http':

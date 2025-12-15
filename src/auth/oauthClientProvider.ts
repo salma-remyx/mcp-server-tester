@@ -90,7 +90,7 @@ export class PlaywrightOAuthClientProvider implements OAuthClientProvider {
         : 'none',
       grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],
-      client_name: '@mcp-testing/server-tester',
+      client_name: '@gleanwork/mcp-server-tester',
       ...this.config.clientMetadata,
     };
   }

@@ -37,7 +37,7 @@ const DEFAULT_REDIRECT_URI = 'http://localhost:3000/oauth/callback';
  * @example
  * ```typescript
  * // global-setup.ts
- * import { performOAuthSetup } from '@mcp-testing/server-tester';
+ * import { performOAuthSetup } from '@gleanwork/mcp-server-tester';
  *
  * export default async function globalSetup() {
  *   await performOAuthSetup({
