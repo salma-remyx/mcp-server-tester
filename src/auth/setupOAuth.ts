@@ -76,7 +76,7 @@ export async function performOAuthSetup(
 
   // 2. Build client information
   const clientInformation = {
-    client_id: config.clientId ?? 'mcp-testing-client',
+    client_id: config.clientId ?? 'mcp-server-tester-client',
     client_secret: config.clientSecret,
   };
 
