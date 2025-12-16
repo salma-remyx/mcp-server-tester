@@ -1,7 +1,7 @@
 {
   "name": "sqlite-server-example",
   "version": "1.0.0",
-  "description": "Example using @mcp-testing/server-tester with SQLite MCP server",
+  "description": "Example using @gleanwork/mcp-server-tester with SQLite MCP server",
   "type": "module",
   "scripts": {
     "test": "playwright test",
@@ -21,7 +21,7 @@
     "@types/node": "^22.10.2",
     "better-sqlite3": "^11.7.0",
     "fixturify-project": "^7.0.0",
-    "@mcp-testing/server-tester": "file:../..",
+    "@gleanwork/mcp-server-tester": "file:../..",
     "typescript": "^5.7.2",
     "zod": "^3.24.1"
   }

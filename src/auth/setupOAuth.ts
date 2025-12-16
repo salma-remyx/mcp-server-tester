@@ -37,7 +37,7 @@ const DEFAULT_REDIRECT_URI = 'http://localhost:3000/oauth/callback';
  * @example
  * ```typescript
  * // global-setup.ts
- * import { performOAuthSetup } from '@mcp-testing/server-tester';
+ * import { performOAuthSetup } from '@gleanwork/mcp-server-tester';
  *
  * export default async function globalSetup() {
  *   await performOAuthSetup({
@@ -76,7 +76,7 @@ export async function performOAuthSetup(
 
   // 2. Build client information
   const clientInformation = {
-    client_id: config.clientId ?? 'mcp-testing-client',
+    client_id: config.clientId ?? 'mcp-server-tester-client',
     client_secret: config.clientSecret,
   };
 
@@ -218,7 +218,7 @@ async function completeLoginForm(
  * This function checks Playwright's single-file auth state format,
  * typically created by `performOAuthSetup` in globalSetup.
  *
- * **Note:** This does NOT work with tokens stored by the CLI (`mcp-test login`).
+ * **Note:** This does NOT work with tokens stored by the CLI (`mcp-server-tester login`).
  * For CLI-stored tokens, use `hasValidTokens(serverUrl)` instead.
  *
  * @param storagePath - Path to the auth state file (e.g., 'playwright/.auth/oauth-state.json')

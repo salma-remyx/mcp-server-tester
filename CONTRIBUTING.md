@@ -1,4 +1,4 @@
-# Contributing to @mcp-testing/server-tester
+# Contributing to @gleanwork/mcp-server-tester
 
 Thank you for your interest in contributing! This project is experimental and community input is essential to its evolution. We welcome all types of contributions.
 
@@ -22,8 +22,8 @@ Thank you for your interest in contributing! This project is experimental and co
 1. Fork the repository
 2. Clone your fork:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/@mcp-testing/server-tester.git
-   cd @mcp-testing/server-tester
+   git clone https://github.com/YOUR_USERNAME/mcp-server-tester.git
+   cd mcp-server-tester
    ```
 3. Install dependencies:
    ```bash
@@ -142,7 +142,7 @@ condition && 'value';
 ## Project Structure
 
 ```
-@mcp-testing/server-tester/
+mcp-server-tester/
 ├── src/
 │   ├── config/       # MCPConfig types + validation
 │   ├── mcp/          # Client factory, fixtures
@@ -244,8 +244,8 @@ Include:
 
 - **Documentation**: Check [`docs/`](./docs) directory
 - **Examples**: See [`examples/`](./examples) directory
-- **Bugs**: [Open an issue](https://github.com/scalvert/@mcp-testing/server-tester/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/scalvert/@mcp-testing/server-tester/discussions)
+- **Bugs**: [Open an issue](https://github.com/gleanwork/mcp-server-tester/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/gleanwork/mcp-server-tester/discussions)
 
 ## Code of Conduct
 

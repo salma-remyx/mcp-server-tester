@@ -36,7 +36,7 @@ class StaticTokenAuthProvider implements OAuthClientProvider {
       token_endpoint_auth_method: 'none' as const,
       grant_types: [],
       response_types: [],
-      client_name: '@mcp-testing/server-tester',
+      client_name: '@gleanwork/mcp-server-tester',
     };
   }
 
@@ -86,7 +86,7 @@ export interface MCPAuthFixtures {
  * @example
  * ```typescript
  * // test.ts
- * import { test } from '@mcp-testing/server-tester/fixtures/mcpAuth';
+ * import { test } from '@gleanwork/mcp-server-tester/fixtures/mcpAuth';
  *
  * test('authenticated MCP call', async ({ mcpAuthProvider }) => {
  *   // mcpAuthProvider can be passed to createMCPClientForConfig

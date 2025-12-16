@@ -13,7 +13,7 @@ MCP servers can be accessed via different transport mechanisms. This guide cover
 
 ## Transport Types
 
-`@mcp-testing/server-tester` supports two transport types:
+`@gleanwork/mcp-server-tester` supports two transport types:
 
 1. **stdio** - Local server processes (via stdin/stdout)
 2. **HTTP** - Remote servers (via HTTP/SSE)
@@ -64,7 +64,7 @@ export default defineConfig({
 }
 ```
 
-> **Debug Logging:** Enable with `DEBUG=mcp-testing:* npm test`
+> **Debug Logging:** Enable with `DEBUG=mcp-server-tester:* npm test`
 
 ### Examples
 
@@ -130,7 +130,7 @@ mcpConfig: {
 
 ```bash
 # Enable debug logging via environment variable
-DEBUG=mcp-testing:* npm test
+DEBUG=mcp-server-tester:* npm test
 ```
 
 ### Process Management
@@ -404,7 +404,7 @@ Error: Command not found: node server.js
 
 **Solutions:**
 
-- Enable debug logging: `DEBUG=mcp-testing:* npm test`
+- Enable debug logging: `DEBUG=mcp-server-tester:* npm test`
 - Check server logs for errors
 - Verify server writes to stdout (not stderr)
 - Ensure server follows MCP protocol

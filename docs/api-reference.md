@@ -1,6 +1,6 @@
 # API Reference
 
-Complete API documentation for `@mcp-testing/server-tester`.
+Complete API documentation for `@gleanwork/mcp-server-tester`.
 
 ## Table of Contents
 
@@ -89,7 +89,7 @@ import {
   validateAccessToken,
   isTokenExpired,
   isTokenExpiringSoon,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 ```
 
 #### `createTokenAuthHeaders(accessToken, tokenType?)`
@@ -152,7 +152,7 @@ import {
   refreshAccessToken,
   loadOAuthState,
   saveOAuthState,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 ```
 
 #### `discoverAuthServer(issuerUrl)`
@@ -210,7 +210,7 @@ Refresh an access token using a refresh token.
 ### OAuth Client Provider
 
 ```typescript
-import { PlaywrightOAuthClientProvider } from '@mcp-testing/server-tester';
+import { PlaywrightOAuthClientProvider } from '@gleanwork/mcp-server-tester';
 ```
 
 Implements the MCP SDK's `OAuthClientProvider` interface with file-based storage.
@@ -227,7 +227,7 @@ const provider = new PlaywrightOAuthClientProvider({
 ### Auth Fixture
 
 ```typescript
-import { test } from '@mcp-testing/server-tester/fixtures/mcpAuth';
+import { test } from '@gleanwork/mcp-server-tester/fixtures/mcpAuth';
 
 test('uses auth provider', async ({ mcpAuthProvider }) => {
   // mcpAuthProvider is configured from environment variables

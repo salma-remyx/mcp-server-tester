@@ -1,6 +1,6 @@
 # Basic Playwright Usage Example
 
-The simplest possible example of testing an MCP server with `@mcp-testing/server-tester`.
+The simplest possible example of testing an MCP server with `@gleanwork/mcp-server-tester`.
 
 ## What This Example Demonstrates
 

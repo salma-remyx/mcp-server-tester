@@ -1,9 +1,10 @@
-# @mcp-testing/server-tester
+# @gleanwork/mcp-server-tester
 
-[![npm version](https://img.shields.io/npm/v/@mcp-testing/server-tester)](https://www.npmjs.com/package/@mcp-testing/server-tester)
-[![CI](https://github.com/mcp-testing/server-tester/actions/workflows/ci.yml/badge.svg)](https://github.com/mcp-testing/server-tester/actions/workflows/ci.yml)
+[![Experimental](https://img.shields.io/badge/-Experimental-D8FD49?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMzIgMzIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0yNC4zMDA2IDIuOTU0MjdMMjAuNzY1NiAwLjE5OTk1MUwxNy45MDI4IDMuOTk1MjdDMTMuNTY1MyAxLjkzNDk1IDguMjMwMTkgMy4wODQzOSA1LjE5Mzk0IDcuMDA5ODNDMS42NTg4OCAxMS41NjQyIDIuNDgzIDE4LjExMzggNy4wMzczOCAyMS42NDg5QzguNzcyMzggMjIuOTkzNSAxMC43ODkzIDIzLjcwOTIgMTIuODI3OSAyMy44MTc3QzE2LjE0NjEgMjQuMDEyOCAxOS41MDc3IDIyLjYyNDggMjEuNjc2NSAxOS44MDU1QzI0LjczNDQgMTUuODggMjQuNTE3NSAxMC40MTQ4IDIxLjQ1OTYgNi43Mjc4OUwyNC4zMDA2IDIuOTU0MjdaTTE4LjExOTcgMTcuMDUxMkMxNi4xMDI4IDE5LjYzMiAxMi4zNzI1IDIwLjEwOTEgOS43NzAwMSAxOC4wOTIyQzcuMTg5MTkgMTYuMDc1MiA2LjcxMjA3IDEyLjMyMzMgOC43MjkwMSA5Ljc0MjQ2QzkuNzA0OTQgOC40ODQ1OCAxMS4xMTQ2IDcuNjgyMTQgMTIuNjc2MSA3LjQ4Njk2QzEzLjA0NDggNy40NDM1OCAxMy40MTM1IDcuNDIxOSAxMy43ODIyIDcuNDQzNThDMTQuOTc1IDcuNTA4NjUgMTYuMTI0NCA3Ljk0MjM5IDE3LjA3ODcgOC42Nzk3N0MxOS42NTk1IDEwLjcxODQgMjAuMTM2NiAxNC40NzAzIDE4LjExOTcgMTcuMDUxMloiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0yNC41MTc2IDIxLjY5MjJDMjMuOTMyIDIyLjQ1MTMgMjMuMjgxNCAyMy4xMjM2IDIyLjU2NTcgMjMuNzUyNUMyMS44NzE3IDI0LjMzODEgMjEuMTEyNyAyNC44ODAzIDIwLjMxMDIgMjUuMzM1N0MxOS41Mjk1IDI1Ljc2OTUgMTguNjgzNyAyNi4xMzgyIDE3LjgzNzggMjYuNDIwMUMxNi45OTIgMjYuNzAyIDE2LjEwMjggMjYuODk3MiAxNS4yMTM3IDI3LjAwNTdDMTQuMzI0NSAyNy4xMTQxIDEzLjQzNTMgMjcuMTU3NSAxMi41MjQ0IDI3LjA5MjRDMTEuNjEzNSAyNy4wMjczIDEwLjcyNDMgMjYuODc1NSA5Ljg1Njg0IDI2LjY1ODdMOS42NjE2NSAyNy4zNzQzTDguNzcyNDYgMzAuOTk2MkM5LjkwMDIxIDMxLjI5OTggMTEuMDQ5NyAzMS40NzMzIDEyLjIyMDggMzEuNTZDMTIuMjY0MiAzMS41NiAxMi4zMjkyIDMxLjU2IDEyLjM3MjYgMzEuNTZDMTMuNTAwMyAzMS42MjUxIDE0LjY0OTggMzEuNTgxNyAxNS43NTU4IDMxLjQ1MTZDMTYuOTI3IDMxLjI5OTggMTguMDk4MSAzMS4wMzk1IDE5LjIyNTggMzAuNjcwOEMyMC4zNTM2IDMwLjMwMjIgMjEuNDU5NyAyOS44MjUgMjIuNTAwNyAyOS4yMzk1QzIzLjU2MzQgMjguNjUzOSAyNC41NjEgMjcuOTM4MiAyNS40OTM1IDI3LjE1NzVDMjYuNDQ3OCAyNi4zNTUgMjcuMzE1MyAyNS40NDQyIDI4LjA3NDQgMjQuNDQ2NUMyOC4xODI4IDI0LjMxNjQgMjguMjY5NSAyNC4xNjQ2IDI4LjM3OCAyNC4wMTI4TDI0Ljc3NzkgMjEuMzQ1MkMyNC42Njk0IDIxLjQ1MzcgMjQuNjA0NCAyMS41ODM4IDI0LjUxNzYgMjEuNjkyMloiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPg==&labelColor=343CED)](https://github.com/gleanwork/.github/blob/main/docs/repository-stability.md#experimental)
+[![npm version](https://img.shields.io/npm/v/@gleanwork/mcp-server-tester)](https://www.npmjs.com/package/@gleanwork/mcp-server-tester)
+[![CI](https://github.com/gleanwork/mcp-server-tester/actions/workflows/ci.yml/badge.svg)](https://github.com/gleanwork/mcp-server-tester/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js Version](https://img.shields.io/node/v/@mcp-testing/server-tester)](https://nodejs.org)
+[![Node.js Version](https://img.shields.io/node/v/@gleanwork/mcp-server-tester)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
 
 > Playwright-based testing framework for MCP servers
@@ -11,7 +12,7 @@
 > [!WARNING]
 > **Experimental Project** - This library is in active development. APIs may change, and we welcome contributions, feedback, and collaboration as we evolve the framework. See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
-`@mcp-testing/server-tester` is a comprehensive testing and evaluation framework for [Model Context Protocol (MCP)](https://modelcontextprotocol.io) servers. It provides first-class Playwright fixtures, data-driven eval datasets, and optional LLM-as-a-judge scoring.
+`@gleanwork/mcp-server-tester` is a comprehensive testing and evaluation framework for [Model Context Protocol (MCP)](https://modelcontextprotocol.io) servers. It provides first-class Playwright fixtures, data-driven eval datasets, and optional LLM-as-a-judge scoring.
 
 ## What's Included
 
@@ -60,7 +61,7 @@ expect(result.passed).toBe(result.total);
 ## Installation
 
 ```bash
-npm install --save-dev @mcp-testing/server-tester @playwright/test zod
+npm install --save-dev @gleanwork/mcp-server-tester @playwright/test zod
 ```
 
 **Note:** Additional dependencies for LLM-as-a-judge are optional and only needed if you plan to use semantic evaluation:
@@ -80,7 +81,7 @@ npm install --save-dev @anthropic-ai/sdk
 The fastest way to get started:
 
 ```bash
-npx mcp-test init
+npx mcp-server-tester init
 
 # Follow the interactive prompts to create:
 # - playwright.config.ts (configured for your MCP server)
@@ -97,12 +98,12 @@ Here's what a complete test suite looks like (following the **layered testing pa
 
 ```typescript
 // tests/mcp.spec.ts
-import { test, expect } from '@mcp-testing/server-tester/fixtures/mcp';
+import { test, expect } from '@gleanwork/mcp-server-tester/fixtures/mcp';
 import {
   loadEvalDataset,
   runEvalDataset,
   createSchemaExpectation,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 import { z } from 'zod';
 
 // Layer 1: MCP Protocol Conformance
@@ -272,7 +273,7 @@ Snapshot testing captures tool responses and compares them against stored baseli
 
 ```bash
 # Generate dataset with snapshot expectations
-npx mcp-test generate --snapshot -o data/evals.json
+npx mcp-server-tester generate --snapshot -o data/evals.json
 
 # First run captures snapshots
 npx playwright test
@@ -303,10 +304,10 @@ For MCP servers that require OAuth authentication, the framework provides a CLI-
 
 ```bash
 # Authenticate with an MCP server (opens browser)
-npx mcp-test login https://api.example.com/mcp
+npx mcp-server-tester login https://api.example.com/mcp
 
 # Force re-authentication
-npx mcp-test login https://api.example.com/mcp --force
+npx mcp-server-tester login https://api.example.com/mcp --force
 ```
 
 ### Token Storage
@@ -330,7 +331,7 @@ Use `--state-dir` to override the storage location.
 ### Programmatic Usage
 
 ```typescript
-import { CLIOAuthClient } from '@mcp-testing/server-tester';
+import { CLIOAuthClient } from '@gleanwork/mcp-server-tester';
 
 const client = new CLIOAuthClient({
   mcpServerUrl: 'https://api.example.com/mcp',
@@ -361,8 +362,8 @@ jobs:
 
 **To set up GitHub Actions secrets:**
 
-1. Authenticate locally: `npx mcp-test login <server-url>`
-2. Export tokens for GitHub: `npx mcp-test token <server-url> --format gh`
+1. Authenticate locally: `npx mcp-server-tester login <server-url>`
+2. Export tokens for GitHub: `npx mcp-server-tester token <server-url> --format gh`
 3. Run the output `gh secret set` commands (requires [GitHub CLI](https://cli.github.com/))
 
 The `token` command supports multiple formats:
@@ -376,7 +377,7 @@ See the [CLI Guide](./docs/cli.md#token---export-tokens-for-cicd) for details.
 Alternatively, inject tokens programmatically in your test setup:
 
 ```typescript
-import { injectTokens } from '@mcp-testing/server-tester';
+import { injectTokens } from '@gleanwork/mcp-server-tester';
 
 // In globalSetup.ts
 await injectTokens('https://api.example.com/mcp', {
@@ -395,7 +396,7 @@ Add to your `playwright.config.ts`:
 
 ```typescript
 export default defineConfig({
-  reporter: [['list'], ['@mcp-testing/server-tester/reporters/mcpReporter']],
+  reporter: [['list'], ['@gleanwork/mcp-server-tester/reporters/mcpReporter']],
 });
 ```
 
@@ -405,7 +406,7 @@ See [UI Reporter Guide](./docs/ui-reporter.md) for features and usage.
 
 - **Documentation**: See [`docs/`](./docs) directory
 - **Examples**: See [`examples/`](./examples) directory
-- **Issues**: [GitHub Issues](https://github.com/mcp-testing/server-tester/issues)
+- **Issues**: [GitHub Issues](https://github.com/gleanwork/mcp-server-tester/issues)
 
 ## License
 

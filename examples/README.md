@@ -1,6 +1,6 @@
 # MCP Server Testing Examples
 
-Complete working examples demonstrating how to use `@mcp-testing/server-tester` for testing MCP servers.
+Complete working examples demonstrating how to use `@gleanwork/mcp-server-tester` for testing MCP servers.
 
 ## The Testing Pyramid
 

@@ -23,7 +23,7 @@ import {
   normalizeWhitespace,
   // Extended expect with MCP tool matchers
   expect,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 import { ConfigFileSchema } from '../schemas/fileContentSchema.js';
 import path from 'path';
 

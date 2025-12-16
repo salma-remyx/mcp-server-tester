@@ -49,7 +49,7 @@ type MCPFixtures = {
  * Extended Playwright test with MCP fixtures
  *
  * @example
- * import { test, expect } from '@mcp-testing/server-tester';
+ * import { test, expect } from '@gleanwork/mcp-server-tester';
  *
  * test('lists tools from MCP server', async ({ mcp }) => {
  *   const tools = await mcp.listTools();
@@ -79,7 +79,7 @@ export const test = base.extend<MCPFixtures>({
    * Authentication resolution order:
    * 1. Explicit authStatePath → uses PlaywrightOAuthClientProvider
    * 2. Explicit accessToken → uses static Bearer token
-   * 3. HTTP transport with no auth → tries CLI-stored tokens (from `mcp-test login`)
+   * 3. HTTP transport with no auth → tries CLI-stored tokens (from `mcp-server-tester login`)
    *    with automatic token refresh
    */
   mcpClient: async ({ _mcpFixtureState }, use, testInfo) => {
@@ -120,7 +120,7 @@ export const test = base.extend<MCPFixtures>({
     }
 
     // If HTTP transport with no explicit auth, try to use CLI-stored tokens
-    // This enables the simple flow: `mcp-test login <url>` then run tests
+    // This enables the simple flow: `mcp-server-tester login <url>` then run tests
     if (
       isHttpConfig(mcpConfig) &&
       !mcpConfig.auth?.accessToken &&
@@ -153,7 +153,7 @@ export const test = base.extend<MCPFixtures>({
     // Create and connect client
     const client = await createMCPClientForConfig(effectiveConfig, {
       clientInfo: {
-        name: '@mcp-testing/server-tester',
+        name: '@gleanwork/mcp-server-tester',
         version: '0.1.0',
       },
       authProvider,

@@ -9,7 +9,7 @@
  *
  * @example Using matchers in Playwright tests
  * ```typescript
- * import { expect } from '@mcp-testing/server-tester';
+ * import { expect } from '@gleanwork/mcp-server-tester';
  *
  * test('weather tool', async ({ mcp }) => {
  *   const result = await mcp.callTool('get_weather', { city: 'London' });
@@ -22,7 +22,7 @@
  *
  * @example Using validators programmatically
  * ```typescript
- * import { validateText, validateSchema } from '@mcp-testing/server-tester';
+ * import { validateText, validateSchema } from '@gleanwork/mcp-server-tester';
  *
  * const result = validateText(response, ['temperature', 'conditions']);
  * if (!result.pass) {

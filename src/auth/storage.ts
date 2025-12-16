@@ -297,7 +297,7 @@ export async function injectTokens(
  * Load stored OAuth tokens for an MCP server
  *
  * Reads tokens from the standard storage location for the given server URL.
- * Tokens are stored by `mcp-test login` or `injectTokens()`.
+ * Tokens are stored by `mcp-server-tester login` or `injectTokens()`.
  *
  * @param serverUrl - The MCP server URL
  * @param stateDir - Optional custom state directory
@@ -305,7 +305,7 @@ export async function injectTokens(
  *
  * @example
  * ```typescript
- * // After running: npx mcp-test login https://api.example.com/mcp
+ * // After running: npx mcp-server-tester login https://api.example.com/mcp
  * const tokens = await loadTokens('https://api.example.com/mcp');
  * if (tokens) {
  *   console.log('Access token:', tokens.accessToken);
@@ -338,7 +338,7 @@ export async function loadTokens(
  *   // Use stored tokens
  *   const tokens = await loadTokens('https://api.example.com/mcp');
  * } else {
- *   console.log('Run: npx mcp-test login https://api.example.com/mcp');
+ *   console.log('Run: npx mcp-server-tester login https://api.example.com/mcp');
  * }
  * ```
  */

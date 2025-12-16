@@ -11,6 +11,7 @@ src/reporters/ui-dist/
 coverage/
 playwright-report/
 test-results/
+test-output.txt
 .preview-output/
 .mcp-test-results/
 

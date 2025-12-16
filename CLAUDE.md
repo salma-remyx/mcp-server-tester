@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`@mcp-testing/server-tester` is a Playwright-based testing and evaluation framework for Model Context Protocol (MCP) servers. It provides Playwright fixtures for automated testing and data-driven eval datasets with optional LLM-as-a-judge scoring.
+`@gleanwork/mcp-server-tester` is a Playwright-based testing and evaluation framework for Model Context Protocol (MCP) servers. It provides Playwright fixtures for automated testing and data-driven eval datasets with optional LLM-as-a-judge scoring.
 
 ## Common Commands
 
@@ -41,7 +41,7 @@ npm run format:check        # Check formatting
 - **`judge/`** - LLM-as-a-judge via Claude Agent SDK
 - **`spec/`** - MCP protocol conformance checks
 - **`reporters/`** - Custom Playwright reporter with React-based UI
-- **`cli/`** - `mcp-test init` and `mcp-test generate` commands
+- **`cli/`** - `mcp-server-tester init` and `mcp-server-tester generate` commands
 
 ### Assertions Module (`src/assertions/`)
 
@@ -52,7 +52,7 @@ The assertion architecture provides a single API for both inline tests and data-
 
 ```typescript
 // Inline test usage
-import { expect } from '@mcp-testing/server-tester';
+import { expect } from '@gleanwork/mcp-server-tester';
 
 test('weather tool', async ({ mcp }) => {
   const result = await mcp.callTool('get_weather', { city: 'London' });
@@ -62,7 +62,7 @@ test('weather tool', async ({ mcp }) => {
 });
 
 // Programmatic validation
-import { validateText } from '@mcp-testing/server-tester';
+import { validateText } from '@gleanwork/mcp-server-tester';
 
 const result = validateText(response, ['temperature']);
 if (!result.pass) console.log(result.message);

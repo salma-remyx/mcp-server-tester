@@ -20,7 +20,7 @@ Validates exact equality of structured data (JSON). Best for predictable, struct
 ### Usage
 
 ```typescript
-import { createExactExpectation } from '@mcp-testing/server-tester';
+import { createExactExpectation } from '@gleanwork/mcp-server-tester';
 
 const expectations = {
   exact: createExactExpectation(),
@@ -47,7 +47,7 @@ Validates that response text contains expected substrings. Ideal for markdown or
 ### Usage
 
 ```typescript
-import { createTextContainsExpectation } from '@mcp-testing/server-tester';
+import { createTextContainsExpectation } from '@gleanwork/mcp-server-tester';
 
 const expectations = {
   textContains: createTextContainsExpectation(),
@@ -90,7 +90,7 @@ Validates that response text matches regex patterns. Powerful for format validat
 ### Usage
 
 ```typescript
-import { createRegexExpectation } from '@mcp-testing/server-tester';
+import { createRegexExpectation } from '@gleanwork/mcp-server-tester';
 
 const expectations = {
   regex: createRegexExpectation(),
@@ -134,7 +134,7 @@ Validates response structure and types using Zod schemas. Best for structured da
 ### Usage
 
 ```typescript
-import { createSchemaExpectation } from '@mcp-testing/server-tester';
+import { createSchemaExpectation } from '@gleanwork/mcp-server-tester';
 import { z } from 'zod';
 
 const dataset = await loadEvalDataset('./evals.json', {
@@ -217,7 +217,7 @@ Captures and compares tool responses against stored snapshots using Playwright's
 ### Usage
 
 ```typescript
-import { createSnapshotExpectation } from '@mcp-testing/server-tester';
+import { createSnapshotExpectation } from '@gleanwork/mcp-server-tester';
 
 const expectations = {
   snapshot: createSnapshotExpectation(),
@@ -331,7 +331,10 @@ When responses contain variable data that would cause snapshot mismatches, use s
 For advanced use cases, you can apply sanitizers directly:
 
 ```typescript
-import { applySanitizers, BUILT_IN_PATTERNS } from '@mcp-testing/server-tester';
+import {
+  applySanitizers,
+  BUILT_IN_PATTERNS,
+} from '@gleanwork/mcp-server-tester';
 
 const sanitized = applySanitizers(response, [
   'uuid',
@@ -358,7 +361,7 @@ Semantic evaluation using LLMs (OpenAI or Anthropic). Best for subjective criter
 import {
   createJudgeExpectation,
   createLLMJudgeClient,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 
 const judgeClient = createLLMJudgeClient({
   provider: 'openai',

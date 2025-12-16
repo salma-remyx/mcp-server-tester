@@ -2,7 +2,7 @@ import { test as base, expect } from '@playwright/test';
 import { Project } from 'fixturify-project';
 import Database from 'better-sqlite3';
 import path from 'node:path';
-import type { MCPConfig, MCPFixtureApi } from '@mcp-testing/server-tester';
+import type { MCPConfig, MCPFixtureApi } from '@gleanwork/mcp-server-tester';
 import {
   createMCPClientForConfig,
   createMCPFixture,
@@ -11,7 +11,7 @@ import {
   runEvalDataset,
   runConformanceChecks,
   extractTextFromResponse,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 import {
   QueryResultSchema,
   TableListSchema,

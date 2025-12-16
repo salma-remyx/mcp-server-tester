@@ -9,7 +9,7 @@ import {
   type MCPFixtureApi,
   // Extended expect with MCP tool matchers
   expect,
-} from '@mcp-testing/server-tester';
+} from '@gleanwork/mcp-server-tester';
 import { tmpdir } from 'os';
 import { mkdtemp, writeFile, rm } from 'fs/promises';
 import { join } from 'path';

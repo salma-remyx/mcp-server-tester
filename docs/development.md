@@ -1,6 +1,6 @@
 # Development Guide
 
-This guide covers contributing to `@mcp-testing/server-tester`, running tests, and building the library.
+This guide covers contributing to `@gleanwork/mcp-server-tester`, running tests, and building the library.
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@ This guide covers contributing to `@mcp-testing/server-tester`, running tests, a
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/mcp-testing/server-tester.git
+git clone https://github.com/gleanwork/mcp-server-tester.git
 cd server-tester
 npm install
 ```
@@ -170,7 +170,7 @@ npm run build      # Build succeeds
 ## Project Structure
 
 ```
-@mcp-testing/server-tester/
+@gleanwork/mcp-server-tester/
 ├── src/
 │   ├── config/       # MCPConfig types + Zod validation
 │   ├── mcp/          # Client factory, fixtures, MCPFixtureApi
@@ -377,7 +377,7 @@ See [RELEASE.md](../RELEASE.md) for the release process using release-it.
 
 - **Documentation**: Check [`docs/`](../docs) directory
 - **Examples**: See [`examples/`](../examples) directory
-- **Issues**: [GitHub Issues](https://github.com/mcp-testing/server-tester/issues)
+- **Issues**: [GitHub Issues](https://github.com/gleanwork/mcp-server-tester/issues)
 
 ## License
 

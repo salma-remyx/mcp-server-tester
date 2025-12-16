@@ -1,5 +1,5 @@
 /**
- * CLI entry point for @mcp-testing/server-tester
+ * CLI entry point for @gleanwork/mcp-server-tester
  */
 
 import { Command } from 'commander';
@@ -11,7 +11,7 @@ import { token } from './commands/token/index.js';
 const program = new Command();
 
 program
-  .name('mcp-test')
+  .name('mcp-server-tester')
   .description('CLI tools for MCP server evaluation and testing')
   .version('0.1.0');
 

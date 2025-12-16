@@ -90,7 +90,7 @@ export class PlaywrightOAuthClientProvider implements OAuthClientProvider {
         : 'none',
       grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],
-      client_name: '@mcp-testing/server-tester',
+      client_name: '@gleanwork/mcp-server-tester',
       ...this.config.clientMetadata,
     };
   }
@@ -321,7 +321,7 @@ export class PlaywrightOAuthClientProvider implements OAuthClientProvider {
  * This function reads from Playwright's single-file auth state format,
  * typically created by `performOAuthSetup` in globalSetup.
  *
- * **Note:** This does NOT work with tokens stored by the CLI (`mcp-test login`).
+ * **Note:** This does NOT work with tokens stored by the CLI (`mcp-server-tester login`).
  * For CLI-stored tokens, use `loadTokens(serverUrl)` instead.
  *
  * @param storagePath - Path to the auth state file (e.g., 'playwright/.auth/oauth-state.json')
@@ -353,7 +353,7 @@ export async function loadOAuthState(
  * This function writes to Playwright's single-file auth state format.
  * Used by `performOAuthSetup` in globalSetup.
  *
- * **Note:** This does NOT work with the CLI storage format (`mcp-test login`).
+ * **Note:** This does NOT work with the CLI storage format (`mcp-server-tester login`).
  * For programmatic token injection compatible with CLI, use `injectTokens(serverUrl, tokens)`.
  *
  * @param storagePath - Path to the auth state file (e.g., 'playwright/.auth/oauth-state.json')

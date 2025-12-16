@@ -1,6 +1,6 @@
 # Filesystem MCP Server Example
 
-Comprehensive testing example for the official [Filesystem MCP Server](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) using `@mcp-testing/server-tester`.
+Comprehensive testing example for the official [Filesystem MCP Server](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) using `@gleanwork/mcp-server-tester`.
 
 ## What This Example Demonstrates
 

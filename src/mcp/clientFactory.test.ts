@@ -59,7 +59,7 @@ describe('clientFactory', () => {
 
         expect(mocks.MockClient).toHaveBeenCalledWith(
           {
-            name: '@mcp-testing/server-tester',
+            name: '@gleanwork/mcp-server-tester',
             version: '0.1.0',
           },
           {
@@ -174,7 +174,7 @@ describe('clientFactory', () => {
 
         expect(mocks.MockClient).toHaveBeenCalledWith(
           {
-            name: '@mcp-testing/server-tester',
+            name: '@gleanwork/mcp-server-tester',
             version: '0.1.0',
           },
           expect.anything()

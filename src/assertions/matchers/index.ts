@@ -27,7 +27,7 @@ import './types.js';
  *
  * @example
  * ```typescript
- * import { expect } from '@mcp-testing/server-tester';
+ * import { expect } from '@gleanwork/mcp-server-tester';
  *
  * test('weather tool', async ({ mcp }) => {
  *   const result = await mcp.callTool('get_weather', { city: 'London' });

@@ -6,20 +6,20 @@
  *
  * @example
  * ```bash
- * # Enable all mcp-testing logs
- * DEBUG=mcp-testing:* npm test
+ * # Enable all mcp-server-tester logs
+ * DEBUG=mcp-server-tester:* npm test
  *
  * # Enable only client logs
- * DEBUG=mcp-testing:client npm test
+ * DEBUG=mcp-server-tester:client npm test
  *
  * # Enable only OAuth logs
- * DEBUG=mcp-testing:oauth npm test
+ * DEBUG=mcp-server-tester:oauth npm test
  * ```
  */
 
 import createDebug from 'debug';
 
-const NAMESPACE = 'mcp-testing';
+const NAMESPACE = 'mcp-server-tester';
 
 /**
  * Debug logger for MCP client operations
