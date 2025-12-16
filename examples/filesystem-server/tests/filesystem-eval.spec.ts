@@ -258,15 +258,19 @@ function hasApiKey(provider: string): boolean {
 
 test.describe('LLM Host Simulation (E2E)', () => {
   test('LLM discovers and lists directory contents', async ({ mcp }) => {
-    if (!hasApiKey('openai')) {
-      test.skip(true, 'OPENAI_API_KEY not set');
+    if (!hasApiKey('anthropic')) {
+      test.skip(true, 'ANTHROPIC_API_KEY not set');
       return;
     }
 
     const result = await simulateLLMHost(
       mcp,
       'What files are in the docs directory?',
-      { provider: 'openai', model: 'gpt-4o', temperature: 0 }
+      {
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-20250514',
+        temperature: 0,
+      }
     );
 
     expect(result.success).toBe(true);
@@ -282,15 +286,19 @@ test.describe('LLM Host Simulation (E2E)', () => {
   });
 
   test('LLM reads file and extracts information', async ({ mcp }) => {
-    if (!hasApiKey('openai')) {
-      test.skip(true, 'OPENAI_API_KEY not set');
+    if (!hasApiKey('anthropic')) {
+      test.skip(true, 'ANTHROPIC_API_KEY not set');
       return;
     }
 
     const result = await simulateLLMHost(
       mcp,
       'Read the config.json file and tell me the version number.',
-      { provider: 'openai', model: 'gpt-4o', temperature: 0 }
+      {
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-20250514',
+        temperature: 0,
+      }
     );
 
     expect(result.success).toBe(true);

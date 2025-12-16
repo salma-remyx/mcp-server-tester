@@ -79,7 +79,11 @@ export {
 
 // Response Normalization
 export type { ContentBlock, NormalizedToolResponse } from './mcp/response.js';
-export { normalizeToolResponse, extractText } from './mcp/response.js';
+export {
+  normalizeToolResponse,
+  extractText,
+  extractText as extractTextFromResponse,
+} from './mcp/response.js';
 
 // Assertions - Matchers (primary API)
 // The extended expect with MCP tool matchers is exported via fixtures
@@ -94,6 +98,7 @@ export {
   validateError,
   validateSize,
   getResponseSizeBytes,
+  normalizeWhitespace,
 } from './assertions/validators/index.js';
 
 export type {

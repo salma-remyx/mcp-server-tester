@@ -67,15 +67,15 @@
       }
     },
     {
-      "id": "should discover docs directory using OpenAI",
-      "description": "LLM (OpenAI) discovers and lists files in docs directory",
+      "id": "should discover docs directory",
+      "description": "LLM discovers and lists files in docs directory",
       "mode": "llm_host",
       "toolName": "placeholder",
       "args": {},
       "scenario": "What files are in the docs directory?",
       "llmHostConfig": {
-        "provider": "openai",
-        "model": "gpt-4o",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
         "temperature": 0.0,
         "maxTokens": 1000
       },
@@ -103,7 +103,7 @@
       "scenario": "Read the config.json file and tell me what version it is.",
       "llmHostConfig": {
         "provider": "anthropic",
-        "model": "claude-3-5-sonnet-20241022",
+        "model": "claude-sonnet-4-20250514",
         "temperature": 0.0,
         "maxTokens": 1000
       },
@@ -130,8 +130,8 @@
       "args": {},
       "scenario": "Find all markdown files in this project.",
       "llmHostConfig": {
-        "provider": "openai",
-        "model": "gpt-4o",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
         "temperature": 0.0
       },
       "expect": {
@@ -158,7 +158,7 @@
       "scenario": "How many users are listed in the data/users.csv file?",
       "llmHostConfig": {
         "provider": "anthropic",
-        "model": "claude-3-5-sonnet-20241022",
+        "model": "claude-sonnet-4-20250514",
         "temperature": 0.0
       },
       "expect": {
@@ -184,8 +184,8 @@
       "args": {},
       "scenario": "Show me all files and directories in this project.",
       "llmHostConfig": {
-        "provider": "openai",
-        "model": "gpt-4o",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
         "temperature": 0.0
       },
       "metadata": {
@@ -245,7 +245,7 @@
       "LLM host mode tests tool discovery and natural language understanding",
       "All files are created in temporary directories using fixturify-project",
       "No API keys required for direct mode tests",
-      "LLM tests require OPENAI_API_KEY or ANTHROPIC_API_KEY environment variables"
+      "LLM tests require ANTHROPIC_API_KEY environment variable"
     ]
   }
 }

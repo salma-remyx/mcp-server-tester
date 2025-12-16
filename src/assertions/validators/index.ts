@@ -34,4 +34,5 @@ export {
   stringifyResponse,
   isErrorResponse,
   extractErrorMessage,
+  normalizeWhitespace,
 } from './utils.js';

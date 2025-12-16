@@ -100,3 +100,22 @@ export function extractErrorMessage(response: unknown): string {
   // Extract text content which typically contains the error message
   return extractText(response);
 }
+
+/**
+ * Normalizes whitespace in text for consistent comparison
+ *
+ * Collapses multiple whitespace characters (spaces, tabs, newlines) into single spaces
+ * and trims leading/trailing whitespace.
+ *
+ * @param text - Text to normalize
+ * @returns Normalized text with collapsed whitespace
+ *
+ * @example
+ * ```typescript
+ * normalizeWhitespace('  hello\n\n  world  ');
+ * // Returns: "hello world"
+ * ```
+ */
+export function normalizeWhitespace(text: string): string {
+  return text.replace(/\s+/g, ' ').trim();
+}
