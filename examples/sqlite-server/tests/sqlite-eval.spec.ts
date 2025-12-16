@@ -149,12 +149,17 @@ const test = base.extend<SQLiteFixtures>({
  * Validates that the SQLite MCP server conforms to the MCP protocol specification
  */
 test.describe('Protocol Conformance', () => {
-  test('should pass all conformance checks', async ({ mcp }) => {
-    const result = await runConformanceChecks(mcp, {
-      requiredTools: ['read_query', 'list_tables', 'describe_table'],
-      validateSchemas: true,
-      checkServerInfo: true,
-    });
+  test('should pass all conformance checks', async ({ mcp }, testInfo) => {
+    // Pass testInfo to attach conformance results to the MCP reporter
+    const result = await runConformanceChecks(
+      mcp,
+      {
+        requiredTools: ['read_query', 'list_tables', 'describe_table'],
+        validateSchemas: true,
+        checkServerInfo: true,
+      },
+      testInfo
+    );
 
     // SQLite server should pass all conformance checks
     const passedChecks = result.checks.filter((c) => c.pass);

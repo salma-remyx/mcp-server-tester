@@ -172,6 +172,11 @@ export function extractText(response: unknown): string {
       return extractTextFromContentArray(r.content);
     }
 
+    // Check for content as a direct string (single content block format)
+    if (typeof r.content === 'string') {
+      return r.content;
+    }
+
     // Check for structuredContent
     if (r.structuredContent !== undefined) {
       if (typeof r.structuredContent === 'string') {

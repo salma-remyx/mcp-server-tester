@@ -405,7 +405,7 @@ async function runExpectBlockValidations(
     }
   }
 
-  // snapshot (toMatchToolSnapshot) - requires Playwright expect
+  // snapshot (toMatchToolSnapshot) - requires Playwright expect with custom matcher
   if (expectBlock.snapshot !== undefined) {
     if (!config.playwrightExpect) {
       results.snapshot = {
@@ -414,10 +414,16 @@ async function runExpectBlockValidations(
       };
     } else {
       try {
-        // eslint-disable-next-line @typescript-eslint/await-thenable
-        await config
-          .playwrightExpect(response)
-          .toMatchSnapshot(expectBlock.snapshot);
+        // Use custom toMatchToolSnapshot matcher which:
+        // 1. Extracts text from the response
+        // 2. Applies sanitizers
+        // 3. Uses Playwright's native snapshot testing
+        const sanitizers = expectBlock.snapshotSanitizers ?? [];
+        // eslint-disable-next-line @typescript-eslint/await-thenable, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        await (config.playwrightExpect(response) as any).toMatchToolSnapshot(
+          expectBlock.snapshot,
+          sanitizers
+        );
         results.snapshot = {
           pass: true,
           details: `Matches snapshot "${expectBlock.snapshot}"`,

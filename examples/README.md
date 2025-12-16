@@ -100,7 +100,7 @@ test('LLM discovers directory contents', async ({ mcp }) => {
   const result = await simulateLLMHost(
     mcp,
     'What files are in the docs directory?',
-    { provider: 'openai', model: 'gpt-4o', temperature: 0 }
+    { provider: 'anthropic', model: 'claude-sonnet-4-20250514', temperature: 0 }
   );
 
   expect(result.success).toBe(true);
@@ -123,11 +123,9 @@ test('LLM discovers directory contents', async ({ mcp }) => {
 
 ## Running LLM Tests
 
-LLM host tests require API keys:
+LLM host tests require an Anthropic API key:
 
 ```bash
-OPENAI_API_KEY=your-key npm test
-# or
 ANTHROPIC_API_KEY=your-key npm test
 ```
 

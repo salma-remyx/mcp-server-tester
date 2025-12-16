@@ -41,17 +41,10 @@ Note: The SQLite MCP server (`mcp-server-sqlite-npx`) is run via `npx -y` and do
 npm test
 ```
 
-### Run with LLM host mode tests (requires API keys)
+### Run with LLM host mode tests (requires API key)
 
 ```bash
-# OpenAI
-OPENAI_API_KEY=your-key-here npm test
-
-# Anthropic
 ANTHROPIC_API_KEY=your-key-here npm test
-
-# Both
-OPENAI_API_KEY=key1 ANTHROPIC_API_KEY=key2 npm test
 ```
 
 ### Run in UI mode
@@ -160,8 +153,8 @@ Natural language scenarios where the LLM chooses which tool and constructs the q
   "mode": "llm_host",
   "scenario": "How many users are in the database?",
   "llmHostConfig": {
-    "provider": "openai",
-    "model": "gpt-4"
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-20250514"
   },
   "metadata": {
     "expectedToolCalls": [
@@ -254,10 +247,9 @@ rm -rf /tmp/sqlite-test-*
 
 ### LLM tests skipped
 
-LLM host mode tests require API keys:
+LLM host mode tests require an Anthropic API key:
 
 ```bash
-export OPENAI_API_KEY="your-key"
 export ANTHROPIC_API_KEY="your-key"
 ```
 
@@ -272,8 +264,6 @@ npm rebuild better-sqlite3
 ## Cost Considerations
 
 - **Direct mode**: Free, no API costs
-- **LLM host mode**: Incurs API costs per test run
-  - OpenAI GPT-4: ~$0.03 per 1K tokens
-  - Anthropic Claude: ~$0.003 per 1K tokens
+- **LLM host mode**: Incurs API costs per test run (Anthropic Claude: ~$0.003 per 1K tokens)
 
 For cost-effective testing, use direct mode for most tests and LLM host mode for critical user journeys only.

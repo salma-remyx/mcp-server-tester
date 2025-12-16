@@ -54,7 +54,7 @@ expect(result.passed).toBe(result.total);
 - 🎭 **Playwright Integration** - Use MCP servers in Playwright tests with idiomatic fixtures
 - 📊 **Matrix Evals** - Run dataset-driven evaluations across multiple transports
 - 📸 **Snapshot Testing** - Capture and compare deterministic responses with optional sanitizers for variable data
-- 🤖 **LLM-as-a-Judge** - Optional semantic evaluation using OpenAI or Anthropic
+- 🤖 **LLM-as-a-Judge** - Optional semantic evaluation using Anthropic Claude
 - 🔌 **Multiple Transports** - Support for both stdio (local) and HTTP (remote) connections
 - ✅ **Protocol Conformance** - Built-in checks for MCP spec compliance
 
@@ -64,13 +64,9 @@ expect(result.passed).toBe(result.total);
 npm install --save-dev @gleanwork/mcp-server-tester @playwright/test zod
 ```
 
-**Note:** Additional dependencies for LLM-as-a-judge are optional and only needed if you plan to use semantic evaluation:
+**Note:** The Anthropic SDK is optional and only needed if you plan to use LLM-as-a-judge semantic evaluation:
 
 ```bash
-# For OpenAI judge (optional)
-npm install --save-dev openai @openai/agents
-
-# For Anthropic judge (optional)
 npm install --save-dev @anthropic-ai/sdk
 ```
 

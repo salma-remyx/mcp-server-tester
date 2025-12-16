@@ -1,6 +1,18 @@
 import React from 'react';
 import type { EvalCaseResult } from '../../types';
 
+/**
+ * Strips ANSI escape codes from a string.
+ *
+ * Terminal applications (including Playwright) use ANSI codes for colored output,
+ * but these appear as raw text like `[31m` when displayed in HTML.
+ */
+function stripAnsiCodes(text: string): string {
+  // Match ANSI escape sequences: ESC[ followed by parameters and a command letter
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+}
+
 interface DetailModalProps {
   result: EvalCaseResult | null;
   onClose: () => void;
@@ -105,7 +117,7 @@ export function DetailModal({ result, onClose }: DetailModalProps) {
                   Error
                 </h3>
                 <pre className="bg-destructive/10 text-destructive p-4 rounded-md text-sm overflow-x-auto">
-                  {result.error}
+                  {stripAnsiCodes(result.error)}
                 </pre>
               </div>
             )}
@@ -150,7 +162,7 @@ export function DetailModal({ result, onClose }: DetailModalProps) {
                       </div>
                       {exp.details && (
                         <pre className="text-xs text-muted-foreground font-mono whitespace-pre-wrap">
-                          {exp.details}
+                          {stripAnsiCodes(exp.details)}
                         </pre>
                       )}
                     </div>
