@@ -3,6 +3,19 @@
 
 
 
+
+## v0.12.0 (2025-12-16)
+
+#### :boom: Breaking Change
+* [#15](https://github.com/gleanwork/mcp-server-tester/pull/15) chore: rename package from @mcp-testing/server-tester to @gleanwork/mcp-server-tester ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### :house: Internal
+* [#16](https://github.com/gleanwork/mcp-server-tester/pull/16) fix: examples and exports after org migration ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### Committers: 1
+- Steve Calvert ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+
 ## v0.11.0 (2025-12-15)
 
 #### :boom: Breaking Change
