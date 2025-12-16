@@ -266,7 +266,11 @@ test.describe('LLM Host Simulation (E2E)', () => {
     const result = await simulateLLMHost(
       mcp,
       'What files are in the docs directory?',
-      { provider: 'anthropic', model: 'claude-sonnet-4-20250514', temperature: 0 }
+      {
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-20250514',
+        temperature: 0,
+      }
     );
 
     expect(result.success).toBe(true);
@@ -290,7 +294,11 @@ test.describe('LLM Host Simulation (E2E)', () => {
     const result = await simulateLLMHost(
       mcp,
       'Read the config.json file and tell me the version number.',
-      { provider: 'anthropic', model: 'claude-sonnet-4-20250514', temperature: 0 }
+      {
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-20250514',
+        temperature: 0,
+      }
     );
 
     expect(result.success).toBe(true);
