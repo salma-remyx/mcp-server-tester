@@ -9,9 +9,6 @@
 
 > Playwright-based testing framework for MCP servers
 
-> [!WARNING]
-> **Experimental Project** - This library is in active development. APIs may change, and we welcome contributions, feedback, and collaboration as we evolve the framework. See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
-
 `@gleanwork/mcp-server-tester` is a comprehensive testing and evaluation framework for [Model Context Protocol (MCP)](https://modelcontextprotocol.io) servers. It provides first-class Playwright fixtures, data-driven eval datasets, and optional LLM-as-a-judge scoring.
 
 ## What's Included
