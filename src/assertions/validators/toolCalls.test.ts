@@ -13,14 +13,20 @@ function makeResult(
 
 describe('validateToolCalls', () => {
   it('passes when required tool was called', () => {
-    const result = makeResult([{ name: 'search', arguments: { query: 'hello' } }]);
-    const v = validateToolCalls(result, { calls: [{ name: 'search', required: true }] });
+    const result = makeResult([
+      { name: 'search', arguments: { query: 'hello' } },
+    ]);
+    const v = validateToolCalls(result, {
+      calls: [{ name: 'search', required: true }],
+    });
     expect(v.pass).toBe(true);
   });
 
   it('fails when required tool was not called', () => {
     const result = makeResult([{ name: 'other' }]);
-    const v = validateToolCalls(result, { calls: [{ name: 'search', required: true }] });
+    const v = validateToolCalls(result, {
+      calls: [{ name: 'search', required: true }],
+    });
     expect(v.pass).toBe(false);
     expect(v.message).toContain('search');
   });
@@ -34,7 +40,9 @@ describe('validateToolCalls', () => {
   });
 
   it('validates partial argument match', () => {
-    const result = makeResult([{ name: 'search', arguments: { query: 'hello', limit: 10 } }]);
+    const result = makeResult([
+      { name: 'search', arguments: { query: 'hello', limit: 10 } },
+    ]);
     const v = validateToolCalls(result, {
       calls: [{ name: 'search', arguments: { query: 'hello' } }],
     });
@@ -42,7 +50,9 @@ describe('validateToolCalls', () => {
   });
 
   it('fails when arguments do not match', () => {
-    const result = makeResult([{ name: 'search', arguments: { query: 'wrong' } }]);
+    const result = makeResult([
+      { name: 'search', arguments: { query: 'wrong' } },
+    ]);
     const v = validateToolCalls(result, {
       calls: [{ name: 'search', arguments: { query: 'hello' } }],
     });

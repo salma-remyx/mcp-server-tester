@@ -15,7 +15,13 @@ vi.mock('ai', () => ({
     ],
     usage: { promptTokens: 100, completionTokens: 50 },
   }),
-  tool: vi.fn((config: { description: string; parameters: unknown; execute: (args: unknown) => Promise<string> }) => config),
+  tool: vi.fn(
+    (config: {
+      description: string;
+      parameters: unknown;
+      execute: (args: unknown) => Promise<string>;
+    }) => config
+  ),
   stepCountIs: vi.fn((n: number) => ({ type: 'stepCount', count: n })),
 }));
 
@@ -80,11 +86,10 @@ describe('createVercelOrchestrator', () => {
     vi.mocked(generateText).mockRejectedValueOnce(new Error('API error'));
 
     const orchestrator = createVercelOrchestrator();
-    const result = await orchestrator.simulate(
-      createMockMCP(),
-      'scenario',
-      { provider: 'openai', model: 'gpt-4o' }
-    );
+    const result = await orchestrator.simulate(createMockMCP(), 'scenario', {
+      provider: 'openai',
+      model: 'gpt-4o',
+    });
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('API error');

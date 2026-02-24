@@ -361,7 +361,9 @@ describe('multi-iteration cases', () => {
     vi.mocked(mcp.callTool).mockImplementation(async () => {
       callCount++;
       return {
-        content: [{ type: 'text', text: callCount % 2 === 0 ? 'nope' : 'hello' }],
+        content: [
+          { type: 'text', text: callCount % 2 === 0 ? 'nope' : 'hello' },
+        ],
         isError: false,
       };
     });
@@ -464,7 +466,10 @@ describe('toolsTriggered and toolCallCount expectations in eval runner', () => {
   it('validates toolCallCount correctly from simulation result', async () => {
     const simulationResult = {
       success: true,
-      toolCalls: [{ name: 'a', arguments: {} }, { name: 'b', arguments: {} }],
+      toolCalls: [
+        { name: 'a', arguments: {} },
+        { name: 'b', arguments: {} },
+      ],
       response: 'Done',
     };
 

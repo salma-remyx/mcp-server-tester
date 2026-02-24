@@ -139,7 +139,9 @@ describe('datasetTypes', () => {
     it('should reject accuracyThreshold outside 0-1', () => {
       const raw = {
         name: 'test',
-        cases: [{ id: 'bad', toolName: 'add', args: {}, accuracyThreshold: 1.5 }],
+        cases: [
+          { id: 'bad', toolName: 'add', args: {}, accuracyThreshold: 1.5 },
+        ],
       };
       expect(() => validateEvalDataset(raw)).toThrow();
     });
@@ -167,19 +169,38 @@ describe('datasetTypes', () => {
       };
       const result = validateEvalDataset(raw);
       expect(result.cases[0]!.expect?.toolsTriggered).toBeDefined();
-      expect(result.cases[0]!.expect?.toolsTriggered?.calls[0]!.name).toBe('search');
+      expect(result.cases[0]!.expect?.toolsTriggered?.calls[0]!.name).toBe(
+        'search'
+      );
       expect(result.cases[0]!.expect?.toolCallCount?.min).toBe(1);
     });
   });
 
   describe('LLMProvider expansion', () => {
     it('should accept new provider values in llmHostConfig', () => {
-      const providers = ['openai', 'anthropic', 'google', 'mistral', 'azure', 'ollama', 'deepseek', 'openrouter', 'xai'];
+      const providers = [
+        'openai',
+        'anthropic',
+        'google',
+        'mistral',
+        'azure',
+        'ollama',
+        'deepseek',
+        'openrouter',
+        'xai',
+      ];
       for (const provider of providers) {
         expect(() =>
           validateEvalDataset({
             name: 'test',
-            cases: [{ id: 'c', mode: 'llm_host', scenario: 's', llmHostConfig: { provider } }],
+            cases: [
+              {
+                id: 'c',
+                mode: 'llm_host',
+                scenario: 's',
+                llmHostConfig: { provider },
+              },
+            ],
           })
         ).not.toThrow();
       }

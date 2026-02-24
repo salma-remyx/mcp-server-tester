@@ -413,7 +413,10 @@ async function runExpectBlockValidations(
 
   // toolCallCount (toHaveToolCallCount)
   if (expectBlock.toolCallCount !== undefined) {
-    const validation = validateToolCallCount(response, expectBlock.toolCallCount);
+    const validation = validateToolCallCount(
+      response,
+      expectBlock.toolCallCount
+    );
     results.toolCallCount = {
       pass: validation.pass,
       details: validation.message,
@@ -605,6 +608,7 @@ async function runWithConcurrency<T>(
   tasks: Array<() => Promise<T>>,
   limit: number
 ): Promise<T[]> {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const results: T[] = new Array(tasks.length);
   let index = 0;
 

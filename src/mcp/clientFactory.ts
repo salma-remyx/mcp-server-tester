@@ -108,7 +108,8 @@ export async function createMCPClientForConfig(
     }
 
     const url = new URL(validatedConfig.serverUrl);
-    const requestInit = Object.keys(headers).length > 0 ? { headers } : undefined;
+    const requestInit =
+      Object.keys(headers).length > 0 ? { headers } : undefined;
 
     debugClient('Connecting via HTTP: %O', {
       serverUrl: validatedConfig.serverUrl,

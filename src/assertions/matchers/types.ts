@@ -13,7 +13,10 @@ import type {
   SnapshotSanitizer,
 } from '../validators/types.js';
 import type { JudgeConfig } from '../../judge/judgeTypes.js';
-import type { ToolCallExpectation, ToolCallCountOptions } from '../validators/toolCalls.js';
+import type {
+  ToolCallExpectation,
+  ToolCallCountOptions,
+} from '../validators/toolCalls.js';
 
 /**
  * Options for the LLM judge matcher

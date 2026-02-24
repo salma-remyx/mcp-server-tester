@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unsafe-member-access */
 /**
  * Vercel AI SDK-based LLM host orchestrator.
  *
@@ -80,7 +81,9 @@ async function loadModel(provider: LLMProvider, model: string): Promise<any> {
       return (xai as any)(model);
     }
     default:
-      throw new Error(`Unsupported Vercel AI SDK provider: ${String(provider)}`);
+      throw new Error(
+        `Unsupported Vercel AI SDK provider: ${String(provider)}`
+      );
   }
 }
 
@@ -164,9 +167,9 @@ export function createVercelOrchestrator(): LLMHostSimulator {
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const conversationHistory = (result.steps ?? []).map((step: any) => ({
-          role: (
-            step.toolCalls?.length > 0 ? 'tool' : 'assistant'
-          ) as 'tool' | 'assistant',
+          role: (step.toolCalls?.length > 0 ? 'tool' : 'assistant') as
+            | 'tool'
+            | 'assistant',
           content:
             step.toolCalls?.length > 0
               ? JSON.stringify(step.toolResults)

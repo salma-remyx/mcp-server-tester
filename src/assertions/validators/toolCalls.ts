@@ -5,7 +5,10 @@
  * and apply assertions against expected call lists and counts.
  */
 import type { ValidationResult } from './types.js';
-import type { LLMHostSimulationResult, LLMToolCall } from '../../evals/llmHost/llmHostTypes.js';
+import type {
+  LLMHostSimulationResult,
+  LLMToolCall,
+} from '../../evals/llmHost/llmHostTypes.js';
 
 export interface ToolCallExpectation {
   calls: Array<{
@@ -185,5 +188,8 @@ export function validateToolCallCount(
     };
   }
 
-  return { pass: true, message: `Tool call count (${count}) is within expected range` };
+  return {
+    pass: true,
+    message: `Tool call count (${count}) is within expected range`,
+  };
 }
