@@ -1,0 +1,52 @@
+{
+  "name": "eval-enhancement-verification",
+  "description": "Verifies multi-iteration accuracy, concurrency, and the new eval runner features. Direct-mode cases run against any MCP server. The mock stdio server returns structuredContent, so expectations use schema/response matching rather than containsText.",
+  "cases": [
+    {
+      "id": "multi-iter-echo-always-passes",
+      "description": "Multi-iteration: 3 runs, all should pass. Verifies accuracy=1.0 and iterationResults has 3 entries. Echo tool returns structuredContent:{echo:message}.",
+      "mode": "direct",
+      "toolName": "echo",
+      "args": { "message": "hello" },
+      "iterations": 3,
+      "accuracyThreshold": 1.0,
+      "expect": {
+        "response": { "echo": "hello" }
+      }
+    },
+    {
+      "id": "multi-iter-calculate-addition",
+      "description": "Multi-iteration: 5 runs of a deterministic calculation (7+3=10). Accuracy should be 1.0. Calculate tool returns structuredContent:{result:10}.",
+      "mode": "direct",
+      "toolName": "calculate",
+      "args": { "operation": "add", "a": 7, "b": 3 },
+      "iterations": 5,
+      "accuracyThreshold": 0.8,
+      "expect": {
+        "response": { "result": 10 }
+      }
+    },
+    {
+      "id": "single-iter-baseline",
+      "description": "Single-iteration baseline (no accuracy field expected). Verifies backward compatibility.",
+      "mode": "direct",
+      "toolName": "echo",
+      "args": { "message": "baseline" },
+      "expect": {
+        "response": { "echo": "baseline" }
+      }
+    },
+    {
+      "id": "multi-iter-low-threshold",
+      "description": "Multi-iteration: 3 runs with 100% accuracy threshold. This always passes since echo is deterministic.",
+      "mode": "direct",
+      "toolName": "echo",
+      "args": { "message": "threshold-test" },
+      "iterations": 3,
+      "accuracyThreshold": 0.5,
+      "expect": {
+        "response": { "echo": "threshold-test" }
+      }
+    }
+  ]
+}
