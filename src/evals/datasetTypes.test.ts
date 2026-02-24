@@ -124,8 +124,8 @@ describe('datasetTypes', () => {
         ],
       };
       const result = validateEvalDataset(raw);
-      expect(result.cases[0].iterations).toBe(5);
-      expect(result.cases[0].accuracyThreshold).toBe(0.8);
+      expect(result.cases[0]!.iterations).toBe(5);
+      expect(result.cases[0]!.accuracyThreshold).toBe(0.8);
     });
 
     it('should reject iterations below 1', () => {

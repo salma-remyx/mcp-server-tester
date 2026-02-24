@@ -45,6 +45,18 @@ export interface EvalContext {
 export type { EvalExpectationResult } from '../types/index.js';
 
 /**
+ * Result of a single iteration within a multi-iteration eval case
+ */
+export interface IterationResult {
+  /** Whether this iteration passed */
+  pass: boolean;
+  /** Execution time for this iteration */
+  durationMs: number;
+  /** Error message if the iteration failed with an exception */
+  error?: string;
+}
+
+/**
  * Result of a single eval case
  */
 export interface EvalCaseResult {
@@ -111,6 +123,18 @@ export interface EvalCaseResult {
    * Execution time in milliseconds
    */
   durationMs: number;
+
+  /**
+   * Accuracy score (0–1) across all iterations.
+   * Only present when the case was run with `iterations > 1`.
+   */
+  accuracy?: number;
+
+  /**
+   * Per-iteration pass/fail breakdown.
+   * Only present when the case was run with `iterations > 1`.
+   */
+  iterationResults?: Array<IterationResult>;
 }
 
 /**
@@ -441,28 +465,13 @@ async function runExpectBlockValidations(
 }
 
 /**
- * Runs a single eval case and returns the result
- *
- * @param evalCase - The eval case to run
- * @param context - Context containing mcp, testInfo, expect
- * @param options - Optional configuration (datasetName, schemas, judgeConfigs)
- * @returns The result of running the eval case
- *
- * @example
- * ```typescript
- * const result = await runEvalCase(
- *   evalCase,
- *   { mcp, testInfo, expect },
- *   { schemas: { WeatherResponse: WeatherSchema } }
- * );
- *
- * expect(result.pass).toBe(true);
- * ```
+ * Runs a single iteration of an eval case (the atomic unit of work).
+ * Extracted from runEvalCase to support multi-iteration accuracy loops.
  */
-export async function runEvalCase(
+async function runSingleIteration(
   evalCase: EvalCase,
   context: EvalContext,
-  options: EvalCaseOptions = {}
+  options: EvalCaseOptions
 ): Promise<EvalCaseResult> {
   const startTime = Date.now();
   const mode = evalCase.mode || 'direct';
@@ -499,6 +508,65 @@ export async function runEvalCase(
     authType: context.mcp.authType,
     project: context.mcp.project,
     durationMs: Date.now() - startTime,
+  };
+}
+
+/**
+ * Runs a single eval case and returns the result.
+ * When `evalCase.iterations > 1`, runs the case N times and returns accuracy.
+ *
+ * @param evalCase - The eval case to run
+ * @param context - Context containing mcp, testInfo, expect
+ * @param options - Optional configuration (datasetName, schemas, judgeConfigs)
+ * @returns The result of running the eval case
+ *
+ * @example
+ * ```typescript
+ * const result = await runEvalCase(
+ *   evalCase,
+ *   { mcp, testInfo, expect },
+ *   { schemas: { WeatherResponse: WeatherSchema } }
+ * );
+ *
+ * expect(result.pass).toBe(true);
+ * ```
+ */
+export async function runEvalCase(
+  evalCase: EvalCase,
+  context: EvalContext,
+  options: EvalCaseOptions = {}
+): Promise<EvalCaseResult> {
+  const iterations = evalCase.iterations ?? 1;
+
+  if (iterations === 1) {
+    return runSingleIteration(evalCase, context, options);
+  }
+
+  // Multi-iteration: run N times and compute accuracy
+  const iterationResults: IterationResult[] = [];
+  let lastResult: EvalCaseResult | null = null;
+
+  for (let i = 0; i < iterations; i++) {
+    const result = await runSingleIteration(evalCase, context, options);
+    lastResult = result;
+    iterationResults.push({
+      pass: result.pass,
+      durationMs: result.durationMs,
+      error: result.error,
+    });
+  }
+
+  const passCount = iterationResults.filter((r) => r.pass).length;
+  const accuracy = passCount / iterations;
+  const threshold = evalCase.accuracyThreshold ?? 1.0;
+
+  return {
+    // Spread the last iteration for response/expectations context
+    ...lastResult!,
+    pass: accuracy >= threshold,
+    accuracy,
+    iterationResults,
+    durationMs: iterationResults.reduce((sum, r) => sum + r.durationMs, 0),
   };
 }
 

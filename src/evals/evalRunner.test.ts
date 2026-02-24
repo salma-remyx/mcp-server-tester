@@ -353,6 +353,55 @@ describe('runEvalCase', () => {
   });
 });
 
+describe('multi-iteration cases', () => {
+  it('should compute accuracy when iterations > 1', async () => {
+    let callCount = 0;
+    const mcp = createMockMCP();
+    // Alternate pass/fail: callTool returns 'hello' on odd calls, 'nope' on even
+    vi.mocked(mcp.callTool).mockImplementation(async () => {
+      callCount++;
+      return {
+        content: [{ type: 'text', text: callCount % 2 === 0 ? 'nope' : 'hello' }],
+        isError: false,
+      };
+    });
+
+    const evalCase = createEvalCase({
+      iterations: 4,
+      accuracyThreshold: 0.5,
+      expect: { containsText: 'hello' },
+    });
+
+    const result = await runEvalCase(evalCase, createContext(mcp));
+
+    expect(result.accuracy).toBeDefined();
+    expect(result.accuracy).toBe(0.5); // 2 of 4 pass
+    expect(result.pass).toBe(true); // 0.5 >= 0.5 threshold
+    expect(result.iterationResults).toHaveLength(4);
+    expect(result.iterationResults?.filter((r) => r.pass)).toHaveLength(2);
+  });
+
+  it('should fail when accuracy is below threshold', async () => {
+    const mcp = createMockMCP({ content: [{ type: 'text', text: 'wrong' }] });
+    const evalCase = createEvalCase({
+      iterations: 3,
+      accuracyThreshold: 0.8,
+      expect: { containsText: 'hello' },
+    });
+
+    const result = await runEvalCase(evalCase, createContext(mcp));
+    expect(result.accuracy).toBe(0);
+    expect(result.pass).toBe(false);
+  });
+
+  it('should not set accuracy for single-iteration cases', async () => {
+    const evalCase = createEvalCase();
+    const result = await runEvalCase(evalCase, createContext());
+    expect(result.accuracy).toBeUndefined();
+    expect(result.iterationResults).toBeUndefined();
+  });
+});
+
 describe('runEvalDataset', () => {
   function createDataset(cases: EvalCase[]): EvalDataset {
     return {
