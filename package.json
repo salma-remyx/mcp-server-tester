@@ -111,7 +111,15 @@
   },
   "peerDependencies": {
     "@playwright/test": "^1.40.0",
+    "ai": "^4.0.0",
+    "@ai-sdk/anthropic": "^1.0.0",
+    "@ai-sdk/openai": "^1.0.0",
     "zod": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ai": { "optional": true },
+    "@ai-sdk/anthropic": { "optional": true },
+    "@ai-sdk/openai": { "optional": true }
   },
   "engines": {
     "node": ">=22.0.0"
@@ -134,5 +142,10 @@
       "release": true,
       "tokenRef": "GITHUB_AUTH"
     }
+  },
+  "optionalDependencies": {
+    "@ai-sdk/anthropic": "^3.0.46",
+    "@ai-sdk/openai": "^3.0.31",
+    "ai": "^6.0.97"
   }
 }
