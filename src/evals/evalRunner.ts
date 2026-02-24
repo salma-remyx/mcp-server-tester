@@ -17,6 +17,8 @@ import {
   validatePattern,
   validateError,
   validateSize,
+  validateToolCalls,
+  validateToolCallCount,
 } from '../assertions/validators/index.js';
 import { createJudge } from '../judge/judgeClient.js';
 
@@ -395,6 +397,24 @@ async function runExpectBlockValidations(
   if (expectBlock.responseSize !== undefined) {
     const validation = validateSize(response, expectBlock.responseSize);
     results.size = {
+      pass: validation.pass,
+      details: validation.message,
+    };
+  }
+
+  // toolsTriggered (toHaveToolCalls)
+  if (expectBlock.toolsTriggered !== undefined) {
+    const validation = validateToolCalls(response, expectBlock.toolsTriggered);
+    results.toolsTriggered = {
+      pass: validation.pass,
+      details: validation.message,
+    };
+  }
+
+  // toolCallCount (toHaveToolCallCount)
+  if (expectBlock.toolCallCount !== undefined) {
+    const validation = validateToolCallCount(response, expectBlock.toolCallCount);
+    results.toolCallCount = {
       pass: validation.pass,
       details: validation.message,
     };

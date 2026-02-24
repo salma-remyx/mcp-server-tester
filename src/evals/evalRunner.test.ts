@@ -402,6 +402,82 @@ describe('multi-iteration cases', () => {
   });
 });
 
+describe('toolsTriggered and toolCallCount expectations in eval runner', () => {
+  it('populates toolsTriggered expectation result when simulation result contains expected tool', async () => {
+    // A structuredContent that matches LLMHostSimulationResult shape is recognized by the validator
+    const simulationResult = {
+      success: true,
+      toolCalls: [{ name: 'search', arguments: { query: 'hello' } }],
+      response: 'Done',
+    };
+
+    const mcp = createMockMCP({ structuredContent: simulationResult });
+    const evalCase = createEvalCase({
+      expect: {
+        toolsTriggered: {
+          calls: [{ name: 'search', required: true }],
+        },
+      },
+    });
+
+    const result = await runEvalCase(evalCase, createContext(mcp));
+    expect(result.expectations.toolsTriggered).toBeDefined();
+    expect(result.expectations.toolsTriggered?.pass).toBe(true);
+  });
+
+  it('fails toolsTriggered when required tool was not called', async () => {
+    const simulationResult = {
+      success: true,
+      toolCalls: [{ name: 'other', arguments: {} }],
+      response: 'Done',
+    };
+
+    const mcp = createMockMCP({ structuredContent: simulationResult });
+    const evalCase = createEvalCase({
+      expect: {
+        toolsTriggered: {
+          calls: [{ name: 'search', required: true }],
+        },
+      },
+    });
+
+    const result = await runEvalCase(evalCase, createContext(mcp));
+    expect(result.expectations.toolsTriggered?.pass).toBe(false);
+    expect(result.pass).toBe(false);
+  });
+
+  it('fails toolsTriggered with informative message when response is not a simulation', async () => {
+    // A plain text response is not a simulation result
+    const mcp = createMockMCP({
+      content: [{ type: 'text', text: 'plain text' }],
+    });
+
+    const evalCase = createEvalCase({
+      expect: { toolsTriggered: { calls: [{ name: 'search' }] } },
+    });
+
+    const result = await runEvalCase(evalCase, createContext(mcp));
+    expect(result.expectations.toolsTriggered?.pass).toBe(false);
+    expect(result.expectations.toolsTriggered?.details).toContain('llm_host');
+  });
+
+  it('validates toolCallCount correctly from simulation result', async () => {
+    const simulationResult = {
+      success: true,
+      toolCalls: [{ name: 'a', arguments: {} }, { name: 'b', arguments: {} }],
+      response: 'Done',
+    };
+
+    const mcp = createMockMCP({ structuredContent: simulationResult });
+    const evalCase = createEvalCase({
+      expect: { toolCallCount: { min: 1, max: 3 } },
+    });
+
+    const result = await runEvalCase(evalCase, createContext(mcp));
+    expect(result.expectations.toolCallCount?.pass).toBe(true);
+  });
+});
+
 describe('runEvalDataset concurrency', () => {
   function createDataset(cases: EvalCase[]): EvalDataset {
     return { name: 'test-dataset', cases };
