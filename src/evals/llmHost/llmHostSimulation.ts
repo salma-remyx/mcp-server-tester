@@ -1,8 +1,21 @@
 /**
  * LLM Host Simulation - Main entry point
  *
- * Provides the public API for simulating LLM hosts interacting
- * with MCP servers through actual LLM providers.
+ * All providers (openai, anthropic, google, azure, mistral, ollama, deepseek,
+ * openrouter, xai) run through the Vercel AI SDK orchestrator, which uses
+ * generateText + stopWhen for a uniform multi-turn tool-calling loop with
+ * built-in latency decomposition.
+ *
+ * Required packages per provider:
+ *   openai      → npm install ai @ai-sdk/openai
+ *   anthropic   → npm install ai @ai-sdk/anthropic
+ *   google      → npm install ai @ai-sdk/google
+ *   azure       → npm install ai @ai-sdk/azure
+ *   mistral     → npm install ai @ai-sdk/mistral
+ *   ollama      → npm install ai @ai-sdk/ollama  (local, no API key)
+ *   deepseek    → npm install ai @ai-sdk/deepseek
+ *   openrouter  → npm install ai @openrouter/ai-sdk-provider
+ *   xai         → npm install ai @ai-sdk/xai
  */
 
 import type { MCPFixtureApi } from '../../mcp/fixtures/mcpFixture.js';
@@ -12,18 +25,15 @@ import type {
   LLMHostSimulator,
   LLMProvider,
 } from './llmHostTypes.js';
-import { registerAdapter, getAdapter, hasAdapter } from './adapter.js';
-import { runSimulation } from './orchestrator.js';
-import { createOpenAIAdapter } from './adapters/openai.js';
-import { createAnthropicAdapter } from './adapters/anthropic.js';
 import { createVercelOrchestrator } from './adapters/vercel.js';
 
-// Register built-in adapters (native SDK path)
-registerAdapter('openai', createOpenAIAdapter);
-registerAdapter('anthropic', createAnthropicAdapter);
+// Single orchestrator instance shared across all providers.
+// Each provider is dynamically imported inside the orchestrator on first use.
+const vercelOrchestrator: LLMHostSimulator = createVercelOrchestrator();
 
-// Register Vercel AI SDK providers (generative loop handled by generateText)
-const vercelProviders: LLMProvider[] = [
+const allProviders: LLMProvider[] = [
+  'openai',
+  'anthropic',
   'google',
   'azure',
   'mistral',
@@ -33,40 +43,35 @@ const vercelProviders: LLMProvider[] = [
   'xai',
 ];
 
-const simulatorRegistry = new Map<LLMProvider, LLMHostSimulator>();
-const vercelOrchestrator = createVercelOrchestrator();
-for (const provider of vercelProviders) {
-  simulatorRegistry.set(provider, vercelOrchestrator);
-}
+const simulatorRegistry = new Map<LLMProvider, LLMHostSimulator>(
+  allProviders.map((p) => [p, vercelOrchestrator])
+);
 
 /**
- * Simulates an LLM host interacting with an MCP server
+ * Simulates an LLM host interacting with an MCP server.
  *
- * This function uses actual LLM providers (OpenAI or Anthropic) to test
- * MCP servers through natural language scenarios. The LLM chooses which
- * tools to call based on their descriptions, testing discoverability and
- * parameter clarity.
+ * The LLM chooses which tools to call based solely on their descriptions and
+ * schemas, testing discoverability and parameter clarity at the level a real
+ * user (via Claude Desktop, ChatGPT, etc.) would experience.
+ *
+ * All providers run through the Vercel AI SDK's generateText with maxSteps,
+ * which handles multi-turn tool calling natively and provides per-step latency
+ * decomposition (llmDurationMs vs. mcpDurationMs).
  *
  * @param mcp - MCP fixture API
- * @param scenario - Natural language prompt describing what to do
- * @param config - LLM host configuration
- * @returns Simulation result with tool calls and final response
+ * @param scenario - Natural language prompt describing what the LLM should do
+ * @param config - LLM host configuration (provider, model, temperature, etc.)
+ * @returns Simulation result with tool calls, final response, and latency data
  *
  * @example
  * ```typescript
  * const result = await simulateLLMHost(mcp,
- *   "Get the weather for London",
- *   {
- *     provider: 'openai',
- *     model: 'gpt-4o'
- *   }
+ *   "Find recent documents about MCP testing frameworks",
+ *   { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' }
  * );
  *
  * expect(result.success).toBe(true);
- * expect(result.toolCalls).toContainEqual({
- *   name: 'get_weather',
- *   arguments: { city: 'London' }
- * });
+ * expect(result.toolCalls.map(c => c.name)).toContain('search');
  * ```
  */
 export async function simulateLLMHost(
@@ -74,57 +79,44 @@ export async function simulateLLMHost(
   scenario: string,
   config: LLMHostConfig
 ): Promise<LLMHostSimulationResult> {
-  // Vercel AI SDK providers bypass the adapter/orchestrator loop —
-  // generateText handles multi-turn tool calling natively.
   const simulator = simulatorRegistry.get(config.provider);
-  if (simulator) {
-    return simulator.simulate(mcp, scenario, config);
+  if (!simulator) {
+    throw new Error(
+      `Unsupported provider: ${String(config.provider)}. ` +
+        `Supported: ${allProviders.join(', ')}`
+    );
   }
-
-  // Native SDK adapter path (openai, anthropic)
-  const adapter = getAdapter(config.provider);
-
-  return runSimulation(adapter, mcp, scenario, config, {
-    retry: {
-      maxAttempts: 3,
-      baseDelayMs: 1000,
-      maxDelayMs: 30000,
-    },
-  });
+  return simulator.simulate(mcp, scenario, config);
 }
 
 /**
- * Checks if the required SDK is available for a given provider
+ * Returns true if the given provider is supported.
  *
- * This performs a quick check without actually loading the SDK.
- * The actual SDK loading happens in the adapter when simulation runs.
- *
- * @param provider - LLM provider to check
- * @returns true if an adapter is registered for the provider
+ * Note: this does not check whether the required @ai-sdk/* package is
+ * installed — that is validated at simulation time with a helpful error.
  */
 export function isProviderAvailable(provider: LLMProvider): boolean {
-  return hasAdapter(provider) || simulatorRegistry.has(provider);
+  return simulatorRegistry.has(provider);
 }
 
 /**
- * Gets a helpful error message for missing dependencies
- *
- * @param provider - LLM provider
- * @returns Error message with installation instructions
+ * Returns a human-readable installation message for a given provider.
  */
 export function getMissingDependencyMessage(provider: LLMProvider): string {
-  switch (provider) {
-    case 'openai':
-      return 'OpenAI SDK is not installed. Install it with: npm install openai';
-    case 'anthropic':
-      return 'Anthropic SDK is not installed. Install it with: npm install @anthropic-ai/sdk';
-    default:
-      return `Unknown provider: ${String(provider)}`;
-  }
-}
+  const packageMap: Partial<Record<LLMProvider, string>> = {
+    openai: 'npm install ai @ai-sdk/openai',
+    anthropic: 'npm install ai @ai-sdk/anthropic',
+    google: 'npm install ai @ai-sdk/google',
+    azure: 'npm install ai @ai-sdk/azure',
+    mistral: 'npm install ai @ai-sdk/mistral',
+    ollama: 'npm install ai @ai-sdk/ollama',
+    deepseek: 'npm install ai @ai-sdk/deepseek',
+    openrouter: 'npm install ai @openrouter/ai-sdk-provider',
+    xai: 'npm install ai @ai-sdk/xai',
+  };
 
-// Re-export adapter utilities for advanced usage
-export { registerAdapter, getAdapter, hasAdapter } from './adapter.js';
-export { runSimulation } from './orchestrator.js';
-export { withRetry, isRetryableError, type RetryOptions } from './retry.js';
-export type { LLMAdapter, LLMChatResult } from './adapter.js';
+  const pkg = packageMap[provider];
+  return pkg
+    ? `${String(provider)} provider requires: ${pkg}`
+    : `Unknown provider: ${String(provider)}`;
+}

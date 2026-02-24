@@ -9,8 +9,19 @@ import type { MCPFixtureApi } from '../../mcp/fixtures/mcpFixture.js';
 
 /**
  * LLM provider for host simulation.
- * 'openai' and 'anthropic' use their native SDKs (legacy adapters).
- * All others require the Vercel AI SDK (`ai` package).
+ *
+ * All providers run through the Vercel AI SDK (`ai` package).
+ * Each provider requires its corresponding @ai-sdk/* package:
+ *
+ *   openai      → npm install ai @ai-sdk/openai
+ *   anthropic   → npm install ai @ai-sdk/anthropic
+ *   google      → npm install ai @ai-sdk/google
+ *   azure       → npm install ai @ai-sdk/azure
+ *   mistral     → npm install ai @ai-sdk/mistral
+ *   ollama      → npm install ai @ai-sdk/ollama  (local, no API key)
+ *   deepseek    → npm install ai @ai-sdk/deepseek
+ *   openrouter  → npm install ai @openrouter/ai-sdk-provider
+ *   xai         → npm install ai @ai-sdk/xai
  */
 export type LLMProvider =
   | 'openai'
@@ -34,13 +45,11 @@ export interface LLMHostConfig {
 
   /**
    * Environment variable name containing the API key
-   * @default 'OPENAI_API_KEY' for openai, 'ANTHROPIC_API_KEY' for anthropic
    */
   apiKeyEnvVar?: string;
 
   /**
-   * Model to use
-   * @default 'gpt-4' for openai, 'claude-3-5-sonnet-20241022' for anthropic
+   * Model to use (provider-specific default if omitted)
    */
   model?: string;
 
@@ -51,12 +60,12 @@ export interface LLMHostConfig {
 
   /**
    * Temperature (0-1, lower is more deterministic)
-   * @default 0.0
+   * @default 0
    */
   temperature?: number;
 
   /**
-   * Maximum number of tool calls to allow in a single conversation
+   * Maximum number of tool call steps to allow in a single conversation
    * @default 10
    */
   maxToolCalls?: number;
@@ -66,96 +75,55 @@ export interface LLMHostConfig {
  * A tool call made by the LLM
  */
 export interface LLMToolCall {
-  /**
-   * Tool name
-   */
+  /** Tool name */
   name: string;
-
-  /**
-   * Tool arguments (as provided by LLM)
-   */
+  /** Tool arguments (as provided by LLM) */
   arguments: Record<string, unknown>;
-
-  /**
-   * Optional tool call ID (for tracking)
-   */
+  /** Optional tool call ID (for tracking) */
   id?: string;
-}
-
-/**
- * Result of a tool call validation
- *
- * @deprecated Unused — will be removed in next major release
- */
-export interface ToolCallValidationResult {
-  /**
-   * Whether the tool call was valid
-   */
-  valid: boolean;
-
-  /**
-   * List of actual tool calls made
-   */
-  actualCalls: Array<LLMToolCall>;
-
-  /**
-   * Expected tool calls (if specified in eval case)
-   */
-  expectedCalls?: Array<LLMToolCall>;
-
-  /**
-   * Details about validation (e.g., missing calls, incorrect arguments)
-   */
-  details?: string;
 }
 
 /**
  * Result from an LLM host simulation
  */
 export interface LLMHostSimulationResult {
-  /**
-   * Whether the simulation succeeded
-   */
+  /** Whether the simulation succeeded */
   success: boolean;
 
-  /**
-   * Tool calls made by the LLM
-   */
+  /** Tool calls made by the LLM */
   toolCalls: Array<LLMToolCall>;
 
-  /**
-   * Final response from the LLM
-   */
+  /** Final response from the LLM */
   response?: string;
 
-  /**
-   * Error message if simulation failed
-   */
+  /** Error message if simulation failed */
   error?: string;
 
-  /**
-   * Full conversation history (for debugging)
-   */
+  /** Full conversation history (for debugging) */
   conversationHistory?: Array<{
     role: 'user' | 'assistant' | 'tool';
     content: string;
   }>;
 
   /**
-   * Milliseconds spent waiting for LLM responses (excludes MCP tool execution time)
+   * Milliseconds spent waiting for LLM responses
+   * (excludes MCP tool execution time)
    */
   llmDurationMs?: number;
 
   /**
-   * Milliseconds spent executing MCP tool calls (excludes LLM response time)
+   * Milliseconds spent executing MCP tool calls
+   * (excludes LLM response time)
    */
   mcpDurationMs?: number;
 }
 
 /**
- * Interface for LLM host simulators
+ * Interface for LLM host simulators.
  *
- * Implementations communicate with MCP servers via the actual MCP protocol
+ * The only built-in implementation is the Vercel AI SDK orchestrator
+ * (src/evals/llmHost/adapters/vercel.ts). Custom implementations can be
+ * created for specialised testing needs.
  */
 export interface LLMHostSimulator {
   /**
@@ -171,25 +139,4 @@ export interface LLMHostSimulator {
     scenario: string,
     config: LLMHostConfig
   ): Promise<LLMHostSimulationResult>;
-}
-
-/**
- * Expected tool call specification (for validation)
- */
-export interface ExpectedToolCall {
-  /**
-   * Tool name
-   */
-  name: string;
-
-  /**
-   * Expected arguments (partial match)
-   */
-  arguments?: Record<string, unknown>;
-
-  /**
-   * Whether this call is required
-   * @default true
-   */
-  required?: boolean;
 }

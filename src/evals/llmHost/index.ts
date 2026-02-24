@@ -7,4 +7,3 @@
 
 export * from './llmHostTypes.js';
 export * from './llmHostSimulation.js';
-export * from './toolCallExpectation.js';

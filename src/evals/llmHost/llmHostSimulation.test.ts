@@ -1,225 +1,138 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { MCPFixtureApi } from '../../mcp/fixtures/mcpFixture.js';
-import type { LLMAdapter } from './adapter.js';
 
-// We need to mock the orchestrator since it does the actual work
-vi.mock('./orchestrator.js', () => ({
-  runSimulation: vi.fn(),
+// Mock the Vercel orchestrator — it's the only runtime path now
+vi.mock('./adapters/vercel.js', () => ({
+  createVercelOrchestrator: vi.fn(() => ({
+    simulate: vi.fn().mockResolvedValue({
+      success: true,
+      toolCalls: [{ name: 'search', arguments: { query: 'test' } }],
+      response: 'Found results',
+      llmDurationMs: 100,
+      mcpDurationMs: 20,
+    }),
+  })),
 }));
 
-// Import after mocks
 import {
   simulateLLMHost,
   isProviderAvailable,
   getMissingDependencyMessage,
-  registerAdapter,
-  getAdapter,
-  hasAdapter,
 } from './llmHostSimulation.js';
-import { runSimulation } from './orchestrator.js';
 
-// Create mock MCP fixture
 function createMockMCP(): MCPFixtureApi {
   return {
     client: {} as MCPFixtureApi['client'],
     authType: 'none',
     project: 'test-project',
+    getServerInfo: vi.fn().mockReturnValue(null),
     listTools: vi.fn().mockResolvedValue([]),
     callTool: vi.fn().mockResolvedValue({
       content: [{ type: 'text', text: 'Tool result' }],
     }),
-    getServerInfo: vi.fn().mockReturnValue({ name: 'test', version: '1.0.0' }),
   };
 }
 
-// Create mock adapter
-function createMockAdapter(): LLMAdapter {
-  return {
-    provider: 'openai',
-    createClient: vi.fn().mockResolvedValue({}),
-    formatTools: vi.fn().mockReturnValue([]),
-    chat: vi.fn().mockResolvedValue({
-      wantsToolCalls: false,
-      toolCalls: [],
-      textContent: 'Response',
-      rawResponse: {},
-    }),
-    createUserMessage: vi.fn().mockReturnValue({}),
-    createAssistantMessage: vi.fn().mockReturnValue({}),
-    createToolResultMessage: vi.fn().mockReturnValue({}),
-  };
-}
+describe('simulateLLMHost', () => {
+  it('routes all providers through the Vercel orchestrator', async () => {
+    const mcp = createMockMCP();
+    const result = await simulateLLMHost(mcp, 'Find recent docs', {
+      provider: 'anthropic',
+      model: 'claude-3-5-sonnet-20241022',
+    });
 
-describe('llmHostSimulation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+    expect(result.success).toBe(true);
+    expect(result.toolCalls).toHaveLength(1);
+    expect(result.toolCalls[0]!.name).toBe('search');
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  it('works for openai provider', async () => {
+    const mcp = createMockMCP();
+    const result = await simulateLLMHost(mcp, 'scenario', {
+      provider: 'openai',
+      model: 'gpt-4o',
+    });
+    expect(result.success).toBe(true);
   });
 
-  describe('simulateLLMHost', () => {
-    it('calls runSimulation with correct parameters', async () => {
-      const mockMCP = createMockMCP();
-      const mockResult = {
-        success: true,
-        toolCalls: [{ name: 'test_tool', arguments: {}, id: '1' }],
-        finalResponse: 'Done',
-        turns: [],
-      };
-      vi.mocked(runSimulation).mockResolvedValue(mockResult);
-
-      const result = await simulateLLMHost(mockMCP, 'Test scenario', {
-        provider: 'openai',
-        model: 'gpt-4o',
-      });
-
-      expect(runSimulation).toHaveBeenCalled();
-      expect(result).toBe(mockResult);
+  it('works for google provider', async () => {
+    const mcp = createMockMCP();
+    const result = await simulateLLMHost(mcp, 'scenario', {
+      provider: 'google',
     });
-
-    it('uses default retry configuration', async () => {
-      const mockMCP = createMockMCP();
-      vi.mocked(runSimulation).mockResolvedValue({
-        success: true,
-        toolCalls: [],
-        response: 'Done',
-      });
-
-      await simulateLLMHost(mockMCP, 'Test scenario', {
-        provider: 'openai',
-        model: 'gpt-4o',
-      });
-
-      expect(runSimulation).toHaveBeenCalledWith(
-        expect.anything(),
-        mockMCP,
-        'Test scenario',
-        { provider: 'openai', model: 'gpt-4o' },
-        {
-          retry: {
-            maxAttempts: 3,
-            baseDelayMs: 1000,
-            maxDelayMs: 30000,
-          },
-        }
-      );
-    });
+    expect(result.success).toBe(true);
   });
 
-  describe('isProviderAvailable', () => {
-    it('returns true for registered providers', () => {
-      // openai and anthropic are registered by default
-      expect(isProviderAvailable('openai')).toBe(true);
-      expect(isProviderAvailable('anthropic')).toBe(true);
-    });
-
-    it('should report google as an available provider', () => {
-      expect(isProviderAvailable('google')).toBe(true);
-    });
-
-    it('returns false for unknown providers', () => {
-      // @ts-expect-error - testing invalid provider
-      expect(isProviderAvailable('unknown')).toBe(false);
-    });
-  });
-
-  describe('getMissingDependencyMessage', () => {
-    it('returns correct message for openai', () => {
-      const message = getMissingDependencyMessage('openai');
-      expect(message).toBe(
-        'OpenAI SDK is not installed. Install it with: npm install openai'
-      );
-    });
-
-    it('returns correct message for anthropic', () => {
-      const message = getMissingDependencyMessage('anthropic');
-      expect(message).toBe(
-        'Anthropic SDK is not installed. Install it with: npm install @anthropic-ai/sdk'
-      );
-    });
-
-    it('returns generic message for unknown providers', () => {
-      // @ts-expect-error - testing invalid provider
-      const message = getMissingDependencyMessage('unknown');
-      expect(message).toBe('Unknown provider: unknown');
-    });
-  });
-
-  describe('adapter registry', () => {
-    it('allows registering custom adapters', () => {
-      const customAdapter = createMockAdapter();
-      // @ts-expect-error - registering with custom provider name
-      registerAdapter('custom', () => customAdapter);
-
-      // @ts-expect-error - checking custom provider
-      expect(hasAdapter('custom')).toBe(true);
-    });
-
-    it('getAdapter returns registered adapter', () => {
-      const adapter = getAdapter('openai');
-      expect(adapter.provider).toBe('openai');
-    });
-
-    it('getAdapter throws for unregistered provider', () => {
-      expect(() => {
+  it('throws for unsupported provider', async () => {
+    const mcp = createMockMCP();
+    await expect(
+      simulateLLMHost(mcp, 'scenario', {
         // @ts-expect-error - testing invalid provider
-        getAdapter('nonexistent');
-      }).toThrow('No adapter registered for provider: nonexistent');
-    });
-
-    it('hasAdapter returns false for unregistered provider', () => {
-      // @ts-expect-error - testing invalid provider
-      expect(hasAdapter('nonexistent')).toBe(false);
-    });
+        provider: 'unknown-provider',
+      })
+    ).rejects.toThrow('Unsupported provider');
   });
 });
 
-describe('adapter interface contract', () => {
-  it('openai adapter implements required methods', () => {
-    const adapter = getAdapter('openai');
+describe('isProviderAvailable', () => {
+  const supportedProviders = [
+    'openai',
+    'anthropic',
+    'google',
+    'azure',
+    'mistral',
+    'ollama',
+    'deepseek',
+    'openrouter',
+    'xai',
+  ] as const;
 
-    expect(typeof adapter.createClient).toBe('function');
-    expect(typeof adapter.formatTools).toBe('function');
-    expect(typeof adapter.chat).toBe('function');
-    expect(typeof adapter.createUserMessage).toBe('function');
-    expect(typeof adapter.createAssistantMessage).toBe('function');
-    expect(typeof adapter.createToolResultMessage).toBe('function');
+  for (const provider of supportedProviders) {
+    it(`returns true for ${provider}`, () => {
+      expect(isProviderAvailable(provider)).toBe(true);
+    });
+  }
+
+  it('returns false for unknown provider', () => {
+    // @ts-expect-error - testing invalid provider
+    expect(isProviderAvailable('unknown')).toBe(false);
+  });
+});
+
+describe('getMissingDependencyMessage', () => {
+  it('returns install command for openai', () => {
+    const msg = getMissingDependencyMessage('openai');
+    expect(msg).toContain('@ai-sdk/openai');
+    expect(msg).toContain('npm install');
   });
 
-  it('anthropic adapter implements required methods', () => {
-    const adapter = getAdapter('anthropic');
-
-    expect(typeof adapter.createClient).toBe('function');
-    expect(typeof adapter.formatTools).toBe('function');
-    expect(typeof adapter.chat).toBe('function');
-    expect(typeof adapter.createUserMessage).toBe('function');
-    expect(typeof adapter.createAssistantMessage).toBe('function');
-    expect(typeof adapter.createToolResultMessage).toBe('function');
+  it('returns install command for anthropic', () => {
+    const msg = getMissingDependencyMessage('anthropic');
+    expect(msg).toContain('@ai-sdk/anthropic');
   });
 
-  it('adapters format tools correctly', () => {
-    const openaiAdapter = getAdapter('openai');
-    const anthropicAdapter = getAdapter('anthropic');
+  it('returns install command for all providers', () => {
+    const providers = [
+      'openai',
+      'anthropic',
+      'google',
+      'azure',
+      'mistral',
+      'ollama',
+      'deepseek',
+      'openrouter',
+      'xai',
+    ] as const;
 
-    const mcpTools = [
-      {
-        name: 'test_tool',
-        description: 'A test tool',
-        inputSchema: {
-          type: 'object' as const,
-          properties: { arg: { type: 'string' } },
-        },
-      },
-    ];
+    for (const provider of providers) {
+      const msg = getMissingDependencyMessage(provider);
+      expect(msg).toContain('npm install');
+    }
+  });
 
-    const openaiFormatted = openaiAdapter.formatTools(mcpTools);
-    const anthropicFormatted = anthropicAdapter.formatTools(mcpTools);
-
-    expect(Array.isArray(openaiFormatted)).toBe(true);
-    expect(Array.isArray(anthropicFormatted)).toBe(true);
-    expect(openaiFormatted.length).toBe(1);
-    expect(anthropicFormatted.length).toBe(1);
+  it('returns generic message for unknown provider', () => {
+    // @ts-expect-error - testing invalid provider
+    const msg = getMissingDependencyMessage('unknown');
+    expect(msg).toContain('Unknown provider');
   });
 });

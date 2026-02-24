@@ -184,45 +184,12 @@ export type {
   LLMToolCall,
   LLMHostSimulationResult,
   LLMHostSimulator,
-  ExpectedToolCall,
-  ToolCallValidationResult,
-  ToolCallValidator,
 } from './evals/llmHost/index.js';
 export {
   simulateLLMHost,
   isProviderAvailable,
   getMissingDependencyMessage,
-  createToolCallValidator,
 } from './evals/llmHost/index.js';
-
-/**
- * @internal Low-level adapter registry. Use `simulateLLMHost()` instead.
- * Not part of the public API — may change without notice.
- */
-export {
-  registerAdapter,
-  getAdapter,
-  hasAdapter,
-} from './evals/llmHost/index.js';
-
-/**
- * @internal Low-level orchestrator. Use `simulateLLMHost()` instead.
- * Not part of the public API — may change without notice.
- */
-export { runSimulation } from './evals/llmHost/index.js';
-
-/**
- * @internal Retry utilities for adapter implementations.
- * Not part of the public API — may change without notice.
- */
-export { withRetry, isRetryableError } from './evals/llmHost/index.js';
-export type { RetryOptions } from './evals/llmHost/index.js';
-
-/**
- * @internal Low-level adapter types. Use `simulateLLMHost()` instead.
- * Not part of the public API — may change without notice.
- */
-export type { LLMAdapter, LLMChatResult } from './evals/llmHost/index.js';
 
 // Judge
 export type {
