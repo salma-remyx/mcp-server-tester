@@ -68,6 +68,26 @@ export default class MCPReporter implements Reporter {
     }
   }
 
+  /**
+   * Reads attachment content from either in-memory body (Playwright < 1.43)
+   * or from the file path on disk (Playwright ≥ 1.43, which writes large
+   * attachments to disk and exposes path instead of body).
+   */
+  private async getAttachmentContent(attachment: {
+    body?: Buffer;
+    path?: string;
+  }): Promise<string | null> {
+    if (attachment.body) return attachment.body.toString('utf-8');
+    if (attachment.path) {
+      try {
+        return await readFile(attachment.path, 'utf-8');
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
   async onBegin(_config: FullConfig, _suite: Suite): Promise<void> {
     this.startTime = Date.now();
     this.allResults = [];
@@ -87,11 +107,12 @@ export default class MCPReporter implements Reporter {
 
     let hasEvalDataset = false;
 
-    if (evalAttachment && evalAttachment.body) {
+    const evalContent = evalAttachment
+      ? await this.getAttachmentContent(evalAttachment)
+      : null;
+    if (evalContent) {
       try {
-        const evalResults = JSON.parse(
-          evalAttachment.body.toString('utf-8')
-        ) as {
+        const evalResults = JSON.parse(evalContent) as {
           caseResults: Array<EvalCaseResult>;
         };
 
@@ -115,11 +136,12 @@ export default class MCPReporter implements Reporter {
         a.contentType === 'application/json'
     );
 
-    if (conformanceAttachment && conformanceAttachment.body) {
+    const conformanceContent = conformanceAttachment
+      ? await this.getAttachmentContent(conformanceAttachment)
+      : null;
+    if (conformanceContent) {
       try {
-        const conformanceData = JSON.parse(
-          conformanceAttachment.body.toString('utf-8')
-        ) as {
+        const conformanceData = JSON.parse(conformanceContent) as {
           operation: string;
           pass: boolean;
           checks: MCPConformanceCheck[];
@@ -155,11 +177,12 @@ export default class MCPReporter implements Reporter {
       (a) => a.name === 'mcp-list-tools' && a.contentType === 'application/json'
     );
 
-    if (listToolsAttachment && listToolsAttachment.body) {
+    const listToolsContent = listToolsAttachment
+      ? await this.getAttachmentContent(listToolsAttachment)
+      : null;
+    if (listToolsContent) {
       try {
-        const listToolsData = JSON.parse(
-          listToolsAttachment.body.toString('utf-8')
-        ) as {
+        const listToolsData = JSON.parse(listToolsContent) as {
           operation: string;
           toolCount: number;
           tools: Array<{ name: string; description?: string }>;
@@ -200,11 +223,12 @@ export default class MCPReporter implements Reporter {
     );
 
     for (const attachment of mcpCallAttachments) {
-      if (!attachment.body) continue;
+      const callContent = await this.getAttachmentContent(attachment);
+      if (!callContent) continue;
 
       try {
         // Attachment now includes authType and project from the mcp fixture
-        const callData = JSON.parse(attachment.body.toString('utf-8')) as {
+        const callData = JSON.parse(callContent) as {
           operation: string;
           toolName: string;
           args: Record<string, unknown>;
