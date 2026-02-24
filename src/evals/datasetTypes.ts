@@ -75,6 +75,20 @@ export interface EvalCase {
   metadata?: Record<string, unknown>;
 
   /**
+   * Number of times to run this case and compute an accuracy score.
+   * When > 1, `EvalCaseResult.accuracy` is populated and `pass` is determined
+   * by `accuracyThreshold` rather than a single run.
+   * @default 1
+   */
+  iterations?: number;
+
+  /**
+   * Minimum accuracy (0–1) required to pass when `iterations > 1`.
+   * @default 1.0 (all iterations must pass)
+   */
+  accuracyThreshold?: number;
+
+  /**
    * Expectations to validate against the tool response
    *
    * Multiple expectations can be combined and will all be validated.
@@ -266,6 +280,8 @@ export const EvalCaseSchema = z.object({
   scenario: z.string().optional(),
   llmHostConfig: LLMHostConfigSchema.optional(),
   metadata: z.record(z.unknown()).optional(),
+  iterations: z.number().int().min(1).optional(),
+  accuracyThreshold: z.number().min(0).max(1).optional(),
   expect: EvalExpectBlockSchema.optional(),
 });
 

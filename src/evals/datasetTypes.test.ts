@@ -109,6 +109,42 @@ describe('datasetTypes', () => {
     });
   });
 
+  describe('iterations and accuracyThreshold', () => {
+    it('should accept iterations and accuracyThreshold on a case', () => {
+      const raw = {
+        name: 'test',
+        cases: [
+          {
+            id: 'multi-iter',
+            toolName: 'add',
+            args: { a: 1, b: 2 },
+            iterations: 5,
+            accuracyThreshold: 0.8,
+          },
+        ],
+      };
+      const result = validateEvalDataset(raw);
+      expect(result.cases[0].iterations).toBe(5);
+      expect(result.cases[0].accuracyThreshold).toBe(0.8);
+    });
+
+    it('should reject iterations below 1', () => {
+      const raw = {
+        name: 'test',
+        cases: [{ id: 'bad', toolName: 'add', args: {}, iterations: 0 }],
+      };
+      expect(() => validateEvalDataset(raw)).toThrow();
+    });
+
+    it('should reject accuracyThreshold outside 0-1', () => {
+      const raw = {
+        name: 'test',
+        cases: [{ id: 'bad', toolName: 'add', args: {}, accuracyThreshold: 1.5 }],
+      };
+      expect(() => validateEvalDataset(raw)).toThrow();
+    });
+  });
+
   describe('validateEvalDataset', () => {
     it('should validate minimal dataset', () => {
       const dataset: SerializedEvalDataset = {
