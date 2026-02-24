@@ -35,7 +35,9 @@ export type ExpectationType =
   | 'snapshot'
   | 'judge'
   | 'error'
-  | 'size';
+  | 'size'
+  | 'toolsTriggered'
+  | 'toolCallCount';
 
 /**
  * Result of an expectation check

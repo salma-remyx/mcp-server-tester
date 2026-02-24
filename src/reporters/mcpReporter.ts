@@ -330,6 +330,8 @@ export default class MCPReporter implements Reporter {
       judge: 0,
       error: 0,
       size: 0,
+      toolsTriggered: 0,
+      toolCallCount: 0,
     };
 
     let passed = 0;
@@ -346,6 +348,8 @@ export default class MCPReporter implements Reporter {
       if (r.expectations.snapshot) expectationBreakdown.snapshot++;
       if (r.expectations.judge) expectationBreakdown.judge++;
       if (r.expectations.error) expectationBreakdown.error++;
+      if (r.expectations.toolsTriggered) expectationBreakdown.toolsTriggered++;
+      if (r.expectations.toolCallCount) expectationBreakdown.toolCallCount++;
     }
 
     const failed = total - passed;
