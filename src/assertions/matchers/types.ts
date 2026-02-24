@@ -13,6 +13,7 @@ import type {
   SnapshotSanitizer,
 } from '../validators/types.js';
 import type { JudgeConfig } from '../../judge/judgeTypes.js';
+import type { ToolCallExpectation, ToolCallCountOptions } from '../validators/toolCalls.js';
 
 /**
  * Options for the LLM judge matcher
@@ -199,6 +200,30 @@ declare global {
         predicate: ToolPredicate,
         description?: string
       ): Promise<R>;
+
+      /**
+       * Validates which tools the LLM called during an llm_host simulation.
+       *
+       * @example
+       * ```typescript
+       * expect(simulationResult).toHaveToolCalls({
+       *   calls: [{ name: 'search', arguments: { query: 'hello' }, required: true }],
+       *   order: 'any',
+       * });
+       * ```
+       */
+      toHaveToolCalls(expectation: ToolCallExpectation): R;
+
+      /**
+       * Validates the number of tool calls made during an llm_host simulation.
+       *
+       * @example
+       * ```typescript
+       * expect(simulationResult).toHaveToolCallCount({ min: 1, max: 3 });
+       * expect(simulationResult).toHaveToolCallCount({ exact: 2 });
+       * ```
+       */
+      toHaveToolCallCount(options: ToolCallCountOptions): R;
     }
   }
 }

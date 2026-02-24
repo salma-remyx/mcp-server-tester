@@ -18,6 +18,8 @@ import { toBeToolError } from './toBeToolError.js';
 import { toPassToolJudge } from './toPassToolJudge.js';
 import { toHaveToolResponseSize } from './toHaveToolResponseSize.js';
 import { toSatisfyToolPredicate } from './toSatisfyToolPredicate.js';
+import { toHaveToolCalls } from './toHaveToolCalls.js';
+import { toHaveToolCallCount } from './toHaveToolCallCount.js';
 
 // Import types for global declaration
 import './types.js';
@@ -48,6 +50,8 @@ export const expect = baseExpect.extend({
   toPassToolJudge,
   toHaveToolResponseSize,
   toSatisfyToolPredicate,
+  toHaveToolCalls,
+  toHaveToolCallCount,
 });
 
 // Re-export types
