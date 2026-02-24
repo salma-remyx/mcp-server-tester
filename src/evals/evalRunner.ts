@@ -210,6 +210,13 @@ export interface EvalRunnerOptions {
    * Optional callback called after each case
    */
   onCaseComplete?: (result: EvalCaseResult) => void | Promise<void>;
+
+  /**
+   * Maximum number of eval cases to run concurrently.
+   * When > 1, cases run in parallel (ignores stopOnFailure ordering).
+   * @default 1 (sequential)
+   */
+  concurrency?: number;
 }
 
 /**
@@ -571,6 +578,29 @@ export async function runEvalCase(
 }
 
 /**
+ * Runs an array of async tasks with bounded concurrency.
+ * Preserves result ordering.
+ */
+async function runWithConcurrency<T>(
+  tasks: Array<() => Promise<T>>,
+  limit: number
+): Promise<T[]> {
+  const results: T[] = new Array(tasks.length);
+  let index = 0;
+
+  async function worker() {
+    while (index < tasks.length) {
+      const i = index++;
+      results[i] = await tasks[i]!();
+    }
+  }
+
+  const workerCount = Math.min(limit, tasks.length);
+  await Promise.all(Array.from({ length: workerCount }, worker));
+  return results;
+}
+
+/**
  * Runs an eval dataset against an MCP server
  *
  * This function composes runEvalCase() for each case in the dataset,
@@ -608,14 +638,11 @@ export async function runEvalDataset(
     schemas,
     judgeConfigs,
     stopOnFailure = false,
+    concurrency = 1,
     onCaseComplete,
   } = options;
 
   const startTime = Date.now();
-  const caseResults: EvalCaseResult[] = [];
-
-  // Context is used as-is (judge is handled via judgeConfigs in expect block)
-  const enrichedContext = context;
 
   // Merge schemas from dataset and options
   const allSchemas = {
@@ -623,25 +650,33 @@ export async function runEvalDataset(
     ...schemas,
   };
 
-  // Run each case
-  for (const evalCase of dataset.cases) {
-    const result = await runEvalCase(evalCase, enrichedContext, {
+  // Build task factories for all cases
+  const tasks = dataset.cases.map((evalCase) => async () => {
+    const result = await runEvalCase(evalCase, context, {
       datasetName: dataset.name,
       schemas: allSchemas,
       judgeConfigs,
     });
 
-    caseResults.push(result);
-
-    // Call onCaseComplete callback
     if (onCaseComplete) {
       await onCaseComplete(result);
     }
 
-    // Stop on failure if requested
-    if (stopOnFailure && !result.pass) {
-      break;
+    return result;
+  });
+
+  let caseResults: EvalCaseResult[];
+
+  if (concurrency === 1 || stopOnFailure) {
+    // Sequential path — required when stopOnFailure is set
+    caseResults = [];
+    for (const task of tasks) {
+      const result = await task();
+      caseResults.push(result);
+      if (stopOnFailure && !result.pass) break;
     }
+  } else {
+    caseResults = await runWithConcurrency(tasks, concurrency);
   }
 
   const total = caseResults.length;

@@ -402,6 +402,44 @@ describe('multi-iteration cases', () => {
   });
 });
 
+describe('runEvalDataset concurrency', () => {
+  function createDataset(cases: EvalCase[]): EvalDataset {
+    return { name: 'test-dataset', cases };
+  }
+
+  it('should run cases concurrently when concurrency > 1', async () => {
+    const startTimes: number[] = [];
+    const mcp = createMockMCP();
+    vi.mocked(mcp.callTool).mockImplementation(async () => {
+      startTimes.push(Date.now());
+      await new Promise((r) => setTimeout(r, 30)); // simulate latency
+      return { content: [{ type: 'text', text: 'ok' }], isError: false };
+    });
+
+    const dataset = createDataset([
+      createEvalCase({ id: 'c1' }),
+      createEvalCase({ id: 'c2' }),
+      createEvalCase({ id: 'c3' }),
+    ]);
+
+    const start = Date.now();
+    await runEvalDataset({ dataset, concurrency: 3 }, createContext(mcp));
+    const elapsed = Date.now() - start;
+
+    // 3 cases with 30ms each, run in parallel → should complete in ~30-60ms not ~90ms
+    expect(elapsed).toBeLessThan(80);
+  });
+
+  it('should default to sequential execution (concurrency: 1)', async () => {
+    const dataset = createDataset([
+      createEvalCase({ id: 's1' }),
+      createEvalCase({ id: 's2' }),
+    ]);
+    const result = await runEvalDataset({ dataset }, createContext());
+    expect(result.total).toBe(2);
+  });
+});
+
 describe('runEvalDataset', () => {
   function createDataset(cases: EvalCase[]): EvalDataset {
     return {
