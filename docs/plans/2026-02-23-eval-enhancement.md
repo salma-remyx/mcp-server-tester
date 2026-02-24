@@ -731,15 +731,13 @@ function createMockMCP(): MCPFixtureApi {
     authType: 'none',
     project: undefined,
     getServerInfo: vi.fn().mockReturnValue(null),
-    listTools: vi
-      .fn()
-      .mockResolvedValue([
-        {
-          name: 'get_weather',
-          description: 'Get weather',
-          inputSchema: { type: 'object', properties: {} },
-        },
-      ]),
+    listTools: vi.fn().mockResolvedValue([
+      {
+        name: 'get_weather',
+        description: 'Get weather',
+        inputSchema: { type: 'object', properties: {} },
+      },
+    ]),
     callTool: vi.fn().mockResolvedValue({
       content: [{ type: 'text', text: 'Sunny, 20°C' }],
       isError: false,

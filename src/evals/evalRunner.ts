@@ -191,13 +191,7 @@ async function executeToolCall(
       }
 
       const result = await mcp.callTool(evalCase.toolName, evalCase.args);
-
-      // For error expectations, return the full result so isError can be checked
-      // For other expectations, return the content (backwards compatible)
-      if (evalCase.expect?.isError !== undefined) {
-        return { response: result };
-      }
-      return { response: result.structuredContent ?? result.content };
+      return { response: result };
     }
   } catch (err) {
     return {

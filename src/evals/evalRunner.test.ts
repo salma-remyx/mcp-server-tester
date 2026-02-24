@@ -58,7 +58,7 @@ describe('runEvalCase', () => {
       expect(result.response).toBeDefined();
     });
 
-    it('should use structuredContent when available', async () => {
+    it('should return full CallToolResult as response', async () => {
       const mcp = createMockMCP({
         content: [{ type: 'text', text: 'fallback' }],
         structuredContent: { data: 'structured' },
@@ -68,7 +68,12 @@ describe('runEvalCase', () => {
 
       const result = await runEvalCase(evalCase, context);
 
-      expect(result.response).toEqual({ data: 'structured' });
+      // response is the full CallToolResult, not just structuredContent
+      expect(result.response).toMatchObject({
+        content: [{ type: 'text', text: 'fallback' }],
+        structuredContent: { data: 'structured' },
+        isError: false,
+      });
     });
 
     it('should pass when no expect block is provided', async () => {
@@ -202,11 +207,18 @@ describe('runEvalCase', () => {
 
     it('should validate expect.response for exact match', async () => {
       const mcp = createMockMCP({
-        structuredContent: { status: 'ok', count: 42 },
+        content: [{ type: 'text', text: 'status: ok' }],
       });
       const context = createContext(mcp);
+      // The response is now the full CallToolResult, so the expected value must match it
       const evalCase = createEvalCase({
-        expect: { response: { status: 'ok', count: 42 } },
+        expect: {
+          response: {
+            content: [{ type: 'text', text: 'status: ok' }],
+            structuredContent: undefined,
+            isError: false,
+          },
+        },
       });
 
       const result = await runEvalCase(evalCase, context);
@@ -406,14 +418,16 @@ describe('multi-iteration cases', () => {
 
 describe('toolsTriggered and toolCallCount expectations in eval runner', () => {
   it('populates toolsTriggered expectation result when simulation result contains expected tool', async () => {
-    // A structuredContent that matches LLMHostSimulationResult shape is recognized by the validator
-    const simulationResult = {
+    // callTool returns an object that itself has the LLMHostSimulationResult shape.
+    // After the fix, response = full callTool return value, so isSimulationResult
+    // checks the top-level object directly.
+    const mcp = createMockMCP();
+    vi.mocked(mcp.callTool).mockResolvedValue({
       success: true,
       toolCalls: [{ name: 'search', arguments: { query: 'hello' } }],
       response: 'Done',
-    };
+    } as unknown as Awaited<ReturnType<typeof mcp.callTool>>);
 
-    const mcp = createMockMCP({ structuredContent: simulationResult });
     const evalCase = createEvalCase({
       expect: {
         toolsTriggered: {
@@ -428,13 +442,13 @@ describe('toolsTriggered and toolCallCount expectations in eval runner', () => {
   });
 
   it('fails toolsTriggered when required tool was not called', async () => {
-    const simulationResult = {
+    const mcp = createMockMCP();
+    vi.mocked(mcp.callTool).mockResolvedValue({
       success: true,
       toolCalls: [{ name: 'other', arguments: {} }],
       response: 'Done',
-    };
+    } as unknown as Awaited<ReturnType<typeof mcp.callTool>>);
 
-    const mcp = createMockMCP({ structuredContent: simulationResult });
     const evalCase = createEvalCase({
       expect: {
         toolsTriggered: {
@@ -449,7 +463,7 @@ describe('toolsTriggered and toolCallCount expectations in eval runner', () => {
   });
 
   it('fails toolsTriggered with informative message when response is not a simulation', async () => {
-    // A plain text response is not a simulation result
+    // A plain text response (standard CallToolResult) is not a simulation result
     const mcp = createMockMCP({
       content: [{ type: 'text', text: 'plain text' }],
     });
@@ -464,16 +478,16 @@ describe('toolsTriggered and toolCallCount expectations in eval runner', () => {
   });
 
   it('validates toolCallCount correctly from simulation result', async () => {
-    const simulationResult = {
+    const mcp = createMockMCP();
+    vi.mocked(mcp.callTool).mockResolvedValue({
       success: true,
       toolCalls: [
         { name: 'a', arguments: {} },
         { name: 'b', arguments: {} },
       ],
       response: 'Done',
-    };
+    } as unknown as Awaited<ReturnType<typeof mcp.callTool>>);
 
-    const mcp = createMockMCP({ structuredContent: simulationResult });
     const evalCase = createEvalCase({
       expect: { toolCallCount: { min: 1, max: 3 } },
     });

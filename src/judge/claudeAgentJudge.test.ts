@@ -361,6 +361,83 @@ describe('claudeAgentJudge', () => {
     });
   });
 
+  describe('parseJudgeResponse edge cases', () => {
+    it('parses plain JSON response', async () => {
+      mockQueryResponse(
+        '{"pass":true,"score":0.85,"reasoning":"clear answer"}'
+      );
+
+      const judge = createClaudeAgentJudge({});
+      const result = await judge.evaluate('candidate', 'reference', 'rubric');
+
+      expect(result.pass).toBe(true);
+      expect(result.score).toBe(0.85);
+      expect(result.reasoning).toBe('clear answer');
+    });
+
+    it('strips ```json code block and parses', async () => {
+      mockQueryResponse(
+        '```json\n{"pass":true,"score":0.9,"reasoning":"good"}\n```'
+      );
+
+      const judge = createClaudeAgentJudge({});
+      const result = await judge.evaluate('candidate', 'reference', 'rubric');
+
+      expect(result.pass).toBe(true);
+      expect(result.score).toBe(0.9);
+      expect(result.reasoning).toBe('good');
+    });
+
+    it('strips plain ``` code block and parses', async () => {
+      mockQueryResponse(
+        '```\n{"pass":false,"score":0.3,"reasoning":"poor"}\n```'
+      );
+
+      const judge = createClaudeAgentJudge({});
+      const result = await judge.evaluate('candidate', 'reference', 'rubric');
+
+      expect(result.pass).toBe(false);
+      expect(result.score).toBe(0.3);
+      expect(result.reasoning).toBe('poor');
+    });
+
+    it('extracts JSON from text with surrounding explanation', async () => {
+      mockQueryResponse(
+        'Here is my evaluation: {"pass":true,"score":0.8,"reasoning":"ok"} hope that helps'
+      );
+
+      const judge = createClaudeAgentJudge({});
+      const result = await judge.evaluate('candidate', 'reference', 'rubric');
+
+      expect(result.pass).toBe(true);
+      expect(result.score).toBe(0.8);
+      expect(result.reasoning).toBe('ok');
+    });
+
+    it('throws when response has no parseable JSON', async () => {
+      mockQueryResponse('I cannot evaluate this response.');
+
+      const judge = createClaudeAgentJudge({});
+
+      await expect(
+        judge.evaluate('candidate', 'reference', 'rubric')
+      ).rejects.toThrow('Failed to parse judge response as JSON');
+    });
+
+    it('handles response with score but no pass field', async () => {
+      // JSON parses successfully but has no "pass" key — defaults to false via ?? false
+      mockQueryResponse('{"score":0.6,"reasoning":"partial credit"}');
+
+      const judge = createClaudeAgentJudge({});
+      const result = await judge.evaluate('candidate', 'reference', 'rubric');
+
+      // pass defaults to false when absent
+      expect(result.pass).toBe(false);
+      expect(result.score).toBe(0.6);
+      expect(result.reasoning).toBe('partial credit');
+    });
+  });
+
   describe('prompt construction', () => {
     it('includes candidate in prompt', async () => {
       mockQueryResponse(
