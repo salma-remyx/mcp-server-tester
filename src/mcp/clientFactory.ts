@@ -1,6 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js';
 import type { MCPConfig } from '../config/mcpConfig.js';
 import {
@@ -106,14 +107,8 @@ export async function createMCPClientForConfig(
       headers.Authorization = `Bearer ${validatedConfig.auth.accessToken}`;
     }
 
-    const transport = new StreamableHTTPClientTransport(
-      new URL(validatedConfig.serverUrl),
-      {
-        requestInit: Object.keys(headers).length > 0 ? { headers } : undefined,
-        // Pass auth provider for OAuth flow - MCP SDK handles it automatically
-        authProvider: options?.authProvider,
-      }
-    );
+    const url = new URL(validatedConfig.serverUrl);
+    const requestInit = Object.keys(headers).length > 0 ? { headers } : undefined;
 
     debugClient('Connecting via HTTP: %O', {
       serverUrl: validatedConfig.serverUrl,
@@ -122,7 +117,20 @@ export async function createMCPClientForConfig(
       hasAuthProvider: !!options?.authProvider,
     });
 
-    await client.connect(transport);
+    // Try Streamable HTTP first (MCP spec 2025-03-26), fall back to SSE (2024-11-05)
+    try {
+      const streamableTransport = new StreamableHTTPClientTransport(url, {
+        requestInit,
+        authProvider: options?.authProvider,
+      });
+      await client.connect(streamableTransport);
+      debugClient('Connected via Streamable HTTP');
+    } catch {
+      debugClient('Streamable HTTP failed, falling back to SSE transport');
+      const sseTransport = new SSEClientTransport(url, { requestInit });
+      await client.connect(sseTransport);
+      debugClient('Connected via SSE');
+    }
   }
 
   debugClient('Connected successfully');

@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   MockClient: vi.fn(),
   MockStdioClientTransport: vi.fn(),
   MockStreamableHTTPClientTransport: vi.fn(),
+  MockSSEClientTransport: vi.fn(),
 }));
 
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
@@ -20,6 +21,10 @@ vi.mock('@modelcontextprotocol/sdk/client/stdio.js', () => ({
 
 vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
   StreamableHTTPClientTransport: mocks.MockStreamableHTTPClientTransport,
+}));
+
+vi.mock('@modelcontextprotocol/sdk/client/sse.js', () => ({
+  SSEClientTransport: mocks.MockSSEClientTransport,
 }));
 
 import { createMCPClientForConfig, closeMCPClient } from './clientFactory.js';
@@ -123,6 +128,37 @@ describe('clientFactory', () => {
     });
 
     describe('http transport', () => {
+      it('falls back to SSE when StreamableHTTP connect fails', async () => {
+        // First connect (StreamableHTTP) fails, second (SSE) succeeds
+        mocks.mockConnect
+          .mockRejectedValueOnce(new Error('Streamable HTTP not supported'))
+          .mockResolvedValueOnce(undefined);
+
+        const config = {
+          transport: 'http' as const,
+          serverUrl: 'http://localhost:3000/mcp',
+        };
+
+        await createMCPClientForConfig(config);
+
+        expect(mocks.MockStreamableHTTPClientTransport).toHaveBeenCalled();
+        expect(mocks.MockSSEClientTransport).toHaveBeenCalled();
+        expect(mocks.mockConnect).toHaveBeenCalledTimes(2);
+      });
+
+      it('does not fall back to SSE when StreamableHTTP succeeds', async () => {
+        const config = {
+          transport: 'http' as const,
+          serverUrl: 'http://localhost:3000/mcp',
+        };
+
+        await createMCPClientForConfig(config);
+
+        expect(mocks.MockStreamableHTTPClientTransport).toHaveBeenCalled();
+        expect(mocks.MockSSEClientTransport).not.toHaveBeenCalled();
+        expect(mocks.mockConnect).toHaveBeenCalledTimes(1);
+      });
+
       it('creates client with http transport', async () => {
         const config = {
           transport: 'http' as const,
