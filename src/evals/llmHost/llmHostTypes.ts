@@ -8,9 +8,20 @@
 import type { MCPFixtureApi } from '../../mcp/fixtures/mcpFixture.js';
 
 /**
- * LLM provider for host simulation
+ * LLM provider for host simulation.
+ * 'openai' and 'anthropic' use their native SDKs (legacy adapters).
+ * All others require the Vercel AI SDK (`ai` package).
  */
-export type LLMProvider = 'openai' | 'anthropic';
+export type LLMProvider =
+  | 'openai'
+  | 'anthropic'
+  | 'azure'
+  | 'google'
+  | 'mistral'
+  | 'ollama'
+  | 'deepseek'
+  | 'openrouter'
+  | 'xai';
 
 /**
  * Configuration for LLM host simulation
@@ -127,6 +138,16 @@ export interface LLMHostSimulationResult {
     role: 'user' | 'assistant' | 'tool';
     content: string;
   }>;
+
+  /**
+   * Milliseconds spent waiting for LLM responses (excludes MCP tool execution time)
+   */
+  llmDurationMs?: number;
+
+  /**
+   * Milliseconds spent executing MCP tool calls (excludes LLM response time)
+   */
+  mcpDurationMs?: number;
 }
 
 /**

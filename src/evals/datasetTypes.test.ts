@@ -145,6 +145,20 @@ describe('datasetTypes', () => {
     });
   });
 
+  describe('LLMProvider expansion', () => {
+    it('should accept new provider values in llmHostConfig', () => {
+      const providers = ['openai', 'anthropic', 'google', 'mistral', 'azure', 'ollama', 'deepseek', 'openrouter', 'xai'];
+      for (const provider of providers) {
+        expect(() =>
+          validateEvalDataset({
+            name: 'test',
+            cases: [{ id: 'c', mode: 'llm_host', scenario: 's', llmHostConfig: { provider } }],
+          })
+        ).not.toThrow();
+      }
+    });
+  });
+
   describe('validateEvalDataset', () => {
     it('should validate minimal dataset', () => {
       const dataset: SerializedEvalDataset = {

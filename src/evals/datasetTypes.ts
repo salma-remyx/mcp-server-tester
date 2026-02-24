@@ -214,7 +214,17 @@ export interface EvalDataset {
  * Zod schema for LLMHostConfig (simplified for serialization)
  */
 const LLMHostConfigSchema = z.object({
-  provider: z.enum(['openai', 'anthropic']),
+  provider: z.enum([
+    'openai',
+    'anthropic',
+    'azure',
+    'google',
+    'mistral',
+    'ollama',
+    'deepseek',
+    'openrouter',
+    'xai',
+  ]),
   apiKeyEnvVar: z.string().optional(),
   model: z.string().optional(),
   maxTokens: z.number().optional(),
