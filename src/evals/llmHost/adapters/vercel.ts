@@ -1,0 +1,193 @@
+/**
+ * Vercel AI SDK-based LLM host orchestrator.
+ *
+ * Replaces the custom agentic loop with generateText + stopWhen (ai v6),
+ * giving access to 9 providers and built-in latency decomposition.
+ *
+ * Requires the `ai` package (v6+) as an optional peer dependency.
+ * Additional providers require their respective @ai-sdk/* packages.
+ */
+import type {
+  LLMHostConfig,
+  LLMHostSimulationResult,
+  LLMHostSimulator,
+  LLMProvider,
+  LLMToolCall,
+} from '../llmHostTypes.js';
+import type { MCPFixtureApi } from '../../../mcp/fixtures/mcpFixture.js';
+import { extractText } from '../../../mcp/response.js';
+
+// Dynamic import helper bypasses TypeScript module resolution for optional peer deps.
+// Each @ai-sdk/* package is optional — install only the providers you need.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function loadModel(provider: LLMProvider, model: string): Promise<any> {
+  switch (provider) {
+    case 'openai': {
+      const { openai } = await import('@ai-sdk/openai');
+      return openai(model);
+    }
+    case 'anthropic': {
+      const { anthropic } = await import('@ai-sdk/anthropic');
+      return anthropic(model);
+    }
+    case 'google': {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore - optional: npm install @ai-sdk/google
+      const { google } = await import('@ai-sdk/google');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (google as any)(model);
+    }
+    case 'mistral': {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore - optional: npm install @ai-sdk/mistral
+      const { mistral } = await import('@ai-sdk/mistral');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (mistral as any)(model);
+    }
+    case 'azure': {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore - optional: npm install @ai-sdk/azure
+      const { azure } = await import('@ai-sdk/azure');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (azure as any)(model);
+    }
+    case 'ollama': {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore - optional: npm install @ai-sdk/ollama
+      const { ollama } = await import('@ai-sdk/ollama');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (ollama as any)(model);
+    }
+    case 'deepseek': {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore - optional: npm install @ai-sdk/deepseek
+      const { deepseek } = await import('@ai-sdk/deepseek');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (deepseek as any)(model);
+    }
+    case 'openrouter': {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore - optional: npm install @openrouter/ai-sdk-provider
+      const { openrouter } = await import('@openrouter/ai-sdk-provider');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (openrouter as any)(model);
+    }
+    case 'xai': {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore - optional: npm install @ai-sdk/xai
+      const { xai } = await import('@ai-sdk/xai');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (xai as any)(model);
+    }
+    default:
+      throw new Error(`Unsupported Vercel AI SDK provider: ${String(provider)}`);
+  }
+}
+
+function defaultModel(provider: LLMProvider): string {
+  switch (provider) {
+    case 'openai':
+      return 'gpt-4o';
+    case 'anthropic':
+      return 'claude-3-5-sonnet-20241022';
+    case 'google':
+      return 'gemini-1.5-pro';
+    case 'mistral':
+      return 'mistral-large-latest';
+    default:
+      return 'default';
+  }
+}
+
+/**
+ * Creates a Vercel AI SDK-based LLM host simulator.
+ *
+ * Uses generateText with stopWhen (ai v6) to handle multi-turn tool calling.
+ * Produces llmDurationMs and mcpDurationMs for latency decomposition.
+ */
+export function createVercelOrchestrator(): LLMHostSimulator {
+  return {
+    async simulate(
+      mcp: MCPFixtureApi,
+      scenario: string,
+      config: LLMHostConfig
+    ): Promise<LLMHostSimulationResult> {
+      try {
+        const { generateText, stepCountIs } = await import('ai');
+
+        const modelId = config.model ?? defaultModel(config.provider);
+        const model = await loadModel(config.provider, modelId);
+
+        // Get available MCP tools and wrap them for Vercel AI SDK
+        const mcpTools = await mcp.listTools();
+        let mcpDurationMs = 0;
+        const allToolCalls: LLMToolCall[] = [];
+
+        // Build tool definitions in Vercel AI SDK format.
+        // Uses any because the tool() generic requires inferred parameter types
+        // which aren't available from MCP's JSON Schema at compile time.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const tools: Record<string, any> = {};
+        const { tool } = await import('ai');
+        for (const mcpTool of mcpTools) {
+          const toolName = mcpTool.name;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          tools[toolName] = (tool as any)({
+            description: mcpTool.description ?? '',
+            parameters: mcpTool.inputSchema,
+            execute: async (args: Record<string, unknown>) => {
+              const mcpStart = Date.now();
+              const result = await mcp.callTool(toolName, args);
+              mcpDurationMs += Date.now() - mcpStart;
+
+              allToolCalls.push({ name: toolName, arguments: args });
+              return extractText(result);
+            },
+          });
+        }
+
+        const maxSteps = config.maxToolCalls ?? 10;
+        const llmStart = Date.now();
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result = await (generateText as any)({
+          model,
+          prompt: scenario,
+          tools,
+          stopWhen: stepCountIs(maxSteps),
+          temperature: config.temperature ?? 0,
+          maxTokens: config.maxTokens,
+        });
+
+        const totalDurationMs = Date.now() - llmStart;
+        const llmDurationMs = totalDurationMs - mcpDurationMs;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const conversationHistory = (result.steps ?? []).map((step: any) => ({
+          role: (
+            step.toolCalls?.length > 0 ? 'tool' : 'assistant'
+          ) as 'tool' | 'assistant',
+          content:
+            step.toolCalls?.length > 0
+              ? JSON.stringify(step.toolResults)
+              : (step.text ?? ''),
+        }));
+
+        return {
+          success: true,
+          toolCalls: allToolCalls,
+          response: result.text as string,
+          llmDurationMs,
+          mcpDurationMs,
+          conversationHistory,
+        };
+      } catch (err) {
+        return {
+          success: false,
+          toolCalls: [],
+          error: err instanceof Error ? err.message : String(err),
+        };
+      }
+    },
+  };
+}

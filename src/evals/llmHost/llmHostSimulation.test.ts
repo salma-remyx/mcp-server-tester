@@ -115,6 +115,10 @@ describe('llmHostSimulation', () => {
       expect(isProviderAvailable('anthropic')).toBe(true);
     });
 
+    it('should report google as an available provider', () => {
+      expect(isProviderAvailable('google')).toBe(true);
+    });
+
     it('returns false for unknown providers', () => {
       // @ts-expect-error - testing invalid provider
       expect(isProviderAvailable('unknown')).toBe(false);
