@@ -21,6 +21,8 @@
 #### :boom: Breaking Change
 * [#14](https://github.com/mcp-testing/server-tester/pull/14) feat: unified assertion architecture with Playwright matchers ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
 
+See [Migration Guide (v0.11)](docs/migration-0.11.md) for upgrade instructions.
+
 #### Committers: 1
 - Steve Calvert ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
 

@@ -27,7 +27,10 @@ export type ExpectationType =
   | 'regex'
   | 'snapshot'
   | 'judge'
-  | 'error';
+  | 'error'
+  | 'size'
+  | 'toolsTriggered'
+  | 'toolCallCount';
 
 /**
  * Result of an expectation check
@@ -93,6 +96,13 @@ export interface EvalCaseResult {
   durationMs: number;
   /** @deprecated Mode is inferred from test context */
   mode?: 'direct' | 'llm_host';
+  // Multi-iteration accuracy fields
+  accuracy?: number;
+  iterationResults?: Array<{
+    pass: boolean;
+    durationMs: number;
+    error?: string;
+  }>;
 }
 
 /**

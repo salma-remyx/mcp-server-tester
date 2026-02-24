@@ -4,12 +4,7 @@ import type { EvalDataset, EvalCase, EvalExpectBlock } from './datasetTypes.js';
 import type { TestInfo, Expect } from '@playwright/test';
 import type { ZodType } from 'zod';
 import { simulateLLMHost } from './llmHost/llmHostSimulation.js';
-import type {
-  AuthType,
-  ResultSource,
-  ExpectationType,
-  EvalExpectationResult,
-} from '../types/index.js';
+import type { EvalCaseResult, IterationResult } from '../types/reporter.js';
 import {
   validateResponse,
   validateSchema,
@@ -46,98 +41,7 @@ export interface EvalContext {
 
 export type { EvalExpectationResult } from '../types/index.js';
 
-/**
- * Result of a single iteration within a multi-iteration eval case
- */
-export interface IterationResult {
-  /** Whether this iteration passed */
-  pass: boolean;
-  /** Execution time for this iteration */
-  durationMs: number;
-  /** Error message if the iteration failed with an exception */
-  error?: string;
-}
-
-/**
- * Result of a single eval case
- */
-export interface EvalCaseResult {
-  /**
-   * Case ID
-   */
-  id: string;
-
-  /**
-   * Dataset name this case belongs to
-   */
-  datasetName: string;
-
-  /**
-   * MCP tool name that was called
-   */
-  toolName: string;
-
-  /**
-   * Evaluation mode (direct or llm_host)
-   * @deprecated Mode is inferred from test context, not displayed in reports
-   */
-  mode?: 'direct' | 'llm_host';
-
-  /**
-   * Source of this result
-   * - 'eval': From runEvalDataset() using JSON eval datasets
-   * - 'test': From direct API test tracking (MCP fixture calls)
-   */
-  source: ResultSource;
-
-  /**
-   * Overall pass/fail status
-   */
-  pass: boolean;
-
-  /**
-   * Tool response
-   */
-  response?: unknown;
-
-  /**
-   * Error if tool call failed
-   */
-  error?: string;
-
-  /**
-   * Expectation results
-   */
-  expectations: Partial<Record<ExpectationType, EvalExpectationResult>>;
-
-  /**
-   * Authentication type used for this test
-   */
-  authType?: AuthType;
-
-  /**
-   * Playwright project name this test belongs to
-   * Used for filtering/grouping results by project in the reporter
-   */
-  project?: string;
-
-  /**
-   * Execution time in milliseconds
-   */
-  durationMs: number;
-
-  /**
-   * Accuracy score (0–1) across all iterations.
-   * Only present when the case was run with `iterations > 1`.
-   */
-  accuracy?: number;
-
-  /**
-   * Per-iteration pass/fail breakdown.
-   * Only present when the case was run with `iterations > 1`.
-   */
-  iterationResults?: Array<IterationResult>;
-}
+export type { EvalCaseResult, IterationResult } from '../types/reporter.js';
 
 /**
  * Overall result of running an eval dataset

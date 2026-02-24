@@ -84,6 +84,8 @@ export interface LLMToolCall {
 
 /**
  * Result of a tool call validation
+ *
+ * @deprecated Unused — will be removed in next major release
  */
 export interface ToolCallValidationResult {
   /**

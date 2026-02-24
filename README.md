@@ -54,6 +54,7 @@ expect(result.passed).toBe(result.total);
 - 🤖 **LLM-as-a-Judge** - Optional semantic evaluation using Anthropic Claude
 - 🔌 **Multiple Transports** - Support for both stdio (local) and HTTP (remote) connections
 - ✅ **Protocol Conformance** - Built-in checks for MCP spec compliance
+- 🤖 **LLM Host Simulation** — Test tool discovery with real LLMs ([docs](docs/llm-host.md))
 
 ## Installation
 
@@ -92,11 +93,7 @@ Here's what a complete test suite looks like (following the **layered testing pa
 ```typescript
 // tests/mcp.spec.ts
 import { test, expect } from '@gleanwork/mcp-server-tester/fixtures/mcp';
-import {
-  loadEvalDataset,
-  runEvalDataset,
-  createSchemaExpectation,
-} from '@gleanwork/mcp-server-tester';
+import { loadEvalDataset, runEvalDataset } from '@gleanwork/mcp-server-tester';
 import { z } from 'zod';
 
 // Layer 1: MCP Protocol Conformance
@@ -131,7 +128,7 @@ test.describe('File Operations', () => {
 });
 
 // Layer 3: Eval Datasets
-test('file operations eval', async ({ mcp }) => {
+test('file operations eval', async ({ mcp }, testInfo) => {
   const FileContentSchema = z.object({
     content: z.string(),
   });
@@ -140,15 +137,7 @@ test('file operations eval', async ({ mcp }) => {
     schemas: { 'file-content': FileContentSchema },
   });
 
-  const result = await runEvalDataset(
-    {
-      dataset,
-      expectations: {
-        schema: createSchemaExpectation(dataset),
-      },
-    },
-    { mcp }
-  );
+  const result = await runEvalDataset({ dataset }, { mcp, testInfo });
 
   expect(result.passed).toBe(result.total);
 });
@@ -163,13 +152,17 @@ test('file operations eval', async ({ mcp }) => {
       "id": "read-config",
       "toolName": "read_file",
       "args": { "path": "/tmp/config.json" },
-      "expectedSchemaName": "file-content"
+      "expect": {
+        "schema": "file-content"
+      }
     },
     {
       "id": "read-readme",
       "toolName": "read_file",
       "args": { "path": "/tmp/README.md" },
-      "expectedTextContains": ["# Welcome", "## Installation"]
+      "expect": {
+        "containsText": ["# Welcome", "## Installation"]
+      }
     }
   ]
 }
@@ -205,6 +198,7 @@ export default defineConfig({
 - **[UI Reporter](./docs/ui-reporter.md)** - Interactive web UI for test results
 - **[Transports](./docs/transports.md)** - Stdio vs HTTP configuration
 - **[Development](./docs/development.md)** - Contributing and building
+- [LLM Host Simulation Guide](docs/llm-host.md)
 
 ## Examples
 
@@ -282,8 +276,10 @@ For responses with variable data, use sanitizers:
   "id": "get-user",
   "toolName": "get_user",
   "args": { "id": "123" },
-  "expectedSnapshot": "user-profile",
-  "snapshotSanitizers": ["uuid", "iso-date", { "remove": ["lastLoginAt"] }]
+  "expect": {
+    "snapshot": "user-profile",
+    "snapshotSanitizers": ["uuid", "iso-date", { "remove": ["lastLoginAt"] }]
+  }
 }
 ```
 
@@ -400,6 +396,16 @@ See [UI Reporter Guide](./docs/ui-reporter.md) for features and usage.
 - **Documentation**: See [`docs/`](./docs) directory
 - **Examples**: See [`examples/`](./examples) directory
 - **Issues**: [GitHub Issues](https://github.com/gleanwork/mcp-server-tester/issues)
+
+## Upgrading
+
+### v0.12.x from v0.11.x
+
+No breaking changes.
+
+### v0.11.x from v0.10.x
+
+The assertion API changed significantly. See the [v0.11 Migration Guide](docs/migration-0.11.md).
 
 ## License
 

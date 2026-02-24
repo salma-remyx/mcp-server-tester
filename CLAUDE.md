@@ -47,8 +47,8 @@ npm run format:check        # Check formatting
 
 The assertion architecture provides a single API for both inline tests and data-driven evals:
 
-- **`validators/`** - Pure validation functions: `validateText`, `validateSchema`, `validatePattern`, `validateError`, `validateSize`, `validateResponse`
-- **`matchers/`** - Playwright custom matchers: `toContainToolText`, `toMatchToolSchema`, `toMatchToolPattern`, `toBeToolError`, `toHaveToolResponseSize`, `toMatchToolResponse`, `toMatchToolSnapshot`, `toPassToolJudge`, `toSatisfyToolPredicate`
+- **`validators/`** - Pure validation functions: `validateText`, `validateSchema`, `validatePattern`, `validateError`, `validateSize`, `validateResponse`, `validateToolCalls`, `validateToolCallCount`
+- **`matchers/`** - Playwright custom matchers (see table below)
 
 ```typescript
 // Inline test usage
@@ -68,6 +68,22 @@ const result = validateText(response, ['temperature']);
 if (!result.pass) console.log(result.message);
 ```
 
+### Available Matchers
+
+| Matcher                                  | Purpose                                       |
+| ---------------------------------------- | --------------------------------------------- |
+| `toMatchToolResponse(expected)`          | Exact response match (deep equal)             |
+| `toContainToolText(text)`                | Response contains text substring(s)           |
+| `toMatchToolPattern(pattern)`            | Response matches regex pattern(s)             |
+| `toMatchToolSchema(schema)`              | Response validates against Zod schema         |
+| `toMatchToolSnapshot(name, sanitizers?)` | Response matches saved snapshot               |
+| `toBeToolError(expected?)`               | Response is (or is not) an error              |
+| `toPassToolJudge(rubric, options?)`      | Response passes LLM-as-judge evaluation       |
+| `toHaveToolResponseSize(options)`        | Response size is within bounds                |
+| `toSatisfyToolPredicate(fn, desc?)`      | Response satisfies custom predicate           |
+| `toHaveToolCalls(expectation)`           | LLM called the expected tools (llm_host mode) |
+| `toHaveToolCallCount(options)`           | LLM made N tool calls (llm_host mode)         |
+
 ### Playwright Fixtures (`src/fixtures/mcp.ts`)
 
 The main test fixture provides:
@@ -85,6 +101,52 @@ Public API is defined in `src/index.ts`. The package has multiple export paths:
 - `./fixtures/mcp` - Playwright test fixtures
 - `./fixtures/mcpAuth` - Auth-specific fixtures for OAuth/token auth
 - `./reporters/mcpReporter` - Custom reporter
+
+### Multi-Iteration Accuracy
+
+Eval cases can be run multiple times to compute accuracy (win rate):
+
+```json
+{
+  "id": "search-trigger",
+  "mode": "llm_host",
+  "scenario": "Find recent docs about planning",
+  "llmHostConfig": { "provider": "anthropic" },
+  "iterations": 5,
+  "accuracyThreshold": 0.8,
+  "expect": {
+    "toolsTriggered": {
+      "calls": [{ "name": "search", "required": true }]
+    }
+  }
+}
+```
+
+- `iterations`: Run case N times (default: 1). When > 1, result has `accuracy` (0-1) and `iterationResults[]`
+- `accuracyThreshold`: Minimum accuracy to pass (default: 1.0)
+
+### Concurrency
+
+Run multiple eval cases in parallel:
+
+```typescript
+await runEvalDataset({ dataset, concurrency: 4 }, { mcp, testInfo });
+```
+
+### Tool Call Assertions (llm_host mode only)
+
+```json
+"expect": {
+  "toolsTriggered": {
+    "calls": [{ "name": "search", "required": true }],
+    "order": "any",
+    "exclusive": false
+  },
+  "toolCallCount": { "min": 1, "max": 5 }
+}
+```
+
+Validators: `validateToolCalls(response, expectation)`, `validateToolCallCount(response, options)`
 
 ## Type Architecture
 
@@ -142,8 +204,8 @@ Use conventional commits: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore
 ### New Matcher
 
 1. Create `src/assertions/matchers/toMyMatcher.ts` using a validator
-2. Register in `src/assertions/matchers/index.ts`
-3. Add TypeScript declaration in `src/assertions/matchers/types.ts`
+2. Import and add to the single `expect.extend({})` call in `src/assertions/matchers/index.ts`
+3. Add TypeScript declaration in `src/assertions/matchers/types.ts` (inside the `PlaywrightTest.Matchers` interface)
 4. Export from `src/index.ts`
 
 ### New LLM Judge Provider
@@ -151,6 +213,19 @@ Use conventional commits: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore
 1. Add to `ProviderKind` in `src/judge/judgeTypes.ts`
 2. Implement `Judge` interface in `src/judge/myProviderJudge.ts`
 3. Add to switch in `src/judge/judgeClient.ts`
+
+### New LLM Host Provider (llm_host mode)
+
+Supported `LLMProvider` values for `llmHostConfig.provider` (defined in `src/evals/llmHost/llmHostTypes.ts`):
+
+`'openai' | 'anthropic' | 'azure' | 'google' | 'mistral' | 'ollama' | 'deepseek' | 'openrouter' | 'xai'`
+
+To add a new provider:
+
+1. Add to `LLMProvider` union in `src/evals/llmHost/llmHostTypes.ts`
+2. Add to the `provider` enum in `LLMHostConfigSchema` in `src/evals/datasetTypes.ts`
+3. Create an adapter in `src/evals/llmHost/adapters/`
+4. Register in `src/evals/llmHost/adapter.ts`
 
 ### New Transport Type
 

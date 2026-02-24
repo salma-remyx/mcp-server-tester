@@ -264,8 +264,8 @@ export function createMCPFixture(
             2
           ),
         })
-        .catch(() => {
-          // Ignore attachment errors for sync methods
+        .catch((err) => {
+          console.error('[MCPFixture] Failed to attach server info:', err);
         });
 
       return result;

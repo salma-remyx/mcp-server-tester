@@ -14,6 +14,15 @@ export default defineConfig([
     outDir: 'dist',
     tsconfig: './tsconfig.build.json',
     // shims: false - main library doesn't use __dirname/__filename
+    external: [
+      '@ai-sdk/google',
+      '@ai-sdk/mistral',
+      '@ai-sdk/azure',
+      '@ai-sdk/ollama',
+      '@ai-sdk/deepseek',
+      '@openrouter/ai-sdk-provider',
+      '@ai-sdk/xai',
+    ],
   },
   // CLI build
   {

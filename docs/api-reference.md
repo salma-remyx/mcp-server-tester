@@ -280,16 +280,17 @@ const dataset = await loadEvalDataset('./data/evals.json', {
 
 ### `runEvalDataset(options, context)`
 
-Run an eval dataset with expectations.
+Run an eval dataset. Expectations are defined per-case in the dataset's `expect` blocks.
 
 **Parameters:**
 
 - `options: object`
   - `dataset: EvalDataset` - Dataset to run
-  - `expectations: Record<string, EvalExpectation>` - Expectations to apply
+  - `concurrency?: number` - Max parallel cases (default: 1 = sequential)
   - `judgeClient?: LLMJudgeClient` - Optional LLM judge client
 - `context: object`
   - `mcp: MCPFixtureApi` - MCP fixture API
+  - `testInfo: TestInfo` - Playwright test info (required for snapshot support)
 
 **Returns:** `Promise<EvalResult>`
 
@@ -297,13 +298,9 @@ Run an eval dataset with expectations.
 const result = await runEvalDataset(
   {
     dataset,
-    expectations: {
-      schema: createSchemaExpectation(dataset),
-      exact: createExactExpectation(),
-    },
     judgeClient,
   },
-  { mcp }
+  { mcp, testInfo }
 );
 
 console.log(`Passed: ${result.passed}/${result.total}`);
@@ -562,6 +559,48 @@ interface ConformanceResult {
 
 ## Type Definitions
 
+### `EvalExpectBlock`
+
+```typescript
+interface EvalExpectBlock {
+  response?: unknown; // Exact response match
+  schema?: string; // Schema name to validate against
+  containsText?: string | string[]; // Text substrings that must be present
+  matchesPattern?: string | string[]; // Regex patterns that must match
+  snapshot?: string; // Snapshot name for comparison
+  snapshotSanitizers?: SnapshotSanitizer[]; // Sanitizers for snapshot
+  isError?: boolean | string | string[]; // Error expectation
+  passesJudge?: {
+    // LLM-as-judge evaluation
+    rubric: string;
+    reference?: unknown;
+    threshold?: number;
+    configId?: string;
+  };
+  responseSize?: {
+    // Size validation
+    maxBytes?: number;
+    minBytes?: number;
+  };
+  toolsTriggered?: {
+    // Tool call assertion (llm_host mode)
+    calls: Array<{
+      name: string;
+      arguments?: Record<string, unknown>;
+      required?: boolean;
+    }>;
+    order?: 'strict' | 'any';
+    exclusive?: boolean;
+  };
+  toolCallCount?: {
+    // Tool call count (llm_host mode)
+    min?: number;
+    max?: number;
+    exact?: number;
+  };
+}
+```
+
 ### `EvalCase`
 
 ```typescript
@@ -569,10 +608,9 @@ interface EvalCase {
   id: string;
   toolName: string;
   args: Record<string, unknown>;
-  expectedExact?: unknown;
-  expectedSchemaName?: string;
-  expectedTextContains?: string[];
-  expectedRegex?: string[];
+  expect?: EvalExpectBlock;
+  iterations?: number; // Run N times for accuracy scoring (default: 1)
+  accuracyThreshold?: number; // Min fraction to pass (0-1, default: 1.0)
   judgeConfigId?: string;
 }
 ```
