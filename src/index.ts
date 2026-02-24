@@ -97,6 +97,8 @@ export {
   validatePattern,
   validateError,
   validateSize,
+  validateToolCalls,
+  validateToolCallCount,
   getResponseSizeBytes,
   normalizeWhitespace,
 } from './assertions/validators/index.js';
@@ -113,6 +115,11 @@ export type {
   FieldRemovalSanitizer,
   SchemaRegistry,
 } from './assertions/validators/types.js';
+
+export type {
+  ToolCallExpectation,
+  ToolCallCountOptions,
+} from './assertions/validators/toolCalls.js';
 
 export type {
   JudgeMatcherOptions,
