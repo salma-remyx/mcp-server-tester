@@ -1,0 +1,189 @@
+/**
+ * Tool call validators for llm_host simulation results.
+ *
+ * These validators extract the tool call trace from an LLMHostSimulationResult
+ * and apply assertions against expected call lists and counts.
+ */
+import type { ValidationResult } from './types.js';
+import type { LLMHostSimulationResult, LLMToolCall } from '../../evals/llmHost/llmHostTypes.js';
+
+export interface ToolCallExpectation {
+  calls: Array<{
+    name: string;
+    arguments?: Record<string, unknown>;
+    required?: boolean;
+  }>;
+  order?: 'strict' | 'any';
+  exclusive?: boolean;
+}
+
+export interface ToolCallCountOptions {
+  min?: number;
+  max?: number;
+  exact?: number;
+}
+
+function isSimulationResult(value: unknown): value is LLMHostSimulationResult {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'success' in value &&
+    'toolCalls' in value &&
+    Array.isArray((value as LLMHostSimulationResult).toolCalls)
+  );
+}
+
+function partialMatch(
+  actual: Record<string, unknown>,
+  expected: Record<string, unknown>
+): boolean {
+  return Object.entries(expected).every(([k, v]) => {
+    const actualVal = actual[k];
+    if (
+      typeof v === 'object' &&
+      v !== null &&
+      typeof actualVal === 'object' &&
+      actualVal !== null
+    ) {
+      return partialMatch(
+        actualVal as Record<string, unknown>,
+        v as Record<string, unknown>
+      );
+    }
+    return JSON.stringify(actualVal) === JSON.stringify(v);
+  });
+}
+
+function findMatchingCall(
+  actual: LLMToolCall[],
+  expected: ToolCallExpectation['calls'][number],
+  startIndex = 0
+): number {
+  for (let i = startIndex; i < actual.length; i++) {
+    const call = actual[i]!;
+    if (call.name !== expected.name) continue;
+    if (
+      expected.arguments !== undefined &&
+      !partialMatch(call.arguments ?? {}, expected.arguments)
+    ) {
+      continue;
+    }
+    return i;
+  }
+  return -1;
+}
+
+/**
+ * Validates tool calls made during an LLM host simulation.
+ *
+ * @param response - Must be an LLMHostSimulationResult (from llm_host mode)
+ * @param expectation - Expected tool call specification
+ */
+export function validateToolCalls(
+  response: unknown,
+  expectation: ToolCallExpectation
+): ValidationResult {
+  if (!isSimulationResult(response)) {
+    return {
+      pass: false,
+      message:
+        'toolsTriggered expectation requires llm_host mode — response must be an LLMHostSimulationResult',
+    };
+  }
+
+  const actual = response.toolCalls;
+  const order = expectation.order ?? 'any';
+
+  if (order === 'strict') {
+    // All calls must appear in the specified sequence
+    let searchFrom = 0;
+    for (const expected of expectation.calls) {
+      const idx = findMatchingCall(actual, expected, searchFrom);
+      if (idx === -1) {
+        if (expected.required !== false) {
+          return {
+            pass: false,
+            message: `Expected tool '${expected.name}' to be called in sequence (starting from position ${searchFrom}), but it was not found`,
+          };
+        }
+      } else {
+        searchFrom = idx + 1;
+      }
+    }
+  } else {
+    // Any order: each required call must appear somewhere
+    const required = expectation.calls.filter((c) => c.required !== false);
+    for (const expected of required) {
+      const idx = findMatchingCall(actual, expected);
+      if (idx === -1) {
+        const argsNote =
+          expected.arguments !== undefined
+            ? ` with args ${JSON.stringify(expected.arguments)}`
+            : '';
+        return {
+          pass: false,
+          message: `Expected tool '${expected.name}'${argsNote} to be called, but it was not`,
+        };
+      }
+    }
+  }
+
+  if (expectation.exclusive === true) {
+    const allowedNames = new Set(expectation.calls.map((c) => c.name));
+    const unexpected = actual.filter((c) => !allowedNames.has(c.name));
+    if (unexpected.length > 0) {
+      const names = unexpected.map((c) => `'${c.name}'`).join(', ');
+      return {
+        pass: false,
+        message: `Unexpected tool calls: ${names}. Only ${[...allowedNames].map((n) => `'${n}'`).join(', ')} are allowed`,
+      };
+    }
+  }
+
+  return { pass: true, message: 'All tool call expectations met' };
+}
+
+/**
+ * Validates the number of tool calls made during an LLM host simulation.
+ *
+ * @param response - Must be an LLMHostSimulationResult (from llm_host mode)
+ * @param options - Count constraints (min, max, exact)
+ */
+export function validateToolCallCount(
+  response: unknown,
+  options: ToolCallCountOptions
+): ValidationResult {
+  if (!isSimulationResult(response)) {
+    return {
+      pass: false,
+      message:
+        'toolCallCount expectation requires llm_host mode — response must be an LLMHostSimulationResult',
+    };
+  }
+
+  const count = response.toolCalls.length;
+  const { min, max, exact } = options;
+
+  if (exact !== undefined && count !== exact) {
+    return {
+      pass: false,
+      message: `Expected exactly ${exact} tool call(s), but got ${count}`,
+    };
+  }
+
+  if (min !== undefined && count < min) {
+    return {
+      pass: false,
+      message: `Expected at least ${min} tool call(s), but got ${count}`,
+    };
+  }
+
+  if (max !== undefined && count > max) {
+    return {
+      pass: false,
+      message: `Expected at most ${max} tool call(s), but got ${count}`,
+    };
+  }
+
+  return { pass: true, message: `Tool call count (${count}) is within expected range` };
+}

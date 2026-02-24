@@ -26,6 +26,8 @@ export { validateText } from './text.js';
 export { validatePattern } from './pattern.js';
 export { validateError } from './error.js';
 export { validateSize } from './size.js';
+export { validateToolCalls, validateToolCallCount } from './toolCalls.js';
+export type { ToolCallExpectation, ToolCallCountOptions } from './toolCalls.js';
 
 // Export utilities
 export {
