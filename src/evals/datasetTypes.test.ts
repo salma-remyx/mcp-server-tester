@@ -145,6 +145,33 @@ describe('datasetTypes', () => {
     });
   });
 
+  describe('toolsTriggered and toolCallCount', () => {
+    it('should preserve toolsTriggered in expect block after validation', () => {
+      const raw = {
+        name: 'test',
+        cases: [
+          {
+            id: 'tool-trigger-test',
+            mode: 'llm_host',
+            scenario: 'Search for documents',
+            llmHostConfig: { provider: 'openai' },
+            expect: {
+              toolsTriggered: {
+                calls: [{ name: 'search', required: true }],
+                order: 'any',
+              },
+              toolCallCount: { min: 1, max: 3 },
+            },
+          },
+        ],
+      };
+      const result = validateEvalDataset(raw);
+      expect(result.cases[0]!.expect?.toolsTriggered).toBeDefined();
+      expect(result.cases[0]!.expect?.toolsTriggered?.calls[0]!.name).toBe('search');
+      expect(result.cases[0]!.expect?.toolCallCount?.min).toBe(1);
+    });
+  });
+
   describe('LLMProvider expansion', () => {
     it('should accept new provider values in llmHostConfig', () => {
       const providers = ['openai', 'anthropic', 'google', 'mistral', 'azure', 'ollama', 'deepseek', 'openrouter', 'xai'];

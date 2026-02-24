@@ -178,6 +178,41 @@ export interface EvalExpectBlock {
     /** Minimum required size in bytes */
     minBytes?: number;
   };
+
+  /**
+   * Asserts which tools the LLM called during an llm_host simulation.
+   * Only meaningful for llm_host mode — direct mode has no tool call trace.
+   */
+  toolsTriggered?: {
+    /** Expected tool calls */
+    calls: Array<{
+      /** Tool name */
+      name: string;
+      /** Expected arguments (partial match — extra keys are allowed) */
+      arguments?: Record<string, unknown>;
+      /** Whether this call MUST have been made (default: true) */
+      required?: boolean;
+    }>;
+    /**
+     * 'strict': calls must appear in the exact order listed
+     * 'any': calls can appear in any order (default)
+     */
+    order?: 'strict' | 'any';
+    /** If true, no tool calls outside the `calls` list are allowed */
+    exclusive?: boolean;
+  };
+
+  /**
+   * Asserts the number of tool calls made during an llm_host simulation.
+   */
+  toolCallCount?: {
+    /** Minimum number of tool calls */
+    min?: number;
+    /** Maximum number of tool calls */
+    max?: number;
+    /** Exact number of tool calls */
+    exact?: number;
+  };
 }
 
 /**
@@ -272,6 +307,26 @@ const EvalExpectBlockSchema = z.object({
     .object({
       maxBytes: z.number().optional(),
       minBytes: z.number().optional(),
+    })
+    .optional(),
+  toolsTriggered: z
+    .object({
+      calls: z.array(
+        z.object({
+          name: z.string(),
+          arguments: z.record(z.unknown()).optional(),
+          required: z.boolean().optional(),
+        })
+      ),
+      order: z.enum(['strict', 'any']).optional(),
+      exclusive: z.boolean().optional(),
+    })
+    .optional(),
+  toolCallCount: z
+    .object({
+      min: z.number().int().min(0).optional(),
+      max: z.number().int().min(0).optional(),
+      exact: z.number().int().min(0).optional(),
     })
     .optional(),
 });
