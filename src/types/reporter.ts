@@ -197,6 +197,11 @@ export interface EvalCaseResult {
    * Only present when the case was run with `iterations > 1`.
    */
   iterationResults?: Array<IterationResult>;
+
+  /**
+   * Tags from the source eval case, for filtering and slicing reports.
+   */
+  tags?: string[];
 }
 
 /**

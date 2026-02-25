@@ -141,6 +141,13 @@ export interface EvalRunnerOptions {
    * ```
    */
   defaultLlmIterations?: number;
+
+  /**
+   * When set, only eval cases whose `tags` array contains at least one of
+   * the specified tags are run. Cases without a `tags` field are excluded.
+   * When undefined or empty, all cases run (default behavior).
+   */
+  filterTags?: string[];
 }
 
 /**
@@ -448,6 +455,7 @@ async function runSingleIteration(
     authType: context.mcp.authType,
     project: context.mcp.project,
     durationMs: Date.now() - startTime,
+    tags: evalCase.tags,
   };
 }
 
@@ -575,6 +583,7 @@ export async function runEvalDataset(
     concurrency = 1,
     defaultLlmIterations,
     onCaseComplete,
+    filterTags,
   } = options;
 
   const startTime = Date.now();
@@ -585,8 +594,16 @@ export async function runEvalDataset(
     ...schemas,
   };
 
+  // Filter cases by tag if filterTags is set (non-empty array)
+  const casesToRun =
+    filterTags && filterTags.length > 0
+      ? dataset.cases.filter((c) =>
+          c.tags?.some((t) => filterTags.includes(t))
+        )
+      : dataset.cases;
+
   // Build task factories for all cases
-  const tasks = dataset.cases.map((evalCase) => async () => {
+  const tasks = casesToRun.map((evalCase) => async () => {
     // Apply defaultLlmIterations to llm_host cases that don't specify iterations.
     // Direct mode cases are deterministic — they always stay at 1 iteration.
     const effectiveCase =

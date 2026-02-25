@@ -103,6 +103,10 @@ export interface EvalCaseResult {
     durationMs: number;
     error?: string;
   }>;
+  /**
+   * Tags from the source eval case, for filtering and slicing reports.
+   */
+  tags?: string[];
 }
 
 /**

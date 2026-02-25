@@ -228,6 +228,34 @@ describe('datasetTypes', () => {
     });
   });
 
+  describe('tags', () => {
+    it('accepts an array of tag strings', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        tags: ['tool-finding', 'multi-hop'],
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('accepts an empty tags array', () => {
+      const result = EvalCaseSchema.safeParse({ id: 'test', tags: [] });
+      expect(result.success).toBe(true);
+    });
+
+    it('is optional — case without tags still validates', () => {
+      const result = EvalCaseSchema.safeParse({ id: 'test' });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects non-string tag values', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        tags: [123],
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
   describe('LLMProvider expansion', () => {
     it('should accept new provider values in llmHostConfig', () => {
       const providers = [

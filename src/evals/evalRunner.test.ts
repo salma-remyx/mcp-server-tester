@@ -804,3 +804,90 @@ describe('runEvalDataset', () => {
     expect(result.caseResults[0]!.pass).toBe(true);
   });
 });
+
+describe('filterTags', () => {
+  function createDataset(cases: EvalCase[]): EvalDataset {
+    return { name: 'filter-test', cases };
+  }
+
+  it('runs only cases that match at least one of the specified tags', async () => {
+    const mcp = createMockMCP();
+    const dataset: EvalDataset = {
+      name: 'filter-test',
+      cases: [
+        { id: 'a', toolName: 'echo', args: {}, tags: ['search'] },
+        { id: 'b', toolName: 'echo', args: {}, tags: ['nav'] },
+        { id: 'c', toolName: 'echo', args: {}, tags: ['search', 'nav'] },
+        { id: 'd', toolName: 'echo', args: {} }, // no tags
+      ],
+    };
+    const result = await runEvalDataset(
+      { dataset, filterTags: ['search'] },
+      createContext(mcp)
+    );
+    // Cases 'a' and 'c' match 'search'; 'b' has only 'nav'; 'd' has no tags
+    expect(result.total).toBe(2);
+    const ids = result.caseResults.map((r) => r.id);
+    expect(ids).toContain('a');
+    expect(ids).toContain('c');
+    expect(ids).not.toContain('b');
+    expect(ids).not.toContain('d');
+  });
+
+  it('runs all cases when filterTags is not set', async () => {
+    const dataset: EvalDataset = {
+      name: 'no-filter-test',
+      cases: [
+        { id: 'x', toolName: 'echo', args: {}, tags: ['search'] },
+        { id: 'y', toolName: 'echo', args: {} },
+      ],
+    };
+    const result = await runEvalDataset(
+      { dataset },
+      createContext()
+    );
+    expect(result.total).toBe(2);
+  });
+
+  it('returns zero cases when no cases match filterTags', async () => {
+    const dataset: EvalDataset = {
+      name: 'no-match-test',
+      cases: [
+        { id: 'x', toolName: 'echo', args: {}, tags: ['search'] },
+      ],
+    };
+    const result = await runEvalDataset(
+      { dataset, filterTags: ['nav'] },
+      createContext()
+    );
+    expect(result.total).toBe(0);
+    expect(result.passed).toBe(0);
+    expect(result.failed).toBe(0);
+  });
+
+  it('runs all cases when filterTags is an empty array', async () => {
+    const dataset = createDataset([
+      createEvalCase({ id: 'p', tags: ['search'] }),
+      createEvalCase({ id: 'q' }),
+    ]);
+    const result = await runEvalDataset(
+      { dataset, filterTags: [] },
+      createContext()
+    );
+    expect(result.total).toBe(2);
+  });
+
+  it('propagates tags onto EvalCaseResult', async () => {
+    const dataset = createDataset([
+      createEvalCase({ id: 'tagged', tags: ['search', 'multi-hop'] }),
+    ]);
+    const result = await runEvalDataset({ dataset }, createContext());
+    expect(result.caseResults[0]!.tags).toEqual(['search', 'multi-hop']);
+  });
+
+  it('leaves tags undefined on EvalCaseResult when case has no tags', async () => {
+    const dataset = createDataset([createEvalCase({ id: 'untagged' })]);
+    const result = await runEvalDataset({ dataset }, createContext());
+    expect(result.caseResults[0]!.tags).toBeUndefined();
+  });
+});

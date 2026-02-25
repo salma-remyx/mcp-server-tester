@@ -106,6 +106,15 @@ export interface EvalCase {
   canonicalAnswer?: string;
 
   /**
+   * Arbitrary string labels for this case.
+   * Use for filtering eval runs with `EvalRunnerOptions.filterTags`
+   * and for slicing results by category.
+   *
+   * @example ['tool-finding', 'multi-hop', 'search']
+   */
+  tags?: string[];
+
+  /**
    * Expectations to validate against the tool response
    *
    * Multiple expectations can be combined and will all be validated.
@@ -370,6 +379,7 @@ export const EvalCaseSchema = z.object({
   accuracyThreshold: z.number().min(0).max(1).optional(),
   judgeReps: z.number().int().min(1).optional(),
   canonicalAnswer: z.string().optional(),
+  tags: z.array(z.string()).optional(),
   expect: EvalExpectBlockSchema.optional(),
 });
 
