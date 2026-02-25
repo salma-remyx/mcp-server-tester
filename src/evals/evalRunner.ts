@@ -256,6 +256,15 @@ interface ExpectBlockConfig {
 }
 
 /**
+ * Return type for runExpectBlockValidations, including optional precision/recall metrics
+ */
+interface ExpectBlockResults {
+  expectations: EvalCaseResult['expectations'];
+  toolPrecision?: number;
+  toolRecall?: number;
+}
+
+/**
  * Processes the new unified expect block using validators
  *
  * This function translates the expect block into validation results,
@@ -265,8 +274,10 @@ async function runExpectBlockValidations(
   expectBlock: EvalExpectBlock,
   response: unknown,
   config: ExpectBlockConfig
-): Promise<EvalCaseResult['expectations']> {
+): Promise<ExpectBlockResults> {
   const results: EvalCaseResult['expectations'] = {};
+  let toolPrecision: number | undefined;
+  let toolRecall: number | undefined;
 
   // response (toMatchToolResponse)
   if (expectBlock.response !== undefined) {
@@ -337,6 +348,8 @@ async function runExpectBlockValidations(
       pass: validation.pass,
       details: validation.message,
     };
+    toolPrecision = validation.metrics?.precision;
+    toolRecall = validation.metrics?.recall;
   }
 
   // toolCallCount (toHaveToolCallCount)
@@ -406,7 +419,7 @@ async function runExpectBlockValidations(
     }
   }
 
-  return results;
+  return { expectations: results, toolPrecision, toolRecall };
 }
 
 /**
@@ -426,19 +439,21 @@ async function runSingleIteration(
 
   // Collect expectation results from expect block
   let expectationResults: EvalCaseResult['expectations'] = {};
+  let toolPrecision: number | undefined;
+  let toolRecall: number | undefined;
 
   if (!error && evalCase.expect) {
-    expectationResults = await runExpectBlockValidations(
-      evalCase.expect,
-      response,
-      {
+    const { expectations, toolPrecision: tp, toolRecall: tr } =
+      await runExpectBlockValidations(evalCase.expect, response, {
         schemas: options.schemas,
         judgeConfigs: options.judgeConfigs,
         playwrightExpect: context.expect,
         judgeReps: evalCase.judgeReps,
         canonicalAnswer: evalCase.canonicalAnswer,
-      }
-    );
+      });
+    expectationResults = expectations;
+    toolPrecision = tp;
+    toolRecall = tr;
   }
 
   // Build result - use test context for authType and project (Playwright is source of truth)
@@ -456,6 +471,8 @@ async function runSingleIteration(
     project: context.mcp.project,
     durationMs: Date.now() - startTime,
     tags: evalCase.tags,
+    toolPrecision,
+    toolRecall,
   };
 }
 

@@ -202,6 +202,20 @@ export interface EvalCaseResult {
    * Tags from the source eval case, for filtering and slicing reports.
    */
   tags?: string[];
+
+  /**
+   * Precision of tool calls made (0–1).
+   * 1.0 means every tool called was expected; <1.0 means unexpected tools were called.
+   * Only populated when exclusive: true in toolsTriggered and the expectation was evaluated.
+   */
+  toolPrecision?: number;
+
+  /**
+   * Recall of required tool calls (0–1).
+   * 1.0 means all required tools were called; <1.0 means some were missed.
+   * Only populated when toolsTriggered expectation was evaluated.
+   */
+  toolRecall?: number;
 }
 
 /**
