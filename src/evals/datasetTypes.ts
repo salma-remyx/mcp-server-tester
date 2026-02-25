@@ -98,6 +98,14 @@ export interface EvalCase {
   judgeReps?: number;
 
   /**
+   * Golden/expected answer for this case.
+   * When set, automatically passed as `reference` to the LLM judge
+   * (unless passesJudge.reference is explicitly provided).
+   * Mirrors EvalV2's `canonical_answer` field.
+   */
+  canonicalAnswer?: string;
+
+  /**
    * Expectations to validate against the tool response
    *
    * Multiple expectations can be combined and will all be validated.
@@ -361,6 +369,7 @@ export const EvalCaseSchema = z.object({
   iterations: z.number().int().min(1).optional(),
   accuracyThreshold: z.number().min(0).max(1).optional(),
   judgeReps: z.number().int().min(1).optional(),
+  canonicalAnswer: z.string().optional(),
   expect: EvalExpectBlockSchema.optional(),
 });
 

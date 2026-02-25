@@ -7,6 +7,7 @@
 import type { ValidationResult } from './types.js';
 import type { JudgeConfig } from '../../judge/judgeTypes.js';
 import { createJudge } from '../../judge/judgeClient.js';
+import { resolveRubric } from '../../judge/rubrics.js';
 
 /**
  * Configuration for the judge validator
@@ -61,6 +62,8 @@ export async function validateJudge(
 ): Promise<ValidationResult> {
   const { rubric, reference, threshold = 0.7, configId, reps = 1 } = config;
 
+  const resolvedRubric = resolveRubric(rubric);
+
   const judgeConfig: JudgeConfig = configId
     ? (judgeConfigs?.[configId] ?? {})
     : {};
@@ -75,7 +78,7 @@ export async function validateJudge(
       const judgeResult = await judge.evaluate(
         response,
         reference ?? null,
-        rubric
+        resolvedRubric
       );
       scores.push(judgeResult.score ?? (judgeResult.pass ? 1.0 : 0.0));
       lastReasoning = judgeResult.reasoning;

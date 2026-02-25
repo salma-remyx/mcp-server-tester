@@ -129,6 +129,9 @@ export interface JudgeResult {
   exceedsMaxToolOutputSize?: boolean;
 }
 
+export type { BuiltInRubric } from './rubrics.js';
+export { BUILT_IN_RUBRICS, resolveRubric, isBuiltInRubric } from './rubrics.js';
+
 /**
  * LLM judge client interface
  */

@@ -213,6 +213,21 @@ describe('datasetTypes', () => {
     });
   });
 
+  describe('canonicalAnswer', () => {
+    it('accepts a canonical answer string', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        canonicalAnswer: 'Paris is the capital of France.',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('is optional — case without canonicalAnswer still validates', () => {
+      const result = EvalCaseSchema.safeParse({ id: 'test' });
+      expect(result.success).toBe(true);
+    });
+  });
+
   describe('LLMProvider expansion', () => {
     it('should accept new provider values in llmHostConfig', () => {
       const providers = [

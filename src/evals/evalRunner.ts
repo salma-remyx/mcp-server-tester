@@ -245,6 +245,7 @@ interface ExpectBlockConfig {
   judgeConfigs?: Record<string, JudgeConfig>;
   playwrightExpect?: Expect;
   judgeReps?: number;
+  canonicalAnswer?: string;
 }
 
 /**
@@ -347,9 +348,17 @@ async function runExpectBlockValidations(
   if (expectBlock.passesJudge !== undefined) {
     const effectiveReps =
       expectBlock.passesJudge.reps ?? config.judgeReps ?? 1;
+    const effectiveReference =
+      expectBlock.passesJudge.reference !== undefined
+        ? expectBlock.passesJudge.reference
+        : config.canonicalAnswer;
     const validation = await validateJudge(
       response,
-      { ...expectBlock.passesJudge, reps: effectiveReps },
+      {
+        ...expectBlock.passesJudge,
+        reference: effectiveReference,
+        reps: effectiveReps,
+      },
       config.judgeConfigs
     );
     results.judge = {
@@ -420,6 +429,7 @@ async function runSingleIteration(
         judgeConfigs: options.judgeConfigs,
         playwrightExpect: context.expect,
         judgeReps: evalCase.judgeReps,
+        canonicalAnswer: evalCase.canonicalAnswer,
       }
     );
   }
