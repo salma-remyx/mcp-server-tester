@@ -244,6 +244,7 @@ interface ExpectBlockConfig {
   schemas?: Record<string, ZodType>;
   judgeConfigs?: Record<string, JudgeConfig>;
   playwrightExpect?: Expect;
+  judgeReps?: number;
 }
 
 /**
@@ -344,9 +345,11 @@ async function runExpectBlockValidations(
 
   // passesJudge (toPassToolJudge)
   if (expectBlock.passesJudge !== undefined) {
+    const effectiveReps =
+      expectBlock.passesJudge.reps ?? config.judgeReps ?? 1;
     const validation = await validateJudge(
       response,
-      expectBlock.passesJudge,
+      { ...expectBlock.passesJudge, reps: effectiveReps },
       config.judgeConfigs
     );
     results.judge = {
@@ -416,6 +419,7 @@ async function runSingleIteration(
         schemas: options.schemas,
         judgeConfigs: options.judgeConfigs,
         playwrightExpect: context.expect,
+        judgeReps: evalCase.judgeReps,
       }
     );
   }

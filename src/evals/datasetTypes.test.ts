@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   validateEvalCase,
   validateEvalDataset,
+  EvalCaseSchema,
   type EvalCase,
   type SerializedEvalDataset,
 } from './datasetTypes.js';
@@ -144,6 +145,42 @@ describe('datasetTypes', () => {
         ],
       };
       expect(() => validateEvalDataset(raw)).toThrow();
+    });
+  });
+
+  describe('judgeReps', () => {
+    it('accepts judgeReps as a positive integer', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        judgeReps: 3,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects judgeReps: 0', () => {
+      const result = EvalCaseSchema.safeParse({ id: 'test', judgeReps: 0 });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects judgeReps: -1', () => {
+      const result = EvalCaseSchema.safeParse({ id: 'test', judgeReps: -1 });
+      expect(result.success).toBe(false);
+    });
+
+    it('accepts passesJudge.reps', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: { passesJudge: { rubric: 'Is it good?', reps: 5 } },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects passesJudge.reps: 0', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: { passesJudge: { rubric: 'Is it good?', reps: 0 } },
+      });
+      expect(result.success).toBe(false);
     });
   });
 

@@ -20,6 +20,8 @@ export interface JudgeValidatorConfig {
   threshold?: number;
   /** Optional config ID to look up from a judgeConfigs registry */
   configId?: string;
+  /** Number of judge evaluations to run. Scores averaged. @default 1 */
+  reps?: number;
 }
 
 /**
@@ -57,7 +59,7 @@ export async function validateJudge(
   config: JudgeValidatorConfig,
   judgeConfigs?: Record<string, JudgeConfig>
 ): Promise<ValidationResult> {
-  const { rubric, reference, threshold = 0.7, configId } = config;
+  const { rubric, reference, threshold = 0.7, configId, reps = 1 } = config;
 
   const judgeConfig: JudgeConfig = configId
     ? (judgeConfigs?.[configId] ?? {})
@@ -65,19 +67,32 @@ export async function validateJudge(
 
   try {
     const judge = createJudge(judgeConfig);
-    const judgeResult = await judge.evaluate(
-      response,
-      reference ?? null,
-      rubric
-    );
-    const score = judgeResult.score ?? (judgeResult.pass ? 1.0 : 0.0);
-    const passed = score >= threshold;
+
+    const scores: number[] = [];
+    let lastReasoning: string | undefined;
+
+    for (let i = 0; i < reps; i++) {
+      const judgeResult = await judge.evaluate(
+        response,
+        reference ?? null,
+        rubric
+      );
+      scores.push(judgeResult.score ?? (judgeResult.pass ? 1.0 : 0.0));
+      lastReasoning = judgeResult.reasoning;
+    }
+
+    const meanScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const passed = meanScore >= threshold;
+    const repNote =
+      reps > 1
+        ? ` (mean of ${reps} reps: [${scores.map((s) => s.toFixed(2)).join(', ')}])`
+        : '';
 
     return {
       pass: passed,
       message: passed
-        ? `Judge passed with score ${score.toFixed(2)}`
-        : `Judge failed with score ${score.toFixed(2)} (threshold: ${threshold}). ${judgeResult.reasoning ?? ''}`,
+        ? `Judge passed with score ${meanScore.toFixed(2)}${repNote}`
+        : `Judge failed with score ${meanScore.toFixed(2)} (threshold: ${threshold})${repNote}. ${lastReasoning ?? ''}`,
     };
   } catch (err) {
     return {

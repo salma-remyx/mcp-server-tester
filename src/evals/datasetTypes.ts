@@ -89,6 +89,15 @@ export interface EvalCase {
   accuracyThreshold?: number;
 
   /**
+   * Number of times to invoke the LLM judge per `passesJudge` assertion.
+   * Scores are averaged; the mean must meet the threshold to pass.
+   * Reduces judge variance caused by non-determinism.
+   * Per-assertion `passesJudge.reps` overrides this value.
+   * @default 1
+   */
+  judgeReps?: number;
+
+  /**
    * Expectations to validate against the tool response
    *
    * Multiple expectations can be combined and will all be validated.
@@ -167,6 +176,8 @@ export interface EvalExpectBlock {
     threshold?: number;
     /** Judge configuration ID */
     configId?: string;
+    /** Number of judge evaluations for this assertion. Overrides EvalCase.judgeReps. */
+    reps?: number;
   };
 
   /**
@@ -302,6 +313,7 @@ const EvalExpectBlockSchema = z.object({
       reference: z.unknown().optional(),
       threshold: z.number().min(0).max(1).optional(),
       configId: z.string().optional(),
+      reps: z.number().int().min(1).optional(),
     })
     .optional(),
   responseSize: z
@@ -348,6 +360,7 @@ export const EvalCaseSchema = z.object({
   metadata: z.record(z.unknown()).optional(),
   iterations: z.number().int().min(1).optional(),
   accuracyThreshold: z.number().min(0).max(1).optional(),
+  judgeReps: z.number().int().min(1).optional(),
   expect: EvalExpectBlockSchema.optional(),
 });
 
