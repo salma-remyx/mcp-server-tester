@@ -26,9 +26,10 @@ export function createOpenAIJudge(config: JudgeConfig = {}): Judge {
       try {
         // @ts-ignore - optional: npm install openai
         openaiModule = await import('openai');
-      } catch {
+      } catch (err) {
         throw new Error(
-          'OpenAI judge requires the `openai` package. Install it with: npm install openai',
+          'OpenAI judge requires the `openai` package. Install it with: npm install openai\n' +
+            `Original error: ${err instanceof Error ? err.message : String(err)}`
         );
       }
 

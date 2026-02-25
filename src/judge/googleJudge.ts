@@ -24,9 +24,10 @@ export function createGoogleJudge(config: JudgeConfig = {}): Judge {
       try {
         // @ts-ignore - optional: npm install @google/generative-ai
         googleModule = await import('@google/generative-ai');
-      } catch {
+      } catch (err) {
         throw new Error(
-          'Google judge requires the `@google/generative-ai` package. Install it with: npm install @google/generative-ai',
+          'Google judge requires the `@google/generative-ai` package. Install it with: npm install @google/generative-ai\n' +
+            `Original error: ${err instanceof Error ? err.message : String(err)}`
         );
       }
 

@@ -17,7 +17,6 @@ describe('createJudge provider routing', () => {
   });
 
   it('throws for "openai" when API key is missing', () => {
-    vi.stubEnv('OPENAI_API_KEY', '');
     // Delete env var to simulate missing
     delete process.env.OPENAI_API_KEY;
     expect(() => createJudge({ provider: 'openai' })).toThrow('API key');
