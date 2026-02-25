@@ -34,13 +34,14 @@ const vercelOrchestrator: LLMHostSimulator = createVercelOrchestrator();
 const allProviders: LLMProvider[] = [
   'openai',
   'anthropic',
-  'google',
   'azure',
+  'google',
   'mistral',
   'ollama',
   'deepseek',
   'openrouter',
   'xai',
+  'vertex-anthropic',
 ];
 
 const simulatorRegistry = new Map<LLMProvider, LLMHostSimulator>(

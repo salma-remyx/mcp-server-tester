@@ -259,6 +259,7 @@ const LLMHostConfigSchema = z.object({
     'deepseek',
     'openrouter',
     'xai',
+    'vertex-anthropic',
   ]),
   apiKeyEnvVar: z.string().optional(),
   model: z.string().optional(),

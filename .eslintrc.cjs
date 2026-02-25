@@ -48,6 +48,7 @@ module.exports = {
     '*.cjs',
     '*.js',
     'playwright.config.ts',
+    'playwright.glean.config.ts',
     'tsup.config.ts',
     'vitest.config.mts',
   ],

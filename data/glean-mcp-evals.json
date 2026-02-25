@@ -1,0 +1,189 @@
+{
+  "name": "glean-mcp-server-evals",
+  "description": "End-to-end eval suite for the Glean remote MCP server (scio-prod-be.glean.com/mcp/default). Covers all 8 tools in direct mode and key tool-triggering scenarios in llm_host mode.",
+  "cases": [
+    {
+      "id": "search-direct-mcp-testing",
+      "description": "Direct: search returns results for a known internal topic",
+      "mode": "direct",
+      "toolName": "search",
+      "args": { "query": "MCP server testing framework" },
+      "expect": {
+        "isError": false,
+        "responseSize": { "minBytes": 100 }
+      }
+    },
+    {
+      "id": "search-direct-glean-product",
+      "description": "Direct: search for Glean product documentation",
+      "mode": "direct",
+      "toolName": "search",
+      "args": { "query": "Glean developer platform API" },
+      "expect": {
+        "isError": false,
+        "responseSize": { "minBytes": 50 }
+      }
+    },
+    {
+      "id": "employee-search-direct-engineering",
+      "description": "Direct: employee search returns people results",
+      "mode": "direct",
+      "toolName": "employee_search",
+      "args": { "query": "engineering" },
+      "expect": {
+        "isError": false,
+        "responseSize": { "minBytes": 50 }
+      }
+    },
+    {
+      "id": "employee-search-direct-by-name",
+      "description": "Direct: search for a specific person by name",
+      "mode": "direct",
+      "toolName": "employee_search",
+      "args": { "query": "Steve Calvert" },
+      "expect": {
+        "isError": false,
+        "containsText": "Steve"
+      }
+    },
+    {
+      "id": "code-search-direct-mcp",
+      "description": "Direct: code search returns results for MCP-related code",
+      "mode": "direct",
+      "toolName": "code_search",
+      "args": { "query": "MCP server handler" },
+      "expect": {
+        "isError": false,
+        "responseSize": { "minBytes": 50 }
+      }
+    },
+    {
+      "id": "user-activity-direct",
+      "description": "Direct: user_activity returns recent activity",
+      "mode": "direct",
+      "toolName": "user_activity",
+      "args": {
+        "start_date": "2026-02-17",
+        "end_date": "2026-02-24"
+      },
+      "expect": {
+        "isError": false
+      }
+    },
+    {
+      "id": "meeting-lookup-direct-recent",
+      "description": "Direct: meeting_lookup returns recent meetings",
+      "mode": "direct",
+      "toolName": "meeting_lookup",
+      "args": { "query": "after:2026-02-17 before:2026-02-24" },
+      "expect": {
+        "isError": false
+      }
+    },
+    {
+      "id": "chat-direct-simple",
+      "description": "Direct: chat returns a coherent response to a simple question",
+      "mode": "direct",
+      "toolName": "chat",
+      "args": {
+        "message": "What does Glean do in one sentence?"
+      },
+      "expect": {
+        "isError": false,
+        "responseSize": { "minBytes": 20 }
+      }
+    },
+    {
+      "id": "llm-host-triggers-search-for-internal-topic",
+      "description": "LLM host: scenario that should trigger search for internal documentation. 3 iterations, 70% accuracy threshold.",
+      "mode": "llm_host",
+      "scenario": "Find recent internal documents about the Glean MCP server and how it works",
+      "llmHostConfig": {
+        "provider": "vertex-anthropic",
+        "model": "claude-3-5-haiku@20241022",
+        "maxToolCalls": 5
+      },
+      "iterations": 3,
+      "accuracyThreshold": 0.67,
+      "expect": {
+        "toolsTriggered": {
+          "calls": [{ "name": "search", "required": true }]
+        }
+      }
+    },
+    {
+      "id": "llm-host-triggers-employee-search-for-people-query",
+      "description": "LLM host: people question should trigger employee_search. 3 iterations, 70% accuracy threshold.",
+      "mode": "llm_host",
+      "scenario": "Who leads the developer platform team at Glean? I want to find out who to talk to about API integrations.",
+      "llmHostConfig": {
+        "provider": "vertex-anthropic",
+        "model": "claude-3-5-haiku@20241022",
+        "maxToolCalls": 5
+      },
+      "iterations": 3,
+      "accuracyThreshold": 0.67,
+      "expect": {
+        "toolsTriggered": {
+          "calls": [{ "name": "employee_search", "required": true }]
+        }
+      }
+    },
+    {
+      "id": "llm-host-triggers-meeting-lookup-for-calendar",
+      "description": "LLM host: calendar question should trigger meeting_lookup. 3 iterations, 67% accuracy threshold.",
+      "mode": "llm_host",
+      "scenario": "What meetings have I had in the last week? Give me a summary of what I've been discussing.",
+      "llmHostConfig": {
+        "provider": "vertex-anthropic",
+        "model": "claude-3-5-haiku@20241022",
+        "maxToolCalls": 5
+      },
+      "iterations": 3,
+      "accuracyThreshold": 0.67,
+      "expect": {
+        "toolsTriggered": {
+          "calls": [{ "name": "meeting_lookup", "required": true }]
+        }
+      }
+    },
+    {
+      "id": "llm-host-triggers-code-search-for-code-question",
+      "description": "LLM host: code question should trigger code_search. 3 iterations, 67% accuracy threshold.",
+      "mode": "llm_host",
+      "scenario": "Find the implementation of the MCP tool handler in our internal codebase",
+      "llmHostConfig": {
+        "provider": "vertex-anthropic",
+        "model": "claude-3-5-haiku@20241022",
+        "maxToolCalls": 5
+      },
+      "iterations": 3,
+      "accuracyThreshold": 0.67,
+      "expect": {
+        "toolsTriggered": {
+          "calls": [{ "name": "code_search", "required": true }]
+        }
+      }
+    },
+    {
+      "id": "llm-host-no-unexpected-tools-for-simple-search",
+      "description": "LLM host: simple knowledge question should use search, not employee_search or meeting_lookup. Tests tool selectivity.",
+      "mode": "llm_host",
+      "scenario": "What is the Glean MCP server and what does it do?",
+      "llmHostConfig": {
+        "provider": "vertex-anthropic",
+        "model": "claude-3-5-haiku@20241022",
+        "maxToolCalls": 3
+      },
+      "iterations": 3,
+      "accuracyThreshold": 0.67,
+      "expect": {
+        "toolsTriggered": {
+          "calls": [{ "name": "search", "required": true }],
+          "exclusive": false
+        },
+        "toolCallCount": { "min": 1, "max": 5 }
+      }
+    }
+  ]
+}

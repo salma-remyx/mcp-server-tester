@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any */
 /**
  * Vercel AI SDK-based LLM host orchestrator.
  *
@@ -30,6 +30,19 @@ async function loadModel(provider: LLMProvider, model: string): Promise<any> {
     case 'anthropic': {
       const { anthropic } = await import('@ai-sdk/anthropic');
       return anthropic(model);
+    }
+    case 'vertex-anthropic': {
+      // Anthropic via Google Vertex AI — uses Application Default Credentials.
+      // Required env vars: GOOGLE_VERTEX_PROJECT, GOOGLE_VERTEX_LOCATION
+      // Install: npm install @ai-sdk/google-vertex
+      // Use this instead of 'anthropic' when api.anthropic.com is not reachable.
+      const { createVertexAnthropic } =
+        await import('@ai-sdk/google-vertex/anthropic');
+      const vertexAnthropic = createVertexAnthropic({
+        project: process.env.GOOGLE_VERTEX_PROJECT,
+        location: process.env.GOOGLE_VERTEX_LOCATION ?? 'us-east5',
+      });
+      return (vertexAnthropic as unknown as (m: string) => unknown)(model);
     }
     case 'google': {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -117,6 +130,10 @@ export function createVercelOrchestrator(): LLMHostSimulator {
     ): Promise<LLMHostSimulationResult> {
       try {
         const { generateText, stepCountIs } = await import('ai');
+        // jsonSchema from @ai-sdk/provider-utils creates a proper Schema object
+        // (with .jsonSchema property) that ai's prepareToolsAndToolChoice can read.
+        // Do NOT use jsonSchema from 'ai' — in v6 it produces the wrong shape.
+        const { jsonSchema } = await import('@ai-sdk/provider-utils');
 
         const modelId = config.model ?? defaultModel(config.provider);
         const model = await loadModel(config.provider, modelId);
@@ -130,14 +147,21 @@ export function createVercelOrchestrator(): LLMHostSimulator {
         // Uses any because the tool() generic requires inferred parameter types
         // which aren't available from MCP's JSON Schema at compile time.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // Build tool definitions using explicit inputSchema (a Schema object with .jsonSchema).
+        // We bypass the tool() helper because ai v6 tool() stores schema as .parameters
+        // but prepareToolsAndToolChoice reads .inputSchema — they're inconsistent in v6.
+        // Using jsonSchema() from @ai-sdk/provider-utils produces the correct Schema object.
         const tools: Record<string, any> = {};
-        const { tool } = await import('ai');
         for (const mcpTool of mcpTools) {
           const toolName = mcpTool.name;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          tools[toolName] = (tool as any)({
+          // Ensure type:'object' is present — Anthropic requires it, some servers omit it.
+          const rawSchema = {
+            type: 'object',
+            ...(mcpTool.inputSchema as Record<string, unknown>),
+          };
+          tools[toolName] = {
             description: mcpTool.description ?? '',
-            parameters: mcpTool.inputSchema,
+            inputSchema: jsonSchema(rawSchema),
             execute: async (args: Record<string, unknown>) => {
               const mcpStart = Date.now();
               const result = await mcp.callTool(toolName, args);
@@ -146,7 +170,7 @@ export function createVercelOrchestrator(): LLMHostSimulator {
               allToolCalls.push({ name: toolName, arguments: args });
               return extractText(result);
             },
-          });
+          };
         }
 
         const maxSteps = config.maxToolCalls ?? 10;

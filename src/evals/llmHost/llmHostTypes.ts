@@ -32,7 +32,15 @@ export type LLMProvider =
   | 'ollama'
   | 'deepseek'
   | 'openrouter'
-  | 'xai';
+  | 'xai'
+  /**
+   * Anthropic Claude via Google Vertex AI.
+   * Requires @ai-sdk/google-vertex and Application Default Credentials (gcloud auth).
+   * Set GOOGLE_VERTEX_PROJECT and GOOGLE_VERTEX_LOCATION env vars.
+   * Use this instead of 'anthropic' in environments where api.anthropic.com is blocked.
+   * @example model: 'claude-3-5-haiku@20241022'
+   */
+  | 'vertex-anthropic';
 
 /**
  * Configuration for LLM host simulation
