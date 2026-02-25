@@ -41,11 +41,15 @@ export interface UsageMetrics {
 /**
  * Valid LLM judge provider kinds.
  *
- * @deprecated 'openai' and 'custom-http' are no longer supported and will
- * throw a runtime error directing you to use 'claude' instead. Use 'claude'
- * (or 'anthropic', which is an alias for 'claude').
+ * Supported providers: 'claude' (or 'anthropic' alias), 'openai', 'google'.
+ * Note: 'custom-http' is no longer supported and will throw a runtime error.
  */
-export type ProviderKind = 'claude' | 'anthropic' | 'openai' | 'custom-http';
+export type ProviderKind =
+  | 'claude'
+  | 'anthropic'
+  | 'openai'
+  | 'google'
+  | 'custom-http';
 
 /**
  * Configuration for an LLM judge
