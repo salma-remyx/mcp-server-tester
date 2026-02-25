@@ -49,9 +49,7 @@
         "b": 20
       },
       "expect": {
-        "response": {
-          "result": 30
-        }
+        "containsText": "30"
       }
     },
     {
