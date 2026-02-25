@@ -176,6 +176,18 @@ export type {
 } from './evals/evalRunner.js';
 export { runEvalDataset, runEvalCase } from './evals/evalRunner.js';
 
+// Baseline eval comparison
+export { saveBaseline, loadBaseline } from './evals/baseline.js';
+
+// Multi-server A/B comparison
+export type {
+  ComparisonOutcome,
+  CaseComparisonResult,
+  ServerComparisonResult,
+  ServerComparisonOptions,
+} from './evals/serverComparison.js';
+export { runServerComparison } from './evals/serverComparison.js';
+
 // LLM Host Simulation
 export type {
   LLMProvider,
