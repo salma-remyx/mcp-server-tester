@@ -7,7 +7,7 @@ Complete API documentation for `@gleanwork/mcp-server-tester`.
 - [Fixtures](#fixtures)
 - [Authentication](#authentication)
 - [Eval Functions](#eval-functions)
-- [Expectation Functions](#expectation-functions)
+- [Playwright Matchers](#playwright-matchers)
 - [Text Utilities](#text-utilities)
 - [Judge Functions](#judge-functions)
 - [Conformance Functions](#conformance-functions)
@@ -321,93 +321,178 @@ interface EvalResult {
 }
 ```
 
-## Expectation Functions
+## Playwright Matchers
 
-### `createExactExpectation()`
-
-Create exact match expectation for structured JSON data.
-
-**Returns:** `EvalExpectation`
+Custom Playwright matchers for writing inline assertions against MCP tool responses. Import `expect` from the package or its fixtures:
 
 ```typescript
-const expectations = {
-  exact: createExactExpectation(),
-};
+import { expect } from '@gleanwork/mcp-server-tester';
+// or, when using fixtures:
+import { test, expect } from '@gleanwork/mcp-server-tester/fixtures/mcp';
 ```
 
-### `createTextContainsExpectation(options?)`
+### `toMatchToolResponse(expected)`
 
-Create text contains expectation for substring matching.
-
-**Parameters:**
-
-- `options?: object`
-  - `caseSensitive?: boolean` - Case-sensitive matching (default: `true`)
-
-**Returns:** `EvalExpectation`
+Assert that the tool response exactly deep-equals the expected value.
 
 ```typescript
-const expectations = {
-  textContains: createTextContainsExpectation(),
-  // Case-insensitive
-  textContainsCI: createTextContainsExpectation({ caseSensitive: false }),
-};
+test('exact response', async ({ mcp }) => {
+  const result = await mcp.callTool('calculate', { a: 2, b: 3 });
+  expect(result).toMatchToolResponse({ result: 5 });
+});
 ```
 
-### `createRegexExpectation()`
+For eval datasets, use the `expect.response` field:
 
-Create regex pattern expectation for format validation.
-
-**Returns:** `EvalExpectation`
-
-```typescript
-const expectations = {
-  regex: createRegexExpectation(),
-};
+```json
+{
+  "id": "calc-test",
+  "toolName": "calculate",
+  "args": { "a": 2, "b": 3 },
+  "expect": {
+    "response": { "result": 5 }
+  }
+}
 ```
 
-### `createSchemaExpectation(dataset)`
+### `toContainToolText(text | text[])`
 
-Create schema validation expectation using Zod schemas.
-
-**Parameters:**
-
-- `dataset: EvalDataset` - Dataset with schemas attached
-
-**Returns:** `EvalExpectation`
+Assert that the tool response text contains the given substring(s).
 
 ```typescript
-const dataset = await loadEvalDataset('./evals.json', {
-  schemas: { user: UserSchema },
+test('text contains', async ({ mcp }) => {
+  const result = await mcp.callTool('get_weather', { city: 'London' });
+  expect(result).toContainToolText('temperature');
+  expect(result).toContainToolText(['London', 'temperature', 'humidity']);
+});
+```
+
+### `toMatchToolPattern(pattern | pattern[])`
+
+Assert that the tool response text matches the given regex pattern(s).
+
+```typescript
+test('pattern match', async ({ mcp }) => {
+  const result = await mcp.callTool('get_weather', { city: 'London' });
+  expect(result).toMatchToolPattern('Temperature: \\d+°[CF]');
+  expect(result).toMatchToolPattern(['^## Weather', '\\d{4}-\\d{2}-\\d{2}']);
+});
+```
+
+### `toMatchToolSchema(schema)`
+
+Assert that the tool response validates against a Zod schema.
+
+```typescript
+import { z } from 'zod';
+
+const WeatherSchema = z.object({
+  city: z.string(),
+  temperature: z.number(),
+  conditions: z.string(),
 });
 
-const expectations = {
-  schema: createSchemaExpectation(dataset),
-};
+test('schema validation', async ({ mcp }) => {
+  const result = await mcp.callTool('get_weather', { city: 'London' });
+  expect(result).toMatchToolSchema(WeatherSchema);
+});
 ```
 
-### `createJudgeExpectation(configs)`
+### `toMatchToolSnapshot(name, sanitizers?)`
 
-Create LLM-as-a-judge expectation for semantic evaluation.
-
-**Parameters:**
-
-- `configs: Record<string, JudgeConfig>` - Judge configurations by ID
-  - `rubric: string` - Evaluation criteria
-  - `passingThreshold: number` - Minimum score (0-1) to pass
-
-**Returns:** `EvalExpectation`
+Assert that the tool response matches a saved Playwright snapshot. Use sanitizers to normalize variable fields (timestamps, UUIDs, etc.) before comparison.
 
 ```typescript
-const expectations = {
-  judge: createJudgeExpectation({
-    'search-relevance': {
-      rubric:
-        'Evaluate if search results are relevant to the query. Score 0-1.',
-      passingThreshold: 0.7,
-    },
-  }),
-};
+test('snapshot', async ({ mcp }, testInfo) => {
+  const result = await mcp.callTool('help', {});
+  expect(result).toMatchToolSnapshot('help-output');
+});
+
+// With sanitizers
+expect(result).toMatchToolSnapshot('user-profile', ['uuid', 'iso-date']);
+```
+
+### `toBeToolError(expected?)`
+
+Assert that the tool response is an error (or is not an error when negated). Optionally assert on the error message.
+
+```typescript
+test('error handling', async ({ mcp }) => {
+  const result = await mcp.callTool('nonexistent_tool', {});
+  expect(result).toBeToolError();
+
+  // Assert specific error message substring
+  expect(result).toBeToolError('not found');
+
+  // Assert response is NOT an error
+  const good = await mcp.callTool('get_weather', { city: 'London' });
+  expect(good).not.toBeToolError();
+});
+```
+
+### `toPassToolJudge(rubric, options?)`
+
+Assert that the tool response passes an LLM-as-a-judge evaluation. Requires a judge client to be configured.
+
+```typescript
+test('semantic quality', async ({ mcp }) => {
+  const result = await mcp.callTool('search_docs', { query: 'authentication' });
+  expect(result).toPassToolJudge(
+    'The results should be relevant to the query about authentication. Score 0-1.',
+    { threshold: 0.7 }
+  );
+});
+```
+
+### `toHaveToolResponseSize(options)`
+
+Assert that the tool response size is within specified byte bounds.
+
+```typescript
+test('response size', async ({ mcp }) => {
+  const result = await mcp.callTool('list_files', {});
+  expect(result).toHaveToolResponseSize({ minBytes: 10, maxBytes: 50000 });
+});
+```
+
+### `toSatisfyToolPredicate(fn, desc?)`
+
+Assert that the tool response satisfies a custom predicate function.
+
+```typescript
+test('custom predicate', async ({ mcp }) => {
+  const result = await mcp.callTool('list_files', {});
+  expect(result).toSatisfyToolPredicate(
+    (r) => Array.isArray(r.content) && r.content.length > 0,
+    'response should contain at least one file'
+  );
+});
+```
+
+### `toHaveToolCalls(expectation)` (llm_host mode only)
+
+Assert that the LLM made specific tool calls when given a natural language prompt. Only meaningful in `llm_host` mode.
+
+```typescript
+test('tool discovery', async ({ mcp }) => {
+  const result = await mcp.callTool('search', { query: 'find recent docs' });
+  expect(result).toHaveToolCalls({
+    calls: [{ name: 'search', required: true }],
+    order: 'any',
+    exclusive: false,
+  });
+});
+```
+
+### `toHaveToolCallCount(options)` (llm_host mode only)
+
+Assert that the LLM made a specific number of tool calls. Only meaningful in `llm_host` mode.
+
+```typescript
+test('call count', async ({ mcp }) => {
+  const result = await mcp.callTool('search', { query: 'find docs' });
+  expect(result).toHaveToolCallCount({ min: 1, max: 5 });
+});
 ```
 
 ## Text Utilities
@@ -519,6 +604,35 @@ const judgeClient = createLLMJudgeClient({
 });
 // Requires: ANTHROPIC_API_KEY environment variable
 ```
+
+### LLM Host Diagnostic Utilities
+
+The following utilities are available for checking whether optional LLM provider packages are installed. They are useful for debugging provider configuration issues but are not part of the typical test-writing path.
+
+#### `isProviderAvailable(provider)`
+
+Check whether the npm package required for a given `llm_host` provider is installed in the current environment.
+
+```typescript
+import { isProviderAvailable } from '@gleanwork/mcp-server-tester';
+
+if (!isProviderAvailable('anthropic')) {
+  console.warn('Install @anthropic-ai/sdk to use the anthropic provider');
+}
+```
+
+#### `getMissingDependencyMessage(provider)`
+
+Return a human-readable message describing the missing dependency for a provider, suitable for displaying in error output or test skip conditions.
+
+```typescript
+import { getMissingDependencyMessage } from '@gleanwork/mcp-server-tester';
+
+const message = getMissingDependencyMessage('openai');
+// e.g. "Provider 'openai' requires the 'openai' package. Run: npm install openai"
+```
+
+See [LLM Host Guide](./llm-host.md) for full details on configuring `llm_host` mode.
 
 ## Conformance Functions
 

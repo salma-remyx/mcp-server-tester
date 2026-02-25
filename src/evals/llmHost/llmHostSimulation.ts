@@ -102,6 +102,9 @@ export function isProviderAvailable(provider: LLMProvider): boolean {
 
 /**
  * Returns a human-readable installation message for a given provider.
+ *
+ * @remarks This is a diagnostic utility for checking whether optional
+ * @ai-sdk/* packages are installed. Not part of the primary usage path.
  */
 export function getMissingDependencyMessage(provider: LLMProvider): string {
   const packageMap: Partial<Record<LLMProvider, string>> = {
@@ -114,6 +117,8 @@ export function getMissingDependencyMessage(provider: LLMProvider): string {
     deepseek: 'npm install ai @ai-sdk/deepseek',
     openrouter: 'npm install ai @openrouter/ai-sdk-provider',
     xai: 'npm install ai @ai-sdk/xai',
+    'vertex-anthropic':
+      'npm install ai @ai-sdk/google-vertex (requires Application Default Credentials — see docs/llm-host.md)',
   };
 
   const pkg = packageMap[provider];

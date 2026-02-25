@@ -2,6 +2,17 @@
 
 This guide covers detailed setup and configuration for `@gleanwork/mcp-server-tester`.
 
+## Before You Start: Two Testing Modes
+
+There are two ways to test an MCP server with this library — choose before you write your first test:
+
+| Mode         | What it tests                                               | When to use                                                             |
+| ------------ | ----------------------------------------------------------- | ----------------------------------------------------------------------- |
+| **Direct**   | You call a tool with specific args and assert on the output | Regression tests, CI, smoke checks — fast and deterministic             |
+| **LLM host** | A real LLM receives your tools and decides which to call    | Testing tool discoverability — requires 10+ iterations, costs API money |
+
+Start with direct mode. Add LLM host mode when you need to validate that your tool descriptions work for real users.
+
 ## Table of Contents
 
 - [CLI Initialization](#cli-initialization)

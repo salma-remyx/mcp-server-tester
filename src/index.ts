@@ -79,11 +79,7 @@ export {
 
 // Response Normalization
 export type { ContentBlock, NormalizedToolResponse } from './mcp/response.js';
-export {
-  normalizeToolResponse,
-  extractText,
-  extractText as extractTextFromResponse,
-} from './mcp/response.js';
+export { normalizeToolResponse, extractText } from './mcp/response.js';
 
 // Assertions - Matchers (primary API)
 // The extended expect with MCP tool matchers is exported via fixtures
@@ -99,6 +95,7 @@ export {
   validateSize,
   validateToolCalls,
   validateToolCallCount,
+  validateJudge,
   getResponseSizeBytes,
   normalizeWhitespace,
 } from './assertions/validators/index.js';
@@ -120,6 +117,8 @@ export type {
   ToolCallExpectation,
   ToolCallCountOptions,
 } from './assertions/validators/toolCalls.js';
+
+export type { JudgeValidatorConfig } from './assertions/validators/judge.js';
 
 export type {
   JudgeMatcherOptions,
@@ -210,7 +209,10 @@ export type {
 } from './spec/conformanceChecks.js';
 export { runConformanceChecks } from './spec/conformanceChecks.js';
 
-// Reporter
+// Reporter types — primarily used by the mcpReporter plugin.
+// These types are available for custom reporter implementations or
+// when consuming reporter output programmatically.
+// Import the reporter itself from '@gleanwork/mcp-server-tester/reporters/mcpReporter'
 export type {
   MCPEvalReporterConfig,
   MCPEvalRunData,

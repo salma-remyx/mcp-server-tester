@@ -97,29 +97,43 @@ export interface MCPFixtureApi {
 }
 
 /**
- * Creates an MCP fixture wrapper around a Client
+ * Creates an MCP fixture wrapper around a Client, providing a high-level
+ * {@link MCPFixtureApi} without requiring Playwright's `test.extend` pattern.
  *
- * When testInfo is provided, automatically tracks all MCP operations with test.step()
- * and creates attachments for the MCP Test Reporter.
+ * Use this when you need to set up an MCP fixture manually — for example in
+ * custom fixture hierarchies, non-Playwright test runners (e.g. Vitest,
+ * Jest), or when you want to compose the fixture with other lifecycle
+ * management logic that doesn't fit the standard `test.extend` model.
  *
- * @param client - The MCP client to wrap
- * @param testInfo - Optional Playwright TestInfo for auto-tracking
+ * For the typical Playwright use case, prefer importing `test` and `mcp`
+ * directly from `@gleanwork/mcp-server-tester/fixtures/mcp`, which wires
+ * this function up automatically.
+ *
+ * When `testInfo` is provided, all MCP operations are automatically wrapped
+ * in `test.step()` calls and attachments are created for the MCP Test
+ * Reporter. Omit `testInfo` for lightweight usage outside Playwright.
+ *
+ * @param client - The MCP client to wrap (created via `createMCPClientForConfig`)
+ * @param testInfo - Optional Playwright TestInfo for auto-tracking and reporter attachments
+ * @param options - Optional fixture options (authType, project)
  * @returns MCPFixtureApi instance
  *
  * @example
  * ```typescript
- * // With tracking (recommended)
+ * // Advanced: custom fixture setup inside test.extend
  * const test = base.extend<{ mcp: MCPFixtureApi }>({
  *   mcp: async ({}, use, testInfo) => {
  *     const client = await createMCPClientForConfig(config);
- *     const api = createMCPFixture(client, testInfo);
+ *     const api = createMCPFixture(client, testInfo, { authType: 'api-token' });
  *     await use(api);
  *     await closeMCPClient(client);
  *   }
  * });
  *
- * // Without tracking
+ * // Non-Playwright usage (no reporter attachments)
+ * const client = await createMCPClientForConfig(config);
  * const api = createMCPFixture(client);
+ * const tools = await api.listTools();
  * ```
  */
 export function createMCPFixture(

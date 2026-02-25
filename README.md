@@ -56,6 +56,21 @@ expect(result.passed).toBe(result.total);
 - ✅ **Protocol Conformance** - Built-in checks for MCP spec compliance
 - 🤖 **LLM Host Simulation** — Test tool discovery with real LLMs ([docs](docs/llm-host.md))
 
+> **Warning:** LLM host mode (`mode: "llm_host"`) makes real LLM API calls on every iteration and incurs API costs. Use direct mode for regression tests and reserve LLM host mode for validating tool descriptions. See [LLM Host Guide](docs/llm-host.md) for details.
+
+## Two Ways to Test
+
+Understanding the difference between the two testing modes will help you choose the right approach:
+
+| Mode         | How it works                                                                                                           | When to use                                         |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| **Direct**   | You call a tool with specific arguments and assert the output. Deterministic and fast. Run once in CI.                 | Regression tests, schema checks, content validation |
+| **LLM host** | A real LLM receives your tool list and a natural language prompt, then decides which tools to call. Non-deterministic. | Validating tool descriptions and discoverability    |
+
+Direct mode is the default for most tests. LLM host mode (`mode: "llm_host"` in eval datasets) is specifically for checking that your tool names, descriptions, and input schemas are clear enough that a real LLM will use them correctly. Because LLM calls are non-deterministic, run LLM host cases 10+ times and measure the accuracy (pass rate) rather than expecting 100% pass on a single run.
+
+> **Cost note:** LLM host mode makes real API calls to the configured provider on every iteration. See the [LLM Host Guide](docs/llm-host.md) for cost management guidance.
+
 ## Installation
 
 ```bash
@@ -406,6 +421,17 @@ No breaking changes.
 ### v0.11.x from v0.10.x
 
 The assertion API changed significantly. See the [v0.11 Migration Guide](docs/migration-0.11.md).
+
+## Known Limitations
+
+The following MCP protocol features are not currently covered by this framework. These are deliberate scope decisions, not bugs:
+
+- **MCP resources** (`listResources`, `readResource`) — no fixture support or eval cases
+- **MCP prompts** (`listPrompts`, `getPrompt`) — no fixture support or eval cases
+- **Server-to-client notifications** — the test client does not expose a notification listener API
+- **Streaming tool responses** — `callTool` waits for the complete response; incremental streaming is not observable
+
+If any of these gaps affect your use case, please open an issue.
 
 ## License
 

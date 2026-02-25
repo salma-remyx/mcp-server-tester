@@ -17,59 +17,65 @@ The framework supports multiple types of expectations to validate MCP tool respo
 
 Validates exact equality of structured data (JSON). Best for predictable, structured responses.
 
-### Usage
-
-```typescript
-import { createExactExpectation } from '@gleanwork/mcp-server-tester';
-
-const expectations = {
-  exact: createExactExpectation(),
-};
-```
-
 ### Dataset Format
+
+Use the `expect.response` field in the eval dataset JSON:
 
 ```json
 {
   "id": "calc-test",
   "toolName": "calculate",
   "args": { "a": 2, "b": 3 },
-  "expectedExact": { "result": 5 }
+  "expect": {
+    "response": { "result": 5 }
+  }
 }
 ```
 
-The `expectedExact` field should contain the exact expected response structure.
+### Inline Test Usage
+
+```typescript
+import { expect } from '@gleanwork/mcp-server-tester';
+
+test('exact response', async ({ mcp }) => {
+  const result = await mcp.callTool('calculate', { a: 2, b: 3 });
+  expect(result).toMatchToolResponse({ result: 5 });
+});
+```
 
 ## Text Contains
 
 Validates that response text contains expected substrings. Ideal for markdown or unstructured text responses.
 
-### Usage
-
-```typescript
-import { createTextContainsExpectation } from '@gleanwork/mcp-server-tester';
-
-const expectations = {
-  textContains: createTextContainsExpectation(),
-  // Optional: case-insensitive matching
-  // textContains: createTextContainsExpectation({ caseSensitive: false }),
-};
-```
-
 ### Dataset Format
+
+Use the `expect.containsText` field in the eval dataset JSON:
 
 ```json
 {
   "id": "markdown-response",
   "toolName": "get_city_info",
   "args": { "city": "London" },
-  "expectedTextContains": [
-    "## City Information",
-    "**City:** London",
-    "### Features",
-    "- Public Transportation"
-  ]
+  "expect": {
+    "containsText": [
+      "## City Information",
+      "**City:** London",
+      "### Features",
+      "- Public Transportation"
+    ]
+  }
 }
+```
+
+### Inline Test Usage
+
+```typescript
+import { expect } from '@gleanwork/mcp-server-tester';
+
+test('text contains', async ({ mcp }) => {
+  const result = await mcp.callTool('get_city_info', { city: 'London' });
+  expect(result).toContainToolText(['## City Information', '**City:** London']);
+});
 ```
 
 ### Options
@@ -87,30 +93,35 @@ const expectations = {
 
 Validates that response text matches regex patterns. Powerful for format validation and flexible pattern matching.
 
-### Usage
-
-```typescript
-import { createRegexExpectation } from '@gleanwork/mcp-server-tester';
-
-const expectations = {
-  regex: createRegexExpectation(),
-};
-```
-
 ### Dataset Format
+
+Use the `expect.matchesPattern` field in the eval dataset JSON:
 
 ```json
 {
   "id": "weather-format",
   "toolName": "get_weather",
   "args": { "city": "London" },
-  "expectedRegex": [
-    "^## Weather",
-    "Temperature: \\d+°[CF]",
-    "Conditions?: (Sunny|Cloudy|Rainy|Snowy)",
-    "\\d{4}-\\d{2}-\\d{2}"
-  ]
+  "expect": {
+    "matchesPattern": [
+      "^## Weather",
+      "Temperature: \\d+°[CF]",
+      "Conditions?: (Sunny|Cloudy|Rainy|Snowy)",
+      "\\d{4}-\\d{2}-\\d{2}"
+    ]
+  }
 }
+```
+
+### Inline Test Usage
+
+```typescript
+import { expect } from '@gleanwork/mcp-server-tester';
+
+test('pattern match', async ({ mcp }) => {
+  const result = await mcp.callTool('get_weather', { city: 'London' });
+  expect(result).toMatchToolPattern(['^## Weather', 'Temperature: \\d+°[CF]']);
+});
 ```
 
 ### Pattern Features
@@ -133,8 +144,10 @@ Validates response structure and types using Zod schemas. Best for structured da
 
 ### Usage
 
+Load the dataset with schemas attached, then reference them by name in each case:
+
 ```typescript
-import { createSchemaExpectation } from '@gleanwork/mcp-server-tester';
+import { loadEvalDataset, runEvalDataset } from '@gleanwork/mcp-server-tester';
 import { z } from 'zod';
 
 const dataset = await loadEvalDataset('./evals.json', {
@@ -147,19 +160,35 @@ const dataset = await loadEvalDataset('./evals.json', {
   },
 });
 
-const expectations = {
-  schema: createSchemaExpectation(dataset),
-};
+const result = await runEvalDataset({ dataset }, { mcp, testInfo });
+```
+
+### Inline Test Usage
+
+```typescript
+import { expect } from '@gleanwork/mcp-server-tester';
+import { z } from 'zod';
+
+const UserSchema = z.object({ id: z.string(), name: z.string() });
+
+test('schema validation', async ({ mcp }) => {
+  const result = await mcp.callTool('get_user', { userId: '123' });
+  expect(result).toMatchToolSchema(UserSchema);
+});
 ```
 
 ### Dataset Format
+
+Use the `expect.schema` field to reference a named Zod schema loaded with `loadEvalDataset`:
 
 ```json
 {
   "id": "get-user",
   "toolName": "get_user",
   "args": { "userId": "123" },
-  "expectedSchemaName": "user-response"
+  "expect": {
+    "schema": "user-response"
+  }
 }
 ```
 
@@ -214,28 +243,34 @@ Captures and compares tool responses against stored snapshots using Playwright's
 | Static content tools                    | Non-deterministic ordering        |
 | Regression testing with controlled data | Pagination cursors                |
 
-### Usage
-
-```typescript
-import { createSnapshotExpectation } from '@gleanwork/mcp-server-tester';
-
-const expectations = {
-  snapshot: createSnapshotExpectation(),
-};
-
-// Requires testInfo and expect from Playwright
-await runEvalDataset({ dataset, expectations }, { mcp, testInfo, expect });
-```
-
 ### Dataset Format
+
+Use the `expect.snapshot` field in the eval dataset JSON. Pass `testInfo` to `runEvalDataset` to enable Playwright snapshot infrastructure:
 
 ```json
 {
   "id": "help-command",
   "toolName": "help",
   "args": {},
-  "expectedSnapshot": "help-output"
+  "expect": {
+    "snapshot": "help-output"
+  }
 }
+```
+
+```typescript
+const result = await runEvalDataset({ dataset }, { mcp, testInfo });
+```
+
+### Inline Test Usage
+
+```typescript
+import { expect } from '@gleanwork/mcp-server-tester';
+
+test('snapshot', async ({ mcp }, testInfo) => {
+  const result = await mcp.callTool('help', {});
+  expect(result).toMatchToolSnapshot('help-output');
+});
 ```
 
 ### Workflow
@@ -265,13 +300,15 @@ When responses contain variable data that would cause snapshot mismatches, use s
   "id": "get-user-profile",
   "toolName": "get_user",
   "args": { "id": "123" },
-  "expectedSnapshot": "user-profile",
-  "snapshotSanitizers": [
-    "uuid",
-    "iso-date",
-    { "pattern": "session_[a-zA-Z0-9]+", "replacement": "[SESSION]" },
-    { "remove": ["lastLoginAt", "metrics.requestId"] }
-  ]
+  "expect": {
+    "snapshot": "user-profile",
+    "snapshotSanitizers": [
+      "uuid",
+      "iso-date",
+      { "pattern": "session_[a-zA-Z0-9]+", "replacement": "[SESSION]" },
+      { "remove": ["lastLoginAt", "metrics.requestId"] }
+    ]
+  }
 }
 ```
 
@@ -355,12 +392,28 @@ const sanitized = applySanitizers(response, [
 
 Semantic evaluation using LLMs (OpenAI or Anthropic). Best for subjective criteria like relevance, quality, or tone.
 
-### Setup
+### Dataset Format
+
+Use the `expect.passesJudge` field in the eval dataset JSON. Supply a `judgeClient` to `runEvalDataset`:
+
+```json
+{
+  "id": "search-test",
+  "toolName": "search_docs",
+  "args": { "query": "authentication" },
+  "expect": {
+    "passesJudge": {
+      "rubric": "Evaluate if the search results are relevant to the query. Score 0-1.",
+      "threshold": 0.7
+    }
+  }
+}
+```
 
 ```typescript
 import {
-  createJudgeExpectation,
   createLLMJudgeClient,
+  runEvalDataset,
 } from '@gleanwork/mcp-server-tester';
 
 const judgeClient = createLLMJudgeClient({
@@ -369,31 +422,24 @@ const judgeClient = createLLMJudgeClient({
   temperature: 0.0,
 });
 
-const expectations = {
-  judge: createJudgeExpectation({
-    'search-relevance': {
-      rubric:
-        'Evaluate if the search results are relevant to the query. Score 0-1.',
-      passingThreshold: 0.7,
-    },
-  }),
-};
-
 const result = await runEvalDataset(
-  { dataset, expectations, judgeClient },
-  { mcp }
+  { dataset, judgeClient },
+  { mcp, testInfo }
 );
 ```
 
-### Dataset Format
+### Inline Test Usage
 
-```json
-{
-  "id": "search-test",
-  "toolName": "search_docs",
-  "args": { "query": "authentication" },
-  "judgeConfigId": "search-relevance"
-}
+```typescript
+import { expect } from '@gleanwork/mcp-server-tester';
+
+test('search relevance', async ({ mcp }) => {
+  const result = await mcp.callTool('search_docs', { query: 'authentication' });
+  expect(result).toPassToolJudge(
+    'Evaluate if the search results are relevant to the query. Score 0-1.',
+    { threshold: 0.7 }
+  );
+});
 ```
 
 ### Supported Providers
@@ -420,7 +466,7 @@ const result = await runEvalDataset(
 ### Judge Configuration
 
 - `rubric` - Evaluation criteria for the LLM judge
-- `passingThreshold` - Minimum score (0-1) to pass the evaluation
+- `threshold` - Minimum score (0-1) to pass the evaluation (default: `1.0`)
 
 ### Best Practices
 
@@ -432,44 +478,39 @@ const result = await runEvalDataset(
 
 ## Combining Multiple Expectations
 
-You can use multiple expectations together for comprehensive validation:
+A single eval case can declare multiple expectation types at once. The runner evaluates each defined field independently and reports results per expectation:
 
 ```typescript
 const result = await runEvalDataset(
-  {
-    dataset,
-    expectations: {
-      exact: createExactExpectation(),
-      schema: createSchemaExpectation(dataset),
-      textContains: createTextContainsExpectation(),
-      regex: createRegexExpectation(),
-      judge: createJudgeExpectation(judgeConfigs),
-    },
-    judgeClient,
-  },
-  { mcp }
+  { dataset, judgeClient },
+  { mcp, testInfo }
 );
 ```
 
-Each eval case will use the appropriate expectation based on which fields are defined:
+Each eval case uses whichever `expect` fields are defined:
 
-- `expectedExact` → Exact match validation
-- `expectedSchemaName` → Schema validation
-- `expectedTextContains` → Text contains validation
-- `expectedRegex` → Regex pattern validation
-- `judgeConfigId` → LLM judge evaluation
+- `expect.response` → Exact match validation
+- `expect.schema` → Schema validation
+- `expect.containsText` → Text contains validation
+- `expect.matchesPattern` → Regex pattern validation
+- `expect.passesJudge` → LLM judge evaluation
 
-You can also combine multiple expectations for a single test case:
+You can combine multiple expectations for a single test case:
 
 ```json
 {
   "id": "comprehensive-test",
   "toolName": "get_city_info",
   "args": { "city": "London" },
-  "expectedSchemaName": "city-info",
-  "expectedTextContains": ["London", "Population"],
-  "expectedRegex": ["^## City Information", "Population: [\\d.]+M"],
-  "judgeConfigId": "info-quality"
+  "expect": {
+    "schema": "city-info",
+    "containsText": ["London", "Population"],
+    "matchesPattern": ["^## City Information", "Population: [\\d.]+M"],
+    "passesJudge": {
+      "rubric": "The response should contain accurate information about London.",
+      "threshold": 0.7
+    }
+  }
 }
 ```
 
@@ -479,57 +520,47 @@ You can also combine multiple expectations for a single test case:
 
 Many MCP servers return markdown-formatted responses. Here's a complete example:
 
-```typescript
-// Your MCP server returns markdown
-const response = `## City Information
+Dataset JSON (using current field names):
 
-**City:** London
-**Population:** 8.9M
-
-### Features
-- Public Transportation
-- Cultural Attractions
-
-Temperature: 15°C
-Last updated: 2025-01-22`;
-
-// Validate with text contains
+```json
 {
-  "id": "city-info-text",
-  "toolName": "get_city_info",
-  "args": { "city": "London" },
-  "expectedTextContains": [
-    "## City Information",
-    "**City:** London",
-    "### Features"
-  ]
-}
-
-// Validate with regex patterns
-{
-  "id": "city-info-format",
-  "toolName": "get_city_info",
-  "args": { "city": "London" },
-  "expectedRegex": [
-    "^## City Information",      // Starts with heading
-    "\\*\\*City:\\*\\* \\w+",    // Has city field
-    "\\*\\*Population:\\*\\* [\\d.]+M",  // Population in millions
-    "Temperature: \\d+°C",       // Temperature format
-    "\\d{4}-\\d{2}-\\d{2}"      // Date format
-  ]
-}
-
-// In your test
-const result = await runEvalDataset(
-  {
-    dataset,
-    expectations: {
-      textContains: createTextContainsExpectation(),
-      regex: createRegexExpectation(),
+  "name": "city-info",
+  "cases": [
+    {
+      "id": "city-info-text",
+      "toolName": "get_city_info",
+      "args": { "city": "London" },
+      "expect": {
+        "containsText": [
+          "## City Information",
+          "**City:** London",
+          "### Features"
+        ]
+      }
     },
-  },
-  { mcp }
-);
+    {
+      "id": "city-info-format",
+      "toolName": "get_city_info",
+      "args": { "city": "London" },
+      "expect": {
+        "matchesPattern": [
+          "^## City Information",
+          "\\*\\*City:\\*\\* \\w+",
+          "\\*\\*Population:\\*\\* [\\d.]+M",
+          "Temperature: \\d+°C",
+          "\\d{4}-\\d{2}-\\d{2}"
+        ]
+      }
+    }
+  ]
+}
+```
+
+In your test:
+
+```typescript
+const dataset = await loadEvalDataset('./data/city-info.json');
+const result = await runEvalDataset({ dataset }, { mcp, testInfo });
 ```
 
 ### Choosing the Right Expectation

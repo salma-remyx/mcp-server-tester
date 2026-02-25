@@ -14,8 +14,8 @@ import {
   validateSize,
   validateToolCalls,
   validateToolCallCount,
+  validateJudge,
 } from '../assertions/validators/index.js';
-import { createJudge } from '../judge/judgeClient.js';
 
 /**
  * Context passed to the eval runner
@@ -212,6 +212,9 @@ async function executeToolCall(
       return { response: result };
     }
   } catch (err) {
+    // Note: errors originating from llm_host simulation are already enriched
+    // with actionable context by enrichErrorMessage() in the vercel adapter.
+    // Pass the message through unchanged so that hint text reaches the caller.
     return {
       response: undefined,
       error: err instanceof Error ? err.message : String(err),
@@ -341,38 +344,15 @@ async function runExpectBlockValidations(
 
   // passesJudge (toPassToolJudge)
   if (expectBlock.passesJudge !== undefined) {
-    const {
-      rubric,
-      reference,
-      threshold = 0.7,
-      configId,
-    } = expectBlock.passesJudge;
-
-    // Get judge config
-    const judgeConfig = configId ? (config.judgeConfigs?.[configId] ?? {}) : {};
-
-    try {
-      const judge = createJudge(judgeConfig);
-      const judgeResult = await judge.evaluate(
-        response,
-        reference ?? null,
-        rubric
-      );
-      const score = judgeResult.score ?? (judgeResult.pass ? 1.0 : 0.0);
-      const passed = score >= threshold;
-
-      results.judge = {
-        pass: passed,
-        details: passed
-          ? `Judge passed with score ${score.toFixed(2)}`
-          : `Judge failed with score ${score.toFixed(2)} (threshold: ${threshold}). ${judgeResult.reasoning ?? ''}`,
-      };
-    } catch (err) {
-      results.judge = {
-        pass: false,
-        details: `Judge evaluation error: ${err instanceof Error ? err.message : String(err)}`,
-      };
-    }
+    const validation = await validateJudge(
+      response,
+      expectBlock.passesJudge,
+      config.judgeConfigs
+    );
+    results.judge = {
+      pass: validation.pass,
+      details: validation.message,
+    };
   }
 
   // snapshot (toMatchToolSnapshot) - requires Playwright expect with custom matcher
@@ -646,6 +626,12 @@ export async function runEvalDataset(
       contentType: 'application/json',
       body: Buffer.from(JSON.stringify({ caseResults })),
     });
+  } else if (caseResults.length > 0) {
+    console.warn(
+      '[mcp-server-tester] runEvalDataset: testInfo not provided — results will not appear in the MCP reporter.\n' +
+        'To enable reporting, pass testInfo from the Playwright test function:\n' +
+        '  await runEvalDataset({ dataset }, { mcp, testInfo });'
+    );
   }
 
   return result;

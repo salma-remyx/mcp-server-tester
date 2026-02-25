@@ -1,0 +1,398 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gleanwork.github.io/mcp-server-tester/schema/eval-dataset.schema.json",
+  "title": "MCP Server Tester Eval Dataset",
+  "description": "Schema for @gleanwork/mcp-server-tester eval dataset JSON files. Enables IDE autocomplete and validation for data/*.json files.",
+  "type": "object",
+  "required": ["name", "cases"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference URI"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Dataset name — should be unique and descriptive"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of what this dataset covers"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Test cases in this dataset",
+      "items": {
+        "$ref": "#/definitions/EvalCase"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Arbitrary additional metadata for the dataset",
+      "additionalProperties": true
+    }
+  },
+  "definitions": {
+    "EvalCase": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "description": "A single eval test case. Use 'direct' mode to call a tool explicitly; use 'llm_host' mode to drive tool selection via natural language.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique identifier for this test case within the dataset"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of what this test case validates"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["direct", "llm_host"],
+          "default": "direct",
+          "description": "Evaluation mode. 'direct': explicit MCP tool call with toolName + args. 'llm_host': LLM-driven tool selection from a natural language scenario."
+        },
+        "toolName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the MCP tool to invoke. Required in 'direct' mode; optional in 'llm_host' mode."
+        },
+        "args": {
+          "type": "object",
+          "description": "Arguments to pass to the tool. Required in 'direct' mode; optional in 'llm_host' mode.",
+          "additionalProperties": true
+        },
+        "scenario": {
+          "type": "string",
+          "description": "Natural language prompt that the LLM host will act on. Required in 'llm_host' mode.",
+          "examples": [
+            "Find recent docs about the Glean MCP server",
+            "Who leads the developer platform team?"
+          ]
+        },
+        "llmHostConfig": {
+          "$ref": "#/definitions/LLMHostConfig"
+        },
+        "iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "Number of times to run this case. When > 1, an accuracy score (pass rate) is computed across all runs."
+        },
+        "accuracyThreshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1.0,
+          "description": "Minimum fraction of iterations that must pass (0–1). Only meaningful when iterations > 1."
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Arbitrary additional metadata for this test case",
+          "additionalProperties": true
+        },
+        "expect": {
+          "$ref": "#/definitions/EvalExpectBlock"
+        }
+      }
+    },
+    "LLMHostConfig": {
+      "type": "object",
+      "required": ["provider"],
+      "additionalProperties": false,
+      "description": "Configuration for the LLM host used in 'llm_host' mode. All providers run through the Vercel AI SDK.",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "openai",
+            "anthropic",
+            "azure",
+            "google",
+            "mistral",
+            "ollama",
+            "deepseek",
+            "openrouter",
+            "xai",
+            "vertex-anthropic"
+          ],
+          "description": "LLM provider. 'vertex-anthropic' routes Anthropic Claude through Google Vertex AI (useful when api.anthropic.com is blocked). Each provider requires the corresponding @ai-sdk/* package."
+        },
+        "model": {
+          "type": "string",
+          "description": "Model identifier. Uses the provider's default if omitted.",
+          "examples": [
+            "gpt-4o",
+            "claude-3-5-haiku@20241022",
+            "claude-3-5-sonnet-20241022",
+            "gemini-1.5-pro"
+          ]
+        },
+        "apiKeyEnvVar": {
+          "type": "string",
+          "description": "Name of the environment variable that holds the API key for this provider. Defaults to the provider's standard env var (e.g. OPENAI_API_KEY).",
+          "examples": ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "MISTRAL_API_KEY"]
+        },
+        "maxTokens": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum number of tokens to generate in the LLM response"
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "description": "Sampling temperature. 0 = fully deterministic; 1 = maximum creativity."
+        },
+        "maxToolCalls": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 10,
+          "description": "Maximum number of tool call steps allowed in a single LLM conversation"
+        }
+      }
+    },
+    "EvalExpectBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Expectations to validate against the tool response. Multiple fields can be combined — all must pass.",
+      "properties": {
+        "response": {
+          "description": "Exact expected response (deep-equal match). Corresponds to toMatchToolResponse().",
+          "examples": [{ "content": [{ "type": "text", "text": "hello" }] }]
+        },
+        "schema": {
+          "type": "string",
+          "description": "Name of a Zod schema (registered in EvalDataset.schemas) to validate the response against. Corresponds to toMatchToolSchema()."
+        },
+        "containsText": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+          ],
+          "description": "Substring(s) that must appear in the response text. All provided strings must be present. Corresponds to toContainToolText()."
+        },
+        "matchesPattern": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+          ],
+          "description": "Regular expression pattern(s) that must match the response text. All provided patterns must match. Corresponds to toMatchToolPattern()."
+        },
+        "snapshot": {
+          "type": "string",
+          "description": "Snapshot name for comparison. The response is compared against the saved snapshot file. Corresponds to toMatchToolSnapshot()."
+        },
+        "snapshotSanitizers": {
+          "type": "array",
+          "description": "Sanitizers to apply to the response before snapshot comparison, normalising variable data such as timestamps and IDs.",
+          "items": {
+            "$ref": "#/definitions/SnapshotSanitizer"
+          }
+        },
+        "isError": {
+          "oneOf": [
+            {
+              "type": "boolean",
+              "description": "true = expect any error; false = expect no error"
+            },
+            {
+              "type": "string",
+              "description": "Expect an error whose message contains this substring"
+            },
+            {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1,
+              "description": "Expect an error whose message contains all of these substrings"
+            }
+          ],
+          "description": "Error expectation. Corresponds to toBeToolError()."
+        },
+        "passesJudge": {
+          "$ref": "#/definitions/PassesJudge"
+        },
+        "responseSize": {
+          "$ref": "#/definitions/ResponseSize"
+        },
+        "toolsTriggered": {
+          "$ref": "#/definitions/ToolsTriggered"
+        },
+        "toolCallCount": {
+          "$ref": "#/definitions/ToolCallCount"
+        }
+      }
+    },
+    "PassesJudge": {
+      "type": "object",
+      "required": ["rubric"],
+      "additionalProperties": false,
+      "description": "LLM-as-judge evaluation. The response is scored by a judge LLM using the given rubric. Corresponds to toPassToolJudge().",
+      "properties": {
+        "rubric": {
+          "type": "string",
+          "description": "Evaluation rubric / criteria the judge will use to score the response",
+          "examples": [
+            "The response must contain accurate pricing information with at least one dollar amount.",
+            "The answer should identify the correct team lead by name."
+          ]
+        },
+        "reference": {
+          "description": "Optional reference response to compare against during judging"
+        },
+        "threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.7,
+          "description": "Minimum score (0–1) required to pass the judge evaluation"
+        },
+        "configId": {
+          "type": "string",
+          "description": "Judge configuration ID — references a named judge config registered in the test runner"
+        }
+      }
+    },
+    "ResponseSize": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Validates that the response text is within acceptable byte bounds. Corresponds to toHaveToolResponseSize().",
+      "properties": {
+        "maxBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum allowed size of the response in bytes (UTF-8)"
+        },
+        "minBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minimum required size of the response in bytes (UTF-8)"
+        }
+      }
+    },
+    "ToolsTriggered": {
+      "type": "object",
+      "required": ["calls"],
+      "additionalProperties": false,
+      "description": "Asserts which tools the LLM called during an 'llm_host' simulation. Only meaningful in llm_host mode. Corresponds to toHaveToolCalls().",
+      "properties": {
+        "calls": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Expected tool calls. Each entry describes one tool invocation the LLM should have made.",
+          "items": {
+            "$ref": "#/definitions/ExpectedToolCall"
+          }
+        },
+        "order": {
+          "type": "string",
+          "enum": ["strict", "any"],
+          "default": "any",
+          "description": "'strict': calls must appear in the exact order listed. 'any': calls can appear in any order."
+        },
+        "exclusive": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, no tool calls outside the listed 'calls' are allowed. If false, extra tool calls are permitted."
+        }
+      }
+    },
+    "ExpectedToolCall": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "description": "A single expected tool call within toolsTriggered.calls",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the tool the LLM must have called",
+          "examples": [
+            "search",
+            "employee_search",
+            "code_search",
+            "meeting_lookup"
+          ]
+        },
+        "arguments": {
+          "type": "object",
+          "description": "Expected arguments (partial match — extra keys in the actual call are allowed)",
+          "additionalProperties": true
+        },
+        "required": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether this tool call MUST have been made. Set to false to assert an optional call."
+        }
+      }
+    },
+    "ToolCallCount": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Asserts the total number of tool calls made during an 'llm_host' simulation. Only meaningful in llm_host mode. Corresponds to toHaveToolCallCount().",
+      "properties": {
+        "min": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minimum number of tool calls that must have been made"
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum number of tool calls allowed"
+        },
+        "exact": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Exact number of tool calls required. Mutually exclusive with min/max."
+        }
+      }
+    },
+    "SnapshotSanitizer": {
+      "description": "Sanitizer applied before snapshot comparison. Can be a built-in name, a regex sanitizer, or a field removal sanitizer.",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": ["timestamp", "uuid", "iso-date", "objectId", "jwt"],
+          "description": "Built-in sanitizer. 'timestamp': Unix timestamps (ms and s). 'uuid': UUIDs v1–v5. 'iso-date': ISO 8601 strings. 'objectId': MongoDB ObjectIds. 'jwt': JWT tokens."
+        },
+        {
+          "type": "object",
+          "required": ["pattern"],
+          "additionalProperties": false,
+          "description": "Custom regex sanitizer — replaces all matches of 'pattern' with 'replacement'",
+          "properties": {
+            "pattern": {
+              "type": "string",
+              "description": "Regular expression pattern string to match against the serialised response"
+            },
+            "replacement": {
+              "type": "string",
+              "default": "[SANITIZED]",
+              "description": "Replacement string for matched text. Defaults to '[SANITIZED]'."
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["remove"],
+          "additionalProperties": false,
+          "description": "Field removal sanitizer — removes named fields from response objects before comparison",
+          "properties": {
+            "remove": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1,
+              "description": "Field paths to remove. Supports dot notation for nested fields (e.g. 'meta.createdAt').",
+              "examples": [["createdAt", "updatedAt"], ["meta.requestId"]]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

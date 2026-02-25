@@ -18,6 +18,82 @@ import type {
 import type { MCPFixtureApi } from '../../../mcp/fixtures/mcpFixture.js';
 import { extractText } from '../../../mcp/response.js';
 
+/**
+ * Classifies a raw error from the Vercel AI SDK agentic loop and returns a
+ * human-readable message with an actionable hint.
+ *
+ * The message is always prefixed with "LLM host simulation failed: " so that
+ * callers see a consistent error surface regardless of which failure path was
+ * hit.
+ */
+function enrichErrorMessage(err: unknown, provider: string): string {
+  const raw = err instanceof Error ? err.message : String(err);
+
+  // Missing optional peer dependency
+  if (
+    raw.includes('Cannot find module') ||
+    raw.includes('ERR_MODULE_NOT_FOUND')
+  ) {
+    return (
+      `LLM host simulation failed: required package not installed.\n` +
+      `Hint: run \`getMissingDependencyMessage('${provider}')\` or check docs/llm-host.md for install instructions.`
+    );
+  }
+
+  // Authentication / API key problems
+  if (
+    raw.includes('401') ||
+    raw.includes('Unauthorized') ||
+    raw.includes('API key') ||
+    raw.includes('api_key')
+  ) {
+    return (
+      `LLM host simulation failed: authentication error.\n` +
+      `Hint: check your API key environment variable (e.g. ANTHROPIC_API_KEY, GOOGLE_APPLICATION_CREDENTIALS).`
+    );
+  }
+
+  // Model not found (404 or explicit "model … not found" phrasing)
+  if (
+    raw.includes('404') ||
+    raw.includes('Not Found') ||
+    (raw.toLowerCase().includes('model') &&
+      raw.toLowerCase().includes('not found'))
+  ) {
+    return (
+      `LLM host simulation failed: model not found.\n` +
+      `Hint: check the model name format for your provider. For vertex-anthropic use 'claude-3-5-haiku@20241022' (with @).`
+    );
+  }
+
+  // Network / DNS / connection errors
+  if (
+    raw.includes('ENOTFOUND') ||
+    raw.includes('fetch failed') ||
+    raw.includes('ECONNREFUSED')
+  ) {
+    return (
+      `LLM host simulation failed: network error.\n` +
+      `Hint: check network connectivity and whether the provider's API endpoint is reachable from this machine.`
+    );
+  }
+
+  // Rate limiting
+  if (
+    raw.includes('429') ||
+    raw.toLowerCase().includes('rate limit') ||
+    raw.includes('Too Many Requests')
+  ) {
+    return (
+      `LLM host simulation failed: rate limited.\n` +
+      `Hint: reduce concurrency, add delays between iterations, or upgrade your API plan.`
+    );
+  }
+
+  // Default: preserve original message with a consistent prefix
+  return `LLM host simulation failed: ${raw}`;
+}
+
 // Dynamic import helper bypasses TypeScript module resolution for optional peer deps.
 // Each @ai-sdk/* package is optional — install only the providers you need.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -212,7 +288,7 @@ export function createVercelOrchestrator(): LLMHostSimulator {
         return {
           success: false,
           toolCalls: [],
-          error: err instanceof Error ? err.message : String(err),
+          error: enrichErrorMessage(err, config.provider),
         };
       }
     },

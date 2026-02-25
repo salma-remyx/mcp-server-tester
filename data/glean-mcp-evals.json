@@ -1,4 +1,5 @@
 {
+  "$schema": "../schema/eval-dataset.schema.json",
   "name": "glean-mcp-server-evals",
   "description": "End-to-end eval suite for the Glean remote MCP server (scio-prod-be.glean.com/mcp/default). Direct-mode cases run once (deterministic). LLM host cases default to 10 iterations via the test runner's defaultLlmIterations option.",
   "cases": [

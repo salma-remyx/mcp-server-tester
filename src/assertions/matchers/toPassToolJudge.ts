@@ -2,17 +2,16 @@
  * toPassToolJudge Matcher
  *
  * Validates that a response passes LLM-as-judge evaluation.
+ * Delegates evaluation logic to validateJudge() for consistency
+ * with the validator/matcher duality pattern.
  */
 
-import { createJudge } from '../../judge/judgeClient.js';
+import { validateJudge } from '../validators/judge.js';
 import type { JudgeConfig } from '../../judge/judgeTypes.js';
 import type { JudgeMatcherOptions } from './types.js';
 
 // Default passing threshold
 const DEFAULT_PASSING_THRESHOLD = 0.7;
-
-// Default judge configuration
-const DEFAULT_JUDGE_CONFIG: JudgeConfig = {};
 
 /**
  * Creates the toPassToolJudge matcher function
@@ -28,50 +27,34 @@ export async function toPassToolJudge(
   const {
     reference = null,
     passingThreshold = DEFAULT_PASSING_THRESHOLD,
-    judgeConfig = DEFAULT_JUDGE_CONFIG,
+    judgeConfig = {} as JudgeConfig,
   } = options;
 
-  // Create judge client
-  const judge = createJudge(judgeConfig);
+  // Delegate to the pure validateJudge validator, passing the inline
+  // config directly as a single-entry registry keyed by '_inline'.
+  const validation = await validateJudge(
+    received,
+    {
+      rubric,
+      reference: reference ?? undefined,
+      threshold: passingThreshold,
+      configId: '_inline',
+    },
+    { _inline: judgeConfig }
+  );
 
-  try {
-    // Evaluate the response
-    const result = await judge.evaluate(received, reference, rubric);
-
-    // Determine pass/fail based on threshold
-    const score = result.score ?? (result.pass ? 1.0 : 0.0);
-    const passes = score >= passingThreshold;
-
-    if (this.isNot) {
-      // For .not, we expect the evaluation to fail
-      return {
-        pass: !passes,
-        message: () =>
-          passes
-            ? `Expected judge evaluation to fail, but it passed with score ${score.toFixed(2)}`
-            : `Judge evaluation failed as expected with score ${score.toFixed(2)}`,
-      };
-    }
-
-    if (passes) {
-      return {
-        pass: true,
-        message: () =>
-          `Judge evaluation passed with score ${score.toFixed(2)} (threshold: ${passingThreshold})`,
-      };
-    }
-
+  if (this.isNot) {
     return {
-      pass: false,
+      pass: !validation.pass,
       message: () =>
-        `Judge evaluation failed with score ${score.toFixed(2)} (threshold: ${passingThreshold}). ` +
-        `Reasoning: ${result.reasoning ?? 'No reasoning provided'}`,
-    };
-  } catch (error) {
-    return {
-      pass: false,
-      message: () =>
-        `Judge evaluation failed with error: ${error instanceof Error ? error.message : String(error)}`,
+        validation.pass
+          ? `Expected judge evaluation to fail, but it passed`
+          : `Judge evaluation failed as expected`,
     };
   }
+
+  return {
+    pass: validation.pass,
+    message: () => validation.message,
+  };
 }

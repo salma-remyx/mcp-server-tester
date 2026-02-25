@@ -35,7 +35,7 @@ export type ExpectationType =
 /**
  * Result of an expectation check
  */
-export interface MCPEvalExpectationResult {
+export interface EvalExpectationResult {
   pass: boolean;
   details?: string;
 }
@@ -90,7 +90,7 @@ export interface EvalCaseResult {
   pass: boolean;
   response?: unknown;
   error?: string;
-  expectations: Partial<Record<ExpectationType, MCPEvalExpectationResult>>;
+  expectations: Partial<Record<ExpectationType, EvalExpectationResult>>;
   authType?: AuthType;
   project?: string;
   durationMs: number;
