@@ -5,6 +5,7 @@ import type { TestInfo, Expect } from '@playwright/test';
 import type { ZodType } from 'zod';
 import { simulateLLMHost } from './llmHost/llmHostSimulation.js';
 import type { EvalCaseResult, IterationResult } from '../types/reporter.js';
+import { saveBaseline, loadBaseline, buildBaselinePassMap } from './baseline.js';
 import {
   validateResponse,
   validateSchema,
@@ -71,6 +72,25 @@ export interface EvalRunnerResult {
    * Overall execution time in milliseconds
    */
   durationMs: number;
+
+  /**
+   * Difference between current pass rate and baseline pass rate.
+   * Positive = improvement, negative = regression.
+   * Only present when `baselineResultsFrom` was provided.
+   */
+  deltaPassRate?: number;
+
+  /**
+   * Number of cases that regressed: passed in baseline, failed now.
+   * Only present when `baselineResultsFrom` was provided.
+   */
+  regressions?: number;
+
+  /**
+   * Number of cases that improved: failed in baseline, passed now.
+   * Only present when `baselineResultsFrom` was provided.
+   */
+  improvements?: number;
 }
 
 /**
@@ -148,6 +168,21 @@ export interface EvalRunnerOptions {
    * When undefined or empty, all cases run (default behavior).
    */
   filterTags?: string[];
+
+  /**
+   * If set, saves the run results to this file path after completion.
+   * Use with `baselineResultsFrom` on the next run for regression detection.
+   *
+   * @example '.mcp-test-results/baseline.json'
+   */
+  saveResultsTo?: string;
+
+  /**
+   * If set, loads this file as the baseline and computes delta metrics vs the current run.
+   * Populates `EvalRunnerResult.deltaPassRate`, `.regressions`, `.improvements`,
+   * and tags each `EvalCaseResult.baselinePass`.
+   */
+  baselineResultsFrom?: string;
 }
 
 /**
@@ -601,6 +636,8 @@ export async function runEvalDataset(
     defaultLlmIterations,
     onCaseComplete,
     filterTags,
+    saveResultsTo,
+    baselineResultsFrom,
   } = options;
 
   const startTime = Date.now();
@@ -667,6 +704,41 @@ export async function runEvalDataset(
     caseResults,
     durationMs: Date.now() - startTime,
   };
+
+  // Load baseline and compute delta if requested
+  if (baselineResultsFrom) {
+    try {
+      const baseline = await loadBaseline(baselineResultsFrom);
+      const baselinePassRate = baseline.total > 0 ? baseline.passed / baseline.total : 0;
+      const baselineMap = buildBaselinePassMap(baseline);
+
+      for (const cr of result.caseResults) {
+        const baselinePass = baselineMap.get(cr.id);
+        if (baselinePass !== undefined) {
+          cr.baselinePass = baselinePass;
+        }
+      }
+
+      result.regressions = result.caseResults.filter(
+        (cr) => cr.baselinePass === true && !cr.pass
+      ).length;
+      result.improvements = result.caseResults.filter(
+        (cr) => cr.baselinePass === false && cr.pass
+      ).length;
+      result.deltaPassRate =
+        result.total > 0 ? result.passed / result.total - baselinePassRate : 0;
+    } catch (err) {
+      console.warn(
+        `[mcp-server-tester] Could not load baseline from ${baselineResultsFrom}: ` +
+          `${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  }
+
+  // Save results to file if requested
+  if (saveResultsTo) {
+    await saveBaseline(result, saveResultsTo);
+  }
 
   // Attach results for MCP reporter if testInfo is provided
   if (context.testInfo) {

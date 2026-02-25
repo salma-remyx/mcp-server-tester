@@ -216,6 +216,12 @@ export interface EvalCaseResult {
    * Only populated when toolsTriggered expectation was evaluated.
    */
   toolRecall?: number;
+
+  /**
+   * Pass/fail status of this case in the baseline run.
+   * Only present when a baseline was provided to runEvalDataset.
+   */
+  baselinePass?: boolean;
 }
 
 /**

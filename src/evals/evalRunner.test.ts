@@ -1,8 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { z } from 'zod';
 import { runEvalCase, runEvalDataset, type EvalContext } from './evalRunner.js';
 import type { EvalCase, EvalDataset } from './datasetTypes.js';
 import type { MCPFixtureApi } from '../mcp/fixtures/mcpFixture.js';
+import { mkdtemp, rm, readFile } from 'fs/promises';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
 function createMockMCP(callToolResponse?: {
   content?: unknown;
@@ -889,5 +892,125 @@ describe('filterTags', () => {
     const dataset = createDataset([createEvalCase({ id: 'untagged' })]);
     const result = await runEvalDataset({ dataset }, createContext());
     expect(result.caseResults[0]!.tags).toBeUndefined();
+  });
+});
+
+describe('saveResultsTo and baselineResultsFrom', () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), 'mcp-runner-baseline-'));
+  });
+
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  function createDataset(cases: EvalCase[]): EvalDataset {
+    return { name: 'baseline-test-dataset', cases };
+  }
+
+  it('saves results to file when saveResultsTo is set', async () => {
+    const mcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const dataset = createDataset([
+      createEvalCase({ id: 'case-1', expect: { containsText: 'hello' } }),
+    ]);
+    const filePath = join(tmpDir, 'results.json');
+
+    await runEvalDataset({ dataset, saveResultsTo: filePath }, createContext(mcp));
+
+    const raw = await readFile(filePath, 'utf8');
+    const saved = JSON.parse(raw) as { total: number; passed: number };
+    expect(saved.total).toBe(1);
+    expect(saved.passed).toBe(1);
+  });
+
+  it('computes deltaPassRate when baselineResultsFrom is set', async () => {
+    const mcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const dataset = createDataset([
+      createEvalCase({ id: 'case-1', expect: { containsText: 'hello' } }),
+    ]);
+    const baselinePath = join(tmpDir, 'baseline.json');
+
+    // Save baseline first
+    await runEvalDataset({ dataset, saveResultsTo: baselinePath }, createContext(mcp));
+
+    // Run again comparing against baseline
+    const result = await runEvalDataset(
+      { dataset, baselineResultsFrom: baselinePath },
+      createContext(mcp)
+    );
+
+    // Same results as baseline → deltaPassRate should be 0
+    expect(result.deltaPassRate).toBe(0);
+    expect(result.regressions).toBe(0);
+    expect(result.improvements).toBe(0);
+  });
+
+  it('counts regressions: cases that passed in baseline but fail now', async () => {
+    const baselinePath = join(tmpDir, 'baseline.json');
+
+    // Baseline: case passes (response contains 'hello')
+    const passingMcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const dataset = createDataset([
+      createEvalCase({ id: 'case-1', expect: { containsText: 'hello' } }),
+    ]);
+    await runEvalDataset({ dataset, saveResultsTo: baselinePath }, createContext(passingMcp));
+
+    // Now: case fails (response contains 'world', not 'hello')
+    const failingMcp = createMockMCP({ content: [{ type: 'text', text: 'world' }] });
+    const result = await runEvalDataset(
+      { dataset, baselineResultsFrom: baselinePath },
+      createContext(failingMcp)
+    );
+
+    expect(result.regressions).toBe(1);
+    expect(result.improvements).toBe(0);
+    expect(result.deltaPassRate).toBeLessThan(0);
+    expect(result.caseResults[0]!.baselinePass).toBe(true);
+  });
+
+  it('counts improvements: cases that failed in baseline but pass now', async () => {
+    const baselinePath = join(tmpDir, 'baseline.json');
+
+    // Baseline: case fails (response contains 'world', not 'hello')
+    const failingMcp = createMockMCP({ content: [{ type: 'text', text: 'world' }] });
+    const dataset = createDataset([
+      createEvalCase({ id: 'case-1', expect: { containsText: 'hello' } }),
+    ]);
+    await runEvalDataset({ dataset, saveResultsTo: baselinePath }, createContext(failingMcp));
+
+    // Now: case passes (response contains 'hello')
+    const passingMcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const result = await runEvalDataset(
+      { dataset, baselineResultsFrom: baselinePath },
+      createContext(passingMcp)
+    );
+
+    expect(result.improvements).toBe(1);
+    expect(result.regressions).toBe(0);
+    expect(result.deltaPassRate).toBeGreaterThan(0);
+    expect(result.caseResults[0]!.baselinePass).toBe(false);
+  });
+
+  it('warns and continues when baselineResultsFrom file does not exist', async () => {
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const mcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const dataset = createDataset([createEvalCase({ id: 'case-1' })]);
+    const nonexistentPath = join(tmpDir, 'does-not-exist.json');
+
+    // Should not throw — just warns
+    const result = await runEvalDataset(
+      { dataset, baselineResultsFrom: nonexistentPath },
+      createContext(mcp)
+    );
+
+    expect(result.total).toBe(1);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Could not load baseline from')
+    );
+    expect(result.deltaPassRate).toBeUndefined();
+
+    consoleSpy.mockRestore();
   });
 });
