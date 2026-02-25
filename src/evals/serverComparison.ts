@@ -31,11 +31,11 @@ export interface ServerComparisonResult {
   ties: number;
   /** Cases where both failed */
   bothFail: number;
-  /** A win rate (aWins / total) */
+  /** A win rate (aWins / decidedCases, excludes BOTH_FAIL) */
   aWinRate: number;
-  /** B win rate (bWins / total) */
+  /** B win rate (bWins / decidedCases, excludes BOTH_FAIL) */
   bWinRate: number;
-  /** Tie rate (ties / total) */
+  /** Tie rate (ties / decidedCases, excludes BOTH_FAIL) */
   tieRate: number;
   /** Per-case comparison results */
   cases: CaseComparisonResult[];
@@ -132,6 +132,7 @@ export async function runServerComparison(
   }
 
   const total = cases.length;
+  const decidedCases = aWins + bWins + ties; // BOTH_FAIL excluded from win rate denominator
 
   return {
     dataset: options.dataset.name,
@@ -140,9 +141,9 @@ export async function runServerComparison(
     bWins,
     ties,
     bothFail,
-    aWinRate: total > 0 ? aWins / total : 0,
-    bWinRate: total > 0 ? bWins / total : 0,
-    tieRate: total > 0 ? ties / total : 0,
+    aWinRate: decidedCases > 0 ? aWins / decidedCases : 0,
+    bWinRate: decidedCases > 0 ? bWins / decidedCases : 0,
+    tieRate: decidedCases > 0 ? ties / decidedCases : 0,
     cases,
     serverAResult: resultA,
     serverBResult: resultB,

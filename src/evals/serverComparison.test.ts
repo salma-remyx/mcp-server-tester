@@ -155,6 +155,98 @@ describe('runServerComparison', () => {
     expect(result.cases[0]!.outcome).toBe('BOTH_FAIL');
   });
 
+  it('excludes BOTH_FAIL cases from win rate calculation so rates sum to 1.0', async () => {
+    // All cases will fail on both servers (expect impossible text)
+    const bothFailDataset: EvalDataset = {
+      name: 'both-fail-rate-test',
+      cases: [
+        {
+          id: 'both-fail-1',
+          toolName: 'echo',
+          args: { msg: 'hello' },
+          expect: { containsText: 'IMPOSSIBLE_TEXT_XYZ' },
+        },
+        {
+          id: 'both-fail-2',
+          toolName: 'echo',
+          args: { msg: 'world' },
+          expect: { containsText: 'IMPOSSIBLE_TEXT_ABC' },
+        },
+      ],
+    };
+
+    // Both mocks return ordinary text that won't match the impossible strings
+    const mockA = createMockMCP({ content: [{ type: 'text', text: 'response' }] });
+    const mockB = createMockMCP({ content: [{ type: 'text', text: 'response' }] });
+
+    const result = await runServerComparison(
+      { dataset: bothFailDataset },
+      createContext(mockA),
+      createContext(mockB)
+    );
+
+    expect(result.total).toBe(2);
+    expect(result.bothFail).toBe(2);
+    expect(result.aWins).toBe(0);
+    expect(result.bWins).toBe(0);
+    expect(result.ties).toBe(0);
+    // decidedCases = 0, so all rates must be 0 (not 1/total)
+    expect(result.aWinRate).toBe(0);
+    expect(result.bWinRate).toBe(0);
+    expect(result.tieRate).toBe(0);
+    // Sum is 0 (not 1.0) when all cases are BOTH_FAIL — that's correct per spec
+    expect(result.aWinRate + result.bWinRate + result.tieRate).toBe(0);
+  });
+
+  it('win rates sum to 1.0 when there is at least one decided case', async () => {
+    // 1 A_WINS + 1 B_WINS + 1 BOTH_FAIL → decidedCases=2, rates should sum to 1.0
+    const mixedDataset: EvalDataset = {
+      name: 'mixed-rate-test',
+      cases: [
+        {
+          id: 'a-wins-case',
+          toolName: 'echo',
+          args: {},
+          expect: { containsText: 'alpha' },
+        },
+        {
+          id: 'b-wins-case',
+          toolName: 'echo',
+          args: {},
+          expect: { containsText: 'beta' },
+        },
+        {
+          id: 'both-fail-case',
+          toolName: 'echo',
+          args: {},
+          expect: { containsText: 'IMPOSSIBLE_TEXT_XYZ' },
+        },
+      ],
+    };
+
+    // mockA always returns 'alpha': passes a-wins-case, fails b-wins-case and both-fail-case
+    const mockA = createMockMCP({ content: [{ type: 'text', text: 'alpha' }] });
+    // mockB always returns 'beta': fails a-wins-case, passes b-wins-case, fails both-fail-case
+    const mockB = createMockMCP({ content: [{ type: 'text', text: 'beta' }] });
+
+    const result = await runServerComparison(
+      { dataset: mixedDataset },
+      createContext(mockA),
+      createContext(mockB)
+    );
+
+    expect(result.total).toBe(3);
+    expect(result.aWins).toBe(1);
+    expect(result.bWins).toBe(1);
+    expect(result.ties).toBe(0);
+    expect(result.bothFail).toBe(1);
+    // decidedCases=2, so each rate is 0.5, sum = 1.0
+    expect(result.aWinRate).toBeCloseTo(0.5);
+    expect(result.bWinRate).toBeCloseTo(0.5);
+    expect(result.tieRate).toBe(0);
+    expect(result.aWinRate + result.bWinRate + result.tieRate).toBeCloseTo(1.0);
+  });
+
   it('win rates sum to <= 1.0', async () => {
     const mockA = createMockMCP({ content: [{ type: 'text', text: 'ok' }] });
     const mockB = createMockMCP({ content: [{ type: 'text', text: 'ok' }] });
