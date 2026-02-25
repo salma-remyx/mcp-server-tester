@@ -93,6 +93,7 @@ test.describe('Glean MCP Server — LLM Host Tool Triggering Evals', () => {
       {
         dataset: llmDataset,
         concurrency: 1, // sequential — avoid rate limits
+        defaultLlmIterations: 10, // 10 iterations per case for statistical validity
       },
       { mcp, testInfo }
     );
@@ -142,6 +143,7 @@ test.describe('Glean MCP Server — Full Dataset Run', () => {
       {
         dataset,
         concurrency: 1, // sequential for stability
+        defaultLlmIterations: 10, // 10 iterations per llm_host case
       },
       { mcp, testInfo }
     );

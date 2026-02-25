@@ -1,6 +1,6 @@
 {
   "name": "glean-mcp-server-evals",
-  "description": "End-to-end eval suite for the Glean remote MCP server (scio-prod-be.glean.com/mcp/default). Covers all 8 tools in direct mode and key tool-triggering scenarios in llm_host mode.",
+  "description": "End-to-end eval suite for the Glean remote MCP server (scio-prod-be.glean.com/mcp/default). Direct-mode cases run once (deterministic). LLM host cases default to 10 iterations via the test runner's defaultLlmIterations option.",
   "cases": [
     {
       "id": "search-direct-mcp-testing",
@@ -93,9 +93,10 @@
         "responseSize": { "minBytes": 20 }
       }
     },
+
     {
-      "id": "llm-host-triggers-search-for-internal-topic",
-      "description": "LLM host: scenario that should trigger search for internal documentation. 3 iterations, 70% accuracy threshold.",
+      "id": "llm-search-phrasing-a",
+      "description": "LLM host: direct request for internal documents (phrasing A). Uses defaultLlmIterations from the runner.",
       "mode": "llm_host",
       "scenario": "Find recent internal documents about the Glean MCP server and how it works",
       "llmHostConfig": {
@@ -103,8 +104,7 @@
         "model": "claude-3-5-haiku@20241022",
         "maxToolCalls": 5
       },
-      "iterations": 3,
-      "accuracyThreshold": 0.67,
+      "accuracyThreshold": 0.8,
       "expect": {
         "toolsTriggered": {
           "calls": [{ "name": "search", "required": true }]
@@ -112,8 +112,26 @@
       }
     },
     {
-      "id": "llm-host-triggers-employee-search-for-people-query",
-      "description": "LLM host: people question should trigger employee_search. 3 iterations, 70% accuracy threshold.",
+      "id": "llm-search-phrasing-b",
+      "description": "LLM host: knowledge question phrasing B — tests the same intent differently.",
+      "mode": "llm_host",
+      "scenario": "What documentation exists about how our MCP server integration works internally?",
+      "llmHostConfig": {
+        "provider": "vertex-anthropic",
+        "model": "claude-3-5-haiku@20241022",
+        "maxToolCalls": 5
+      },
+      "accuracyThreshold": 0.8,
+      "expect": {
+        "toolsTriggered": {
+          "calls": [{ "name": "search", "required": true }]
+        }
+      }
+    },
+
+    {
+      "id": "llm-employee-search-phrasing-a",
+      "description": "LLM host: people question phrasing A — should trigger employee_search.",
       "mode": "llm_host",
       "scenario": "Who leads the developer platform team at Glean? I want to find out who to talk to about API integrations.",
       "llmHostConfig": {
@@ -121,8 +139,7 @@
         "model": "claude-3-5-haiku@20241022",
         "maxToolCalls": 5
       },
-      "iterations": 3,
-      "accuracyThreshold": 0.67,
+      "accuracyThreshold": 0.8,
       "expect": {
         "toolsTriggered": {
           "calls": [{ "name": "employee_search", "required": true }]
@@ -130,8 +147,26 @@
       }
     },
     {
-      "id": "llm-host-triggers-meeting-lookup-for-calendar",
-      "description": "LLM host: calendar question should trigger meeting_lookup. 3 iterations, 67% accuracy threshold.",
+      "id": "llm-employee-search-phrasing-b",
+      "description": "LLM host: people question phrasing B — org chart lookup phrasing.",
+      "mode": "llm_host",
+      "scenario": "Find engineers who work on the MCP server at Glean",
+      "llmHostConfig": {
+        "provider": "vertex-anthropic",
+        "model": "claude-3-5-haiku@20241022",
+        "maxToolCalls": 5
+      },
+      "accuracyThreshold": 0.8,
+      "expect": {
+        "toolsTriggered": {
+          "calls": [{ "name": "employee_search", "required": true }]
+        }
+      }
+    },
+
+    {
+      "id": "llm-meeting-lookup-phrasing-a",
+      "description": "LLM host: calendar question phrasing A — should trigger meeting_lookup.",
       "mode": "llm_host",
       "scenario": "What meetings have I had in the last week? Give me a summary of what I've been discussing.",
       "llmHostConfig": {
@@ -139,17 +174,17 @@
         "model": "claude-3-5-haiku@20241022",
         "maxToolCalls": 5
       },
-      "iterations": 3,
-      "accuracyThreshold": 0.67,
+      "accuracyThreshold": 0.8,
       "expect": {
         "toolsTriggered": {
           "calls": [{ "name": "meeting_lookup", "required": true }]
         }
       }
     },
+
     {
-      "id": "llm-host-triggers-code-search-for-code-question",
-      "description": "LLM host: code question should trigger code_search. 3 iterations, 67% accuracy threshold.",
+      "id": "llm-code-search-phrasing-a",
+      "description": "LLM host: code question — should trigger code_search.",
       "mode": "llm_host",
       "scenario": "Find the implementation of the MCP tool handler in our internal codebase",
       "llmHostConfig": {
@@ -157,17 +192,17 @@
         "model": "claude-3-5-haiku@20241022",
         "maxToolCalls": 5
       },
-      "iterations": 3,
-      "accuracyThreshold": 0.67,
+      "accuracyThreshold": 0.8,
       "expect": {
         "toolsTriggered": {
           "calls": [{ "name": "code_search", "required": true }]
         }
       }
     },
+
     {
-      "id": "llm-host-no-unexpected-tools-for-simple-search",
-      "description": "LLM host: simple knowledge question should use search, not employee_search or meeting_lookup. Tests tool selectivity.",
+      "id": "llm-selectivity-search-not-people",
+      "description": "LLM host: knowledge question should use search, not employee_search or meeting_lookup. Tests tool selectivity.",
       "mode": "llm_host",
       "scenario": "What is the Glean MCP server and what does it do?",
       "llmHostConfig": {
@@ -175,8 +210,7 @@
         "model": "claude-3-5-haiku@20241022",
         "maxToolCalls": 3
       },
-      "iterations": 3,
-      "accuracyThreshold": 0.67,
+      "accuracyThreshold": 0.8,
       "expect": {
         "toolsTriggered": {
           "calls": [{ "name": "search", "required": true }],

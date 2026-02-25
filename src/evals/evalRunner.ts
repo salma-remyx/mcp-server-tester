@@ -123,6 +123,24 @@ export interface EvalRunnerOptions {
    * @default 1 (sequential)
    */
   concurrency?: number;
+
+  /**
+   * Default iteration count for `llm_host` mode cases that do not specify
+   * `iterations` explicitly. Has no effect on `direct` mode cases (which are
+   * deterministic and always default to 1 iteration).
+   *
+   * Set to 10 for standard runs or 20 for release gates. Individual cases can
+   * still override this with their own `iterations` field.
+   *
+   * @default 1 (preserves historical behaviour when not set)
+   *
+   * @example
+   * ```typescript
+   * // Run all llm_host cases 10 times each by default
+   * await runEvalDataset({ dataset, defaultLlmIterations: 10 }, { mcp });
+   * ```
+   */
+  defaultLlmIterations?: number;
 }
 
 /**
@@ -561,6 +579,7 @@ export async function runEvalDataset(
     judgeConfigs,
     stopOnFailure = false,
     concurrency = 1,
+    defaultLlmIterations,
     onCaseComplete,
   } = options;
 
@@ -574,7 +593,16 @@ export async function runEvalDataset(
 
   // Build task factories for all cases
   const tasks = dataset.cases.map((evalCase) => async () => {
-    const result = await runEvalCase(evalCase, context, {
+    // Apply defaultLlmIterations to llm_host cases that don't specify iterations.
+    // Direct mode cases are deterministic — they always stay at 1 iteration.
+    const effectiveCase =
+      evalCase.mode === 'llm_host' &&
+      evalCase.iterations === undefined &&
+      defaultLlmIterations !== undefined
+        ? { ...evalCase, iterations: defaultLlmIterations }
+        : evalCase;
+
+    const result = await runEvalCase(effectiveCase, context, {
       datasetName: dataset.name,
       schemas: allSchemas,
       judgeConfigs,
