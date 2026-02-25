@@ -81,6 +81,13 @@ export async function validateJudge(
       lastReasoning = judgeResult.reasoning;
     }
 
+    if (scores.length === 0) {
+      return {
+        pass: false,
+        message: 'Judge evaluation failed: no scores collected',
+      };
+    }
+
     const meanScore = scores.reduce((a, b) => a + b, 0) / scores.length;
     const passed = meanScore >= threshold;
     const repNote =
