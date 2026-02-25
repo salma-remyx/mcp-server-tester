@@ -8,9 +8,9 @@
 
 A **test** checks that your code does what you wrote it to do. Pass or fail, deterministic, milliseconds to run.
 
-An **eval** checks that your *system* does what a *user* needs it to do. Probabilistic, needs multiple runs, takes seconds or minutes.
+An **eval** checks that your _system_ does what a _user_ needs it to do. Probabilistic, needs multiple runs, takes seconds or minutes.
 
-For MCP servers, this distinction matters enormously. Your tool definitions — the names, descriptions, and schemas you expose to AI clients — directly affect whether Claude Desktop, ChatGPT, or any other LLM host will actually *use* your tools correctly. A unit test can verify that your `search` tool returns results. It cannot tell you whether a real user asking "find recent docs about planning" will cause Claude to call `search` in the first place.
+For MCP servers, this distinction matters enormously. Your tool definitions — the names, descriptions, and schemas you expose to AI clients — directly affect whether Claude Desktop, ChatGPT, or any other LLM host will actually _use_ your tools correctly. A unit test can verify that your `search` tool returns results. It cannot tell you whether a real user asking "find recent docs about planning" will cause Claude to call `search` in the first place.
 
 That's the gap evals fill.
 
@@ -26,7 +26,7 @@ That's the gap evals fill.
 
 Every eval case has three parts:
 
-```
+```text
 Scenario  →  Run  →  Assertion
 ```
 
@@ -93,7 +93,7 @@ A real LLM receives your tools and a natural language scenario, then decides whi
 
 **How many iterations:** At least 10. LLMs are non-deterministic — the same scenario may trigger different tools on different runs. 3 iterations is almost meaningless statistically. 10 gives you a rough accuracy estimate. 20+ lets you make reliable decisions about whether a change helped.
 
-**What you're testing:** Your tool *descriptions* and the mental model they create in the LLM, not the tool implementation.
+**What you're testing:** Your tool _descriptions_ and the mental model they create in the LLM, not the tool implementation.
 
 ---
 
@@ -123,20 +123,17 @@ This says: "I'll accept this eval as passing if the LLM gets it right at least 8
 
 Here's the uncomfortable math. With 3 iterations, a tool that works 40% of the time is statistically indistinguishable from one that works 94% of the time. The confidence interval is just too wide to make decisions.
 
-| Iterations | Margin of error (95% CI) | Useful for |
-|---|---|---|
-| 3 | ±27 percentage points | Almost nothing |
-| 10 | ±16 percentage points | Detecting large regressions |
-| 20 | ±10 percentage points | Making real decisions |
-| 50 | ±6 percentage points | Release gates |
+| Iterations | Margin of error (95% CI) | Useful for                  |
+| ---------- | ------------------------ | --------------------------- |
+| 3          | ±27 percentage points    | Almost nothing              |
+| 10         | ±16 percentage points    | Detecting large regressions |
+| 20         | ±10 percentage points    | Making real decisions       |
+| 50         | ±6 percentage points     | Release gates               |
 
 **Practical recommendation:** 10 iterations for development/CI, 20 for release gates. The `defaultLlmIterations` option in `runEvalDataset` sets this globally so you don't have to repeat it on every case:
 
 ```typescript
-await runEvalDataset(
-  { dataset, defaultLlmIterations: 10 },
-  { mcp, testInfo }
-);
+await runEvalDataset({ dataset, defaultLlmIterations: 10 }, { mcp, testInfo });
 ```
 
 Individual cases can override this with their own `iterations` field.
@@ -149,7 +146,7 @@ This is where most eval efforts fall short. A single scenario phrasing tests whe
 
 ### The Diversity Problem
 
-If your only scenario for `employee_search` is "Who leads the developer platform team?", and the LLM gets it right 10/10 times, you've learned that *that exact phrasing* works. You haven't learned whether it works for "find the VP of engineering" or "who should I talk to about API access?" Those might fail.
+If your only scenario for `employee_search` is "Who leads the developer platform team?", and the LLM gets it right 10/10 times, you've learned that _that exact phrasing_ works. You haven't learned whether it works for "find the VP of engineering" or "who should I talk to about API access?" Those might fail.
 
 **Rule of thumb:** Write at least 2-3 scenario phrasings per tool. Vary the vocabulary, the level of directness, and the implied user goal.
 
@@ -163,7 +160,7 @@ If your only scenario for `employee_search` is "Who leads the developer platform
 
 1. **Use natural phrasing** — Write scenarios the way a real user would ask the question, not the way an engineer would phrase a function call. "Search for recent documents about the Q4 planning process" not "Call search with query 'Q4 planning'."
 
-2. **Test the *intent*, not the keyword** — Good tool descriptions work even when the user doesn't use the tool's name. "Find recent documents" should trigger `search` without the user saying "search".
+2. **Test the _intent_, not the keyword** — Good tool descriptions work even when the user doesn't use the tool's name. "Find recent documents" should trigger `search` without the user saying "search".
 
 3. **Test selectivity** — For each tool, write a scenario that should trigger it and NOT other tools. This catches over-triggering (using `search` when `employee_search` would be better).
 
@@ -185,7 +182,7 @@ Not every scenario should expect a tool call. Some scenarios should result in th
 }
 ```
 
-This tests that your tools don't *over-trigger* for questions that don't need them.
+This tests that your tools don't _over-trigger_ for questions that don't need them.
 
 ---
 
@@ -226,17 +223,15 @@ Did the LLM call the right tools? This is the core assertion for LLM host mode.
 ```json
 {
   "toolsTriggered": {
-    "calls": [
-      { "name": "search", "required": true }
-    ],
+    "calls": [{ "name": "search", "required": true }],
     "order": "any",
     "exclusive": false
   }
 }
 ```
 
-- `required: true` — the LLM *must* call this tool
-- `required: false` — it *may* call this tool, but not required
+- `required: true` — the LLM _must_ call this tool
+- `required: false` — it _may_ call this tool, but not required
 - `order: "strict"` — calls must appear in the listed order
 - `exclusive: true` — only the listed tools may be called (no unexpected tools)
 
@@ -269,7 +264,7 @@ This is the most expensive assertion (requires a second LLM call) and the most p
 
 ## Stacking Assertions
 
-Assertions compose. A case passes only if *all* assertions pass. This lets you be precise about what "correct behavior" means:
+Assertions compose. A case passes only if _all_ assertions pass. This lets you be precise about what "correct behavior" means:
 
 ```json
 {
@@ -296,12 +291,12 @@ This case only passes if: the LLM called `search`, made between 1 and 5 tool cal
 
 **Think of it as:** "In what fraction of real user interactions am I OK with the wrong tool being called?"
 
-| Threshold | What it means | When to use |
-|---|---|---|
-| 1.0 | Zero tolerance — must always work | Critical paths, primary tools |
-| 0.9 | 1 in 10 interactions may fail | Important secondary tools |
-| 0.8 | 1 in 5 interactions may fail | Useful but not essential tools |
-| 0.7 | 3 in 10 interactions may fail | Experimental features |
+| Threshold | What it means                     | When to use                    |
+| --------- | --------------------------------- | ------------------------------ |
+| 1.0       | Zero tolerance — must always work | Critical paths, primary tools  |
+| 0.9       | 1 in 10 interactions may fail     | Important secondary tools      |
+| 0.8       | 1 in 5 interactions may fail      | Useful but not essential tools |
+| 0.7       | 3 in 10 interactions may fail     | Experimental features          |
 
 A threshold of 0.8 with 10 iterations means: "This eval passes if 8 or more of 10 runs trigger the right tool."
 
@@ -342,8 +337,8 @@ projects: [
   {
     name: 'baseline',
     use: {
-      mcpConfig: { transport: 'http', serverUrl: '...' }
-    }
+      mcpConfig: { transport: 'http', serverUrl: '...' },
+    },
   },
   {
     name: 'with-skill',
@@ -354,11 +349,13 @@ projects: [
         // After adding a Glean skill to the LLM host config
       },
       llmHostConfig: {
-        systemPromptAdditions: ['You have access to Glean enterprise search. Use the search tool to find internal documents, and employee_search to find people.']
-      }
-    }
-  }
-]
+        systemPromptAdditions: [
+          'You have access to Glean enterprise search. Use the search tool to find internal documents, and employee_search to find people.',
+        ],
+      },
+    },
+  },
+];
 ```
 
 Run both and compare accuracy per tool. The reporter groups results by project, making the comparison straightforward.
@@ -371,7 +368,7 @@ Run both and compare accuracy per tool. The reporter groups results by project, 
 
 **Testing the scenario, not the description.** If you write the scenario after looking at the tool description, you're likely to use the same vocabulary the description uses. The LLM will get it right, but a real user might not. Write scenarios first.
 
-**Ignoring selectivity.** "Will `search` be called for this scenario?" is only half the question. "Will `employee_search` be called *instead of* `search` when it should be?" is equally important.
+**Ignoring selectivity.** "Will `search` be called for this scenario?" is only half the question. "Will `employee_search` be called _instead of_ `search` when it should be?" is equally important.
 
 **Setting threshold to 1.0 everywhere.** If your CI requires 100% accuracy, any LLM non-determinism will cause flaky failures. Reserve 1.0 for cases you're confident are genuinely always correct. Use 0.8–0.9 for most cases.
 
@@ -392,21 +389,21 @@ Run both and compare accuracy per tool. The reporter groups results by project, 
       "id": "unique-case-id",
       "description": "Human-readable description",
 
-      "mode": "direct",                 // or "llm_host"
-      "toolName": "search",             // required for direct mode
-      "args": { "query": "hello" },     // required for direct mode
+      "mode": "direct", // or "llm_host"
+      "toolName": "search", // required for direct mode
+      "args": { "query": "hello" }, // required for direct mode
 
       // For llm_host mode instead:
       "scenario": "Find recent documents about X",
       "llmHostConfig": {
-        "provider": "vertex-anthropic",  // or "openai", "anthropic", etc.
+        "provider": "vertex-anthropic", // or "openai", "anthropic", etc.
         "model": "claude-3-5-haiku@20241022",
         "maxToolCalls": 5
       },
 
       // Multi-iteration (mainly for llm_host):
-      "iterations": 10,                 // or use defaultLlmIterations in the runner
-      "accuracyThreshold": 0.8,         // fraction that must pass (0–1)
+      "iterations": 10, // or use defaultLlmIterations in the runner
+      "accuracyThreshold": 0.8, // fraction that must pass (0–1)
 
       "expect": {
         "isError": false,

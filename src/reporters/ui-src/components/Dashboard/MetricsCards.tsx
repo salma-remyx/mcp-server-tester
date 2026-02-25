@@ -11,33 +11,72 @@ interface MetricsSummary {
   passed: number;
   failed: number;
   passRate: number;
+  avgAccuracy?: number; // mean accuracy across multi-iteration cases
+  totalIterations?: number; // total iterations run
 }
 
 function computeMetrics(results: EvalCaseResult[]): MetricsSummary {
   const passed = results.filter((r) => r.pass).length;
   const failed = results.filter((r) => !r.pass).length;
   const total = results.length;
+
+  const multiIterResults = results.filter((r) => r.accuracy !== undefined);
+  const avgAccuracy =
+    multiIterResults.length > 0
+      ? multiIterResults.reduce((sum, r) => sum + (r.accuracy ?? 0), 0) /
+        multiIterResults.length
+      : undefined;
+
+  const totalIterations = results.reduce(
+    (sum, r) => sum + (r.iterationResults?.length ?? 1),
+    0
+  );
+
   return {
     total,
     passed,
     failed,
     passRate: total > 0 ? passed / total : 0,
+    avgAccuracy,
+    totalIterations,
   };
 }
 
 export function MetricsCards({ results }: MetricsCardsProps) {
   const overall = useMemo(() => computeMetrics(results), [results]);
+  const showAccuracy = overall.avgAccuracy !== undefined;
 
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div
+      className={`grid grid-cols-2 gap-4 ${showAccuracy ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
+    >
       <MetricCard
         title="Pass Rate"
         value={`${(overall.passRate * 100).toFixed(1)}%`}
         variant={overall.passRate >= 0.8 ? 'success' : 'error'}
       />
+      {showAccuracy && (
+        <MetricCard
+          title="Avg LLM Accuracy"
+          value={`${(overall.avgAccuracy! * 100).toFixed(1)}%`}
+          subtitle={`${overall.totalIterations} iterations`}
+          variant={
+            overall.avgAccuracy! >= 0.8
+              ? 'success'
+              : overall.avgAccuracy! >= 0.6
+                ? 'warning'
+                : 'error'
+          }
+        />
+      )}
       <MetricCard
-        title="Total Tests"
+        title="Total Cases"
         value={overall.total.toString()}
+        subtitle={
+          overall.totalIterations && overall.totalIterations > overall.total
+            ? `${overall.totalIterations} runs`
+            : undefined
+        }
         variant="neutral"
       />
       <MetricCard
@@ -97,14 +136,16 @@ export function SourceBreakdown({ results }: SourceBreakdownProps) {
 interface MetricCardProps {
   title: string;
   value: string;
-  variant: 'success' | 'error' | 'neutral';
+  subtitle?: string;
+  variant: 'success' | 'error' | 'neutral' | 'warning';
 }
 
-function MetricCard({ title, value, variant }: MetricCardProps) {
+function MetricCard({ title, value, subtitle, variant }: MetricCardProps) {
   const colors = {
     success: 'text-green-600 dark:text-green-400',
     error: 'text-red-600 dark:text-red-400',
     neutral: 'text-foreground',
+    warning: 'text-amber-600 dark:text-amber-400',
   };
 
   return (
@@ -116,6 +157,9 @@ function MetricCard({ title, value, variant }: MetricCardProps) {
         <span className={`mt-2 text-3xl font-bold ${colors[variant]}`}>
           {value}
         </span>
+        {subtitle && (
+          <span className="mt-1 text-xs text-muted-foreground">{subtitle}</span>
+        )}
       </div>
     </div>
   );
@@ -155,12 +199,12 @@ function SourceBreakdownCard({
     <div
       className={`rounded-lg border border-l-4 ${colors.border} ${colors.bg} p-4 shadow-sm`}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-2">
           <span className={colors.icon}>{icon}</span>
           <span className={`font-semibold ${colors.title}`}>{title}</span>
         </div>
-        <div className="flex items-center gap-6 text-sm">
+        <div className="flex items-center gap-6 text-sm flex-wrap">
           <div className="flex flex-col items-center">
             <span className="text-xs text-muted-foreground uppercase">
               Pass Rate
@@ -175,9 +219,36 @@ function SourceBreakdownCard({
               {(metrics.passRate * 100).toFixed(1)}%
             </span>
           </div>
+          {metrics.avgAccuracy !== undefined && (
+            <div className="flex flex-col items-center">
+              <span className="text-xs text-muted-foreground uppercase">
+                Avg Accuracy
+              </span>
+              <span
+                className={`font-bold ${
+                  metrics.avgAccuracy >= 0.8
+                    ? 'text-green-600 dark:text-green-400'
+                    : metrics.avgAccuracy >= 0.6
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-red-600 dark:text-red-400'
+                }`}
+              >
+                {(metrics.avgAccuracy * 100).toFixed(1)}%
+              </span>
+            </div>
+          )}
+          {metrics.totalIterations !== undefined &&
+            metrics.totalIterations > metrics.total && (
+              <div className="flex flex-col items-center">
+                <span className="text-xs text-muted-foreground uppercase">
+                  Iterations
+                </span>
+                <span className="font-bold">{metrics.totalIterations}</span>
+              </div>
+            )}
           <div className="flex flex-col items-center">
             <span className="text-xs text-muted-foreground uppercase">
-              Total
+              Cases
             </span>
             <span className="font-bold">{metrics.total}</span>
           </div>
