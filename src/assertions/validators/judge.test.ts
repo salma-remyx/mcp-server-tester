@@ -39,7 +39,7 @@ describe('validateJudge', () => {
       const mockJudge = makeMockJudge([{ score: 0.8, pass: true }]);
       mockCreateJudge.mockReturnValue(mockJudge);
 
-      await validateJudge('some response', { rubric: 'Is it good?' });
+      await validateJudge('some response', { rubric: { text: 'Is it good?' } });
 
       expect(mockJudge.evaluate).toHaveBeenCalledTimes(1);
     });
@@ -48,7 +48,7 @@ describe('validateJudge', () => {
       const mockJudge = makeMockJudge([{ score: 0.8, pass: true }]);
       mockCreateJudge.mockReturnValue(mockJudge);
 
-      await validateJudge('some response', { rubric: 'Is it good?', reps: 1 });
+      await validateJudge('some response', { rubric: { text: 'Is it good?' }, reps: 1 });
 
       expect(mockJudge.evaluate).toHaveBeenCalledTimes(1);
     });
@@ -57,7 +57,7 @@ describe('validateJudge', () => {
       const mockJudge = makeMockJudge([{ score: 0.75, pass: true }]);
       mockCreateJudge.mockReturnValue(mockJudge);
 
-      const result = await validateJudge('response', { rubric: 'Is it good?' });
+      const result = await validateJudge('response', { rubric: { text: 'Is it good?' } });
 
       expect(result.pass).toBe(true);
       expect(result.message).toContain('0.75');
@@ -67,7 +67,7 @@ describe('validateJudge', () => {
       const mockJudge = makeMockJudge([{ score: 0.5, pass: false, reasoning: 'Too vague' }]);
       mockCreateJudge.mockReturnValue(mockJudge);
 
-      const result = await validateJudge('response', { rubric: 'Is it good?' });
+      const result = await validateJudge('response', { rubric: { text: 'Is it good?' } });
 
       expect(result.pass).toBe(false);
       expect(result.message).toContain('0.50');
@@ -78,7 +78,7 @@ describe('validateJudge', () => {
       const mockJudge = makeMockJudge([{ score: 0.8, pass: true }]);
       mockCreateJudge.mockReturnValue(mockJudge);
 
-      const result = await validateJudge('response', { rubric: 'Is it good?' });
+      const result = await validateJudge('response', { rubric: { text: 'Is it good?' } });
 
       expect(result.message).not.toContain('mean of');
       expect(result.message).not.toContain('reps');
@@ -88,7 +88,7 @@ describe('validateJudge', () => {
       const mockJudge = makeMockJudge([{ pass: true }]);
       mockCreateJudge.mockReturnValue(mockJudge);
 
-      const result = await validateJudge('response', { rubric: 'Is it good?' });
+      const result = await validateJudge('response', { rubric: { text: 'Is it good?' } });
 
       // pass=true → score=1.0, which is >= 0.7 threshold
       expect(result.pass).toBe(true);
@@ -104,7 +104,7 @@ describe('validateJudge', () => {
       ]);
       mockCreateJudge.mockReturnValue(mockJudge);
 
-      await validateJudge('response', { rubric: 'Is it good?', reps: 3 });
+      await validateJudge('response', { rubric: { text: 'Is it good?' }, reps: 3 });
 
       expect(mockJudge.evaluate).toHaveBeenCalledTimes(3);
     });
@@ -118,7 +118,7 @@ describe('validateJudge', () => {
       mockCreateJudge.mockReturnValue(mockJudge);
 
       const result = await validateJudge('response', {
-        rubric: 'Is it good?',
+        rubric: { text: 'Is it good?' },
         reps: 2,
         threshold: 0.7,
       });
@@ -135,7 +135,7 @@ describe('validateJudge', () => {
       mockCreateJudge.mockReturnValue(mockJudge);
 
       const result = await validateJudge('response', {
-        rubric: 'Is it good?',
+        rubric: { text: 'Is it good?' },
         reps: 2,
         threshold: 0.7,
       });
@@ -151,7 +151,7 @@ describe('validateJudge', () => {
       mockCreateJudge.mockReturnValue(mockJudge);
 
       const result = await validateJudge('response', {
-        rubric: 'Is it good?',
+        rubric: { text: 'Is it good?' },
         reps: 2,
       });
 
@@ -168,7 +168,7 @@ describe('validateJudge', () => {
       mockCreateJudge.mockReturnValue(mockJudge);
 
       const result = await validateJudge('response', {
-        rubric: 'Is it good?',
+        rubric: { text: 'Is it good?' },
         reps: 2,
         threshold: 0.7,
       });
@@ -186,7 +186,7 @@ describe('validateJudge', () => {
       };
       mockCreateJudge.mockReturnValue(mockJudge);
 
-      const result = await validateJudge('response', { rubric: 'Is it good?' });
+      const result = await validateJudge('response', { rubric: { text: 'Is it good?' } });
 
       expect(result.pass).toBe(false);
       expect(result.message).toContain('Judge evaluation error');

@@ -5,7 +5,8 @@
  */
 
 import type { ValidationResult } from './types.js';
-import type { JudgeConfig } from '../../judge/judgeTypes.js';
+import type { ProviderKind } from '../../judge/judgeTypes.js';
+import type { RubricSpec } from '../../judge/rubrics.js';
 import { createJudge } from '../../judge/judgeClient.js';
 import { resolveRubric } from '../../judge/rubrics.js';
 
@@ -13,16 +14,28 @@ import { resolveRubric } from '../../judge/rubrics.js';
  * Configuration for the judge validator
  */
 export interface JudgeValidatorConfig {
-  /** The evaluation rubric/criteria for the judge */
-  rubric: string;
+  /** The evaluation rubric: a built-in name or custom { text: string } */
+  rubric: RubricSpec;
   /** Optional reference response to compare against */
   reference?: unknown;
   /** Minimum score required to pass (0-1, default: 0.7) */
   threshold?: number;
-  /** Optional config ID to look up from a judgeConfigs registry */
-  configId?: string;
   /** Number of judge evaluations to run. Scores averaged. @default 1 */
   reps?: number;
+  /** Judge provider. @default 'claude' */
+  provider?: ProviderKind;
+  /** Model override (e.g., 'claude-opus-4-20250514') */
+  model?: string;
+  /** Environment variable name for API key */
+  apiKeyEnvVar?: string;
+  /** Max tokens for judge response */
+  maxTokens?: number;
+  /** Temperature for judge LLM (0–1) */
+  temperature?: number;
+  /** Max budget in USD per evaluation */
+  maxBudgetUsd?: number;
+  /** Fail if response exceeds this size in bytes before judging */
+  maxToolOutputSize?: number;
 }
 
 /**
@@ -33,8 +46,7 @@ export interface JudgeValidatorConfig {
  * with the unified assertion architecture.
  *
  * @param response - The response to evaluate
- * @param config - Judge evaluation configuration (rubric, reference, threshold, configId)
- * @param judgeConfigs - Optional registry mapping configId values to JudgeConfig instances
+ * @param config - Judge evaluation configuration (rubric, reference, threshold, provider, model, etc.)
  * @returns Validation result indicating pass/fail with judge reasoning
  *
  * @example
@@ -47,26 +59,42 @@ export interface JudgeValidatorConfig {
  *   console.log(result.message);
  * }
  *
- * // With a custom judge config and threshold
+ * // With inline judge config and threshold
  * const result2 = await validateJudge(
  *   response,
- *   { rubric: 'Is this helpful?', threshold: 0.9, configId: 'strict' },
- *   { strict: { model: 'claude-opus-4-20250514', temperature: 0 } }
+ *   { rubric: 'Is this helpful?', threshold: 0.9, model: 'claude-opus-4-20250514', temperature: 0 }
  * );
  * ```
  */
 export async function validateJudge(
   response: unknown,
-  config: JudgeValidatorConfig,
-  judgeConfigs?: Record<string, JudgeConfig>
+  config: JudgeValidatorConfig
 ): Promise<ValidationResult> {
-  const { rubric, reference, threshold = 0.7, configId, reps = 1 } = config;
+  const {
+    rubric,
+    reference,
+    threshold = 0.7,
+    reps = 1,
+    provider,
+    model,
+    apiKeyEnvVar,
+    maxTokens,
+    temperature,
+    maxBudgetUsd,
+    maxToolOutputSize,
+  } = config;
 
   const resolvedRubric = resolveRubric(rubric);
 
-  const judgeConfig: JudgeConfig = configId
-    ? (judgeConfigs?.[configId] ?? {})
-    : {};
+  const judgeConfig = {
+    ...(provider !== undefined && { provider }),
+    ...(model !== undefined && { model }),
+    ...(apiKeyEnvVar !== undefined && { apiKeyEnvVar }),
+    ...(maxTokens !== undefined && { maxTokens }),
+    ...(temperature !== undefined && { temperature }),
+    ...(maxBudgetUsd !== undefined && { maxBudgetUsd }),
+    ...(maxToolOutputSize !== undefined && { maxToolOutputSize }),
+  };
 
   try {
     const judge = createJudge(judgeConfig);

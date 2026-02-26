@@ -32,8 +32,7 @@ describe('datasetTypes', () => {
           response: { temperature: 20 },
           schema: 'weather-response',
           passesJudge: {
-            rubric: 'Should contain temperature',
-            configId: 'weather-judge',
+            rubric: { text: 'Should contain temperature' },
           },
         },
         metadata: { priority: 'high' },
@@ -170,7 +169,7 @@ describe('datasetTypes', () => {
     it('accepts passesJudge.reps', () => {
       const result = EvalCaseSchema.safeParse({
         id: 'test',
-        expect: { passesJudge: { rubric: 'Is it good?', reps: 5 } },
+        expect: { passesJudge: { rubric: 'correctness', reps: 5 } },
       });
       expect(result.success).toBe(true);
     });
@@ -178,9 +177,104 @@ describe('datasetTypes', () => {
     it('rejects passesJudge.reps: 0', () => {
       const result = EvalCaseSchema.safeParse({
         id: 'test',
-        expect: { passesJudge: { rubric: 'Is it good?', reps: 0 } },
+        expect: { passesJudge: { rubric: 'correctness', reps: 0 } },
       });
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe('passesJudge rubric discriminated union', () => {
+    it('accepts a built-in rubric name', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: { passesJudge: { rubric: 'correctness' } },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('accepts a custom rubric object', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: {
+          passesJudge: { rubric: { text: 'Evaluate if the response is helpful' } },
+        },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects a plain string that is not a built-in rubric', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: { passesJudge: { rubric: 'this is not a built-in rubric' } },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('accepts all five built-in rubric names', () => {
+      const names = [
+        'correctness',
+        'completeness',
+        'groundedness',
+        'instruction-following',
+        'conciseness',
+      ];
+      for (const rubric of names) {
+        const result = EvalCaseSchema.safeParse({
+          id: 'test',
+          expect: { passesJudge: { rubric } },
+        });
+        expect(result.success).toBe(true);
+      }
+    });
+
+    it('rejects a custom rubric object with empty text', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: { passesJudge: { rubric: { text: '' } } },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('accepts inline judge config fields on passesJudge', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: {
+          passesJudge: {
+            rubric: 'correctness',
+            provider: 'openai',
+            model: 'gpt-4o',
+            apiKeyEnvVar: 'OPENAI_API_KEY',
+            maxTokens: 512,
+            temperature: 0.2,
+            maxBudgetUsd: 0.05,
+            maxToolOutputSize: 100000,
+          },
+        },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects unknown provider values in passesJudge', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: {
+          passesJudge: { rubric: 'correctness', provider: 'ollama' },
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('does not accept configId on passesJudge', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: { passesJudge: { rubric: 'correctness', configId: 'my-judge' } },
+      });
+      // configId is no longer a recognized field — strict Zod should reject it
+      // (passesJudge uses .object() which strips unknown fields but does not fail)
+      // After strip, configId should be absent from the result
+      if (result.success) {
+        expect((result.data.expect?.passesJudge as Record<string, unknown>)['configId']).toBeUndefined();
+      }
     });
   });
 

@@ -266,9 +266,44 @@
           "default": 0.7,
           "description": "Minimum score (0–1) required to pass the judge evaluation"
         },
-        "configId": {
+        "reps": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of judge evaluations to run; scores are averaged. Overrides EvalCase.judgeReps."
+        },
+        "provider": {
           "type": "string",
-          "description": "Judge configuration ID — references a named judge config registered in the test runner"
+          "enum": ["claude", "anthropic", "openai", "google"],
+          "description": "Judge LLM provider. Defaults to 'claude'."
+        },
+        "model": {
+          "type": "string",
+          "description": "Model override for the judge LLM (e.g., 'claude-opus-4-20250514')."
+        },
+        "apiKeyEnvVar": {
+          "type": "string",
+          "description": "Environment variable name that holds the API key for the judge provider."
+        },
+        "maxTokens": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum tokens for the judge LLM response."
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Temperature for the judge LLM (0 = deterministic, 1 = max creativity)."
+        },
+        "maxBudgetUsd": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Maximum budget in USD per judge evaluation."
+        },
+        "maxToolOutputSize": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Fail if the response exceeds this size in bytes before judging."
         }
       }
     },

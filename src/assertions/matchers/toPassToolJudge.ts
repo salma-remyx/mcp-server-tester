@@ -7,7 +7,7 @@
  */
 
 import { validateJudge } from '../validators/judge.js';
-import type { JudgeConfig } from '../../judge/judgeTypes.js';
+import type { RubricSpec } from '../../judge/rubrics.js';
 import type { JudgeMatcherOptions } from './types.js';
 
 // Default passing threshold
@@ -21,27 +21,25 @@ const DEFAULT_PASSING_THRESHOLD = 0.7;
 export async function toPassToolJudge(
   this: { isNot: boolean },
   received: unknown,
-  rubric: string,
+  rubric: RubricSpec,
   options: JudgeMatcherOptions = {}
 ): Promise<{ pass: boolean; message: () => string }> {
   const {
     reference = null,
     passingThreshold = DEFAULT_PASSING_THRESHOLD,
-    judgeConfig = {} as JudgeConfig,
+    reps,
+    provider,
+    model,
   } = options;
 
-  // Delegate to the pure validateJudge validator, passing the inline
-  // config directly as a single-entry registry keyed by '_inline'.
-  const validation = await validateJudge(
-    received,
-    {
-      rubric,
-      reference: reference ?? undefined,
-      threshold: passingThreshold,
-      configId: '_inline',
-    },
-    { _inline: judgeConfig }
-  );
+  const validation = await validateJudge(received, {
+    rubric,
+    reference: reference ?? undefined,
+    threshold: passingThreshold,
+    ...(reps !== undefined && { reps }),
+    ...(provider !== undefined && { provider }),
+    ...(model !== undefined && { model }),
+  });
 
   if (this.isNot) {
     return {

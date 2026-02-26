@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { LLMHostConfig } from './llmHost/llmHostTypes.js';
 import type { SnapshotSanitizer } from '../assertions/validators/types.js';
+import type { BuiltInRubric } from '../judge/judgeTypes.js';
 
 // Re-export sanitizer types from canonical source (validators/types.ts)
 // Note: For JSON datasets, the Zod schema below validates that patterns are strings.
@@ -185,16 +186,28 @@ export interface EvalExpectBlock {
    * LLM-as-judge evaluation (toPassToolJudge)
    */
   passesJudge?: {
-    /** Evaluation rubric/criteria */
-    rubric: string;
+    /** Built-in rubric name or custom rubric object */
+    rubric: BuiltInRubric | { text: string };
     /** Reference response to compare against */
     reference?: unknown;
     /** Score threshold for passing (0-1, default: 0.7) */
     threshold?: number;
-    /** Judge configuration ID */
-    configId?: string;
     /** Number of judge evaluations for this assertion. Overrides EvalCase.judgeReps. */
     reps?: number;
+    /** Judge provider. @default 'claude' */
+    provider?: 'claude' | 'anthropic' | 'openai' | 'google';
+    /** Model override (e.g., 'claude-opus-4-20250514') */
+    model?: string;
+    /** Environment variable name for API key */
+    apiKeyEnvVar?: string;
+    /** Max tokens for judge response */
+    maxTokens?: number;
+    /** Temperature for judge LLM (0–1) */
+    temperature?: number;
+    /** Max budget in USD per evaluation */
+    maxBudgetUsd?: number;
+    /** Fail if response exceeds this size in bytes before judging */
+    maxToolOutputSize?: number;
   };
 
   /**
@@ -326,11 +339,26 @@ const EvalExpectBlockSchema = z.object({
   isError: z.union([z.boolean(), z.string(), z.array(z.string())]).optional(),
   passesJudge: z
     .object({
-      rubric: z.string(),
+      rubric: z.union([
+        z.enum([
+          'correctness',
+          'completeness',
+          'groundedness',
+          'instruction-following',
+          'conciseness',
+        ]),
+        z.object({ text: z.string().min(1) }),
+      ]),
       reference: z.unknown().optional(),
       threshold: z.number().min(0).max(1).optional(),
-      configId: z.string().optional(),
       reps: z.number().int().min(1).optional(),
+      provider: z.enum(['claude', 'anthropic', 'openai', 'google']).optional(),
+      model: z.string().optional(),
+      apiKeyEnvVar: z.string().optional(),
+      maxTokens: z.number().int().positive().optional(),
+      temperature: z.number().min(0).max(1).optional(),
+      maxBudgetUsd: z.number().positive().optional(),
+      maxToolOutputSize: z.number().int().positive().optional(),
     })
     .optional(),
   responseSize: z

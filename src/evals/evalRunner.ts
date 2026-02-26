@@ -1,5 +1,4 @@
 import type { MCPFixtureApi } from '../mcp/fixtures/mcpFixture.js';
-import type { JudgeConfig } from '../judge/judgeTypes.js';
 import type { EvalDataset, EvalCase, EvalExpectBlock } from './datasetTypes.js';
 import type { TestInfo, Expect } from '@playwright/test';
 import type { ZodType } from 'zod';
@@ -120,13 +119,6 @@ export interface EvalRunnerOptions {
   schemas?: Record<string, ZodType>;
 
   /**
-   * Judge configuration registry by ID
-   *
-   * Maps config IDs to JudgeConfig for use with expect.passesJudge.configId
-   */
-  judgeConfigs?: Record<string, JudgeConfig>;
-
-  /**
    * Whether to stop on first failure
    * @default false
    */
@@ -207,11 +199,6 @@ export interface EvalCaseOptions {
    * Schema registry for schema validation by name
    */
   schemas?: Record<string, ZodType>;
-
-  /**
-   * Judge configuration registry by ID
-   */
-  judgeConfigs?: Record<string, JudgeConfig>;
 }
 
 async function executeToolCall(
@@ -293,7 +280,6 @@ function didCasePass(
  */
 interface ExpectBlockConfig {
   schemas?: Record<string, ZodType>;
-  judgeConfigs?: Record<string, JudgeConfig>;
   playwrightExpect?: Expect;
   judgeReps?: number;
   canonicalAnswer?: string;
@@ -416,15 +402,11 @@ async function runExpectBlockValidations(
       expectBlock.passesJudge.reference !== undefined
         ? expectBlock.passesJudge.reference
         : config.canonicalAnswer;
-    const validation = await validateJudge(
-      response,
-      {
-        ...expectBlock.passesJudge,
-        reference: effectiveReference,
-        reps: effectiveReps,
-      },
-      config.judgeConfigs
-    );
+    const validation = await validateJudge(response, {
+      ...expectBlock.passesJudge,
+      reference: effectiveReference,
+      reps: effectiveReps,
+    });
     results.judge = {
       pass: validation.pass,
       details: validation.message,
@@ -489,7 +471,6 @@ async function runSingleIteration(
     const { expectations, toolPrecision: tp, toolRecall: tr } =
       await runExpectBlockValidations(evalCase.expect, response, {
         schemas: options.schemas,
-        judgeConfigs: options.judgeConfigs,
         playwrightExpect: context.expect,
         judgeReps: evalCase.judgeReps,
         canonicalAnswer: evalCase.canonicalAnswer,
@@ -524,7 +505,7 @@ async function runSingleIteration(
  *
  * @param evalCase - The eval case to run
  * @param context - Context containing mcp, testInfo, expect
- * @param options - Optional configuration (datasetName, schemas, judgeConfigs)
+ * @param options - Optional configuration (datasetName, schemas)
  * @returns The result of running the eval case
  *
  * @example
@@ -607,7 +588,7 @@ async function runWithConcurrency<T>(
  * This function composes runEvalCase() for each case in the dataset,
  * adding dataset-level features like stopOnFailure and callbacks.
  *
- * @param options - Eval runner options (dataset, schemas, judgeConfigs)
+ * @param options - Eval runner options (dataset, schemas)
  * @param context - Eval context (mcp fixture, optional testInfo, optional expect)
  * @returns Eval results
  *
@@ -637,7 +618,6 @@ export async function runEvalDataset(
   const {
     dataset,
     schemas,
-    judgeConfigs,
     stopOnFailure = false,
     concurrency = 1,
     defaultLlmIterations,
@@ -684,7 +664,6 @@ export async function runEvalDataset(
     const result = await runEvalCase(effectiveCase, context, {
       datasetName: dataset.name,
       schemas: allSchemas,
-      judgeConfigs,
     });
 
     if (onCaseComplete) {
