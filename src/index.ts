@@ -176,6 +176,18 @@ export type {
 } from './evals/evalRunner.js';
 export { runEvalDataset, runEvalCase } from './evals/evalRunner.js';
 
+// Baseline eval comparison
+export { saveBaseline, loadBaseline } from './evals/baseline.js';
+
+// Multi-server A/B comparison
+export type {
+  ComparisonOutcome,
+  CaseComparisonResult,
+  ServerComparisonResult,
+  ServerComparisonOptions,
+} from './evals/serverComparison.js';
+export { runServerComparison } from './evals/serverComparison.js';
+
 // LLM Host Simulation
 export type {
   LLMProvider,
@@ -197,8 +209,15 @@ export type {
   JudgeResult,
   UsageMetrics,
   ProviderKind,
+  BuiltInRubric,
+  RubricSpec,
 } from './judge/judgeTypes.js';
 export { createJudge } from './judge/judgeClient.js';
+export {
+  BUILT_IN_RUBRICS,
+  resolveRubric,
+  isBuiltInRubric,
+} from './judge/judgeTypes.js';
 
 // Conformance
 export type {

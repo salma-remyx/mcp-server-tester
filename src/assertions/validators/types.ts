@@ -17,6 +17,14 @@ export interface ValidationResult {
   message: string;
   /** Additional structured details about the validation */
   details?: Record<string, unknown>;
+  /**
+   * Optional quantitative metrics from the validation.
+   * Populated by validateToolCalls for precision/recall.
+   */
+  metrics?: {
+    precision?: number;
+    recall?: number;
+  };
 }
 
 /**

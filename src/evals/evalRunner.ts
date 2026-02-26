@@ -1,10 +1,14 @@
 import type { MCPFixtureApi } from '../mcp/fixtures/mcpFixture.js';
-import type { JudgeConfig } from '../judge/judgeTypes.js';
 import type { EvalDataset, EvalCase, EvalExpectBlock } from './datasetTypes.js';
 import type { TestInfo, Expect } from '@playwright/test';
 import type { ZodType } from 'zod';
 import { simulateLLMHost } from './llmHost/llmHostSimulation.js';
 import type { EvalCaseResult, IterationResult } from '../types/reporter.js';
+import {
+  saveBaseline,
+  loadBaseline,
+  buildBaselinePassMap,
+} from './baseline.js';
 import {
   validateResponse,
   validateSchema,
@@ -71,6 +75,25 @@ export interface EvalRunnerResult {
    * Overall execution time in milliseconds
    */
   durationMs: number;
+
+  /**
+   * Difference between current pass rate and baseline pass rate.
+   * Positive = improvement, negative = regression.
+   * Only present when `baselineResultsFrom` was provided.
+   */
+  deltaPassRate?: number;
+
+  /**
+   * Number of cases that regressed: passed in baseline, failed now.
+   * Only present when `baselineResultsFrom` was provided.
+   */
+  regressions?: number;
+
+  /**
+   * Number of cases that improved: failed in baseline, passed now.
+   * Only present when `baselineResultsFrom` was provided.
+   */
+  improvements?: number;
 }
 
 /**
@@ -98,13 +121,6 @@ export interface EvalRunnerOptions {
    * ```
    */
   schemas?: Record<string, ZodType>;
-
-  /**
-   * Judge configuration registry by ID
-   *
-   * Maps config IDs to JudgeConfig for use with expect.passesJudge.configId
-   */
-  judgeConfigs?: Record<string, JudgeConfig>;
 
   /**
    * Whether to stop on first failure
@@ -141,6 +157,37 @@ export interface EvalRunnerOptions {
    * ```
    */
   defaultLlmIterations?: number;
+
+  /**
+   * Default number of judge evaluations for cases that do not specify
+   * `judgeReps` explicitly. Applies to any case with a `passesJudge`
+   * expectation. Per-case `judgeReps` overrides this.
+   *
+   * @default 1 (single judge run)
+   */
+  defaultJudgeReps?: number;
+
+  /**
+   * When set, only eval cases whose `tags` array contains at least one of
+   * the specified tags are run. Cases without a `tags` field are excluded.
+   * When undefined or empty, all cases run (default behavior).
+   */
+  filterTags?: string[];
+
+  /**
+   * If set, saves the run results to this file path after completion.
+   * Use with `baselineResultsFrom` on the next run for regression detection.
+   *
+   * @example '.mcp-test-results/baseline.json'
+   */
+  saveResultsTo?: string;
+
+  /**
+   * If set, loads this file as the baseline and computes delta metrics vs the current run.
+   * Populates `EvalRunnerResult.deltaPassRate`, `.regressions`, `.improvements`,
+   * and tags each `EvalCaseResult.baselinePass`.
+   */
+  baselineResultsFrom?: string;
 }
 
 /**
@@ -156,11 +203,6 @@ export interface EvalCaseOptions {
    * Schema registry for schema validation by name
    */
   schemas?: Record<string, ZodType>;
-
-  /**
-   * Judge configuration registry by ID
-   */
-  judgeConfigs?: Record<string, JudgeConfig>;
 }
 
 async function executeToolCall(
@@ -242,8 +284,18 @@ function didCasePass(
  */
 interface ExpectBlockConfig {
   schemas?: Record<string, ZodType>;
-  judgeConfigs?: Record<string, JudgeConfig>;
   playwrightExpect?: Expect;
+  judgeReps?: number;
+  canonicalAnswer?: string;
+}
+
+/**
+ * Return type for runExpectBlockValidations, including optional precision/recall metrics
+ */
+interface ExpectBlockResults {
+  expectations: EvalCaseResult['expectations'];
+  toolPrecision?: number;
+  toolRecall?: number;
 }
 
 /**
@@ -256,8 +308,10 @@ async function runExpectBlockValidations(
   expectBlock: EvalExpectBlock,
   response: unknown,
   config: ExpectBlockConfig
-): Promise<EvalCaseResult['expectations']> {
+): Promise<ExpectBlockResults> {
   const results: EvalCaseResult['expectations'] = {};
+  let toolPrecision: number | undefined;
+  let toolRecall: number | undefined;
 
   // response (toMatchToolResponse)
   if (expectBlock.response !== undefined) {
@@ -328,6 +382,8 @@ async function runExpectBlockValidations(
       pass: validation.pass,
       details: validation.message,
     };
+    toolPrecision = validation.metrics?.precision;
+    toolRecall = validation.metrics?.recall;
   }
 
   // toolCallCount (toHaveToolCallCount)
@@ -344,11 +400,16 @@ async function runExpectBlockValidations(
 
   // passesJudge (toPassToolJudge)
   if (expectBlock.passesJudge !== undefined) {
-    const validation = await validateJudge(
-      response,
-      expectBlock.passesJudge,
-      config.judgeConfigs
-    );
+    const effectiveReps = expectBlock.passesJudge.reps ?? config.judgeReps ?? 1;
+    const effectiveReference =
+      expectBlock.passesJudge.reference !== undefined
+        ? expectBlock.passesJudge.reference
+        : config.canonicalAnswer;
+    const validation = await validateJudge(response, {
+      ...expectBlock.passesJudge,
+      reference: effectiveReference,
+      reps: effectiveReps,
+    });
     results.judge = {
       pass: validation.pass,
       details: validation.message,
@@ -387,7 +448,7 @@ async function runExpectBlockValidations(
     }
   }
 
-  return results;
+  return { expectations: results, toolPrecision, toolRecall };
 }
 
 /**
@@ -400,24 +461,29 @@ async function runSingleIteration(
   options: EvalCaseOptions
 ): Promise<EvalCaseResult> {
   const startTime = Date.now();
-  const mode = evalCase.mode || 'direct';
 
   // Execute tool call
   const { response, error } = await executeToolCall(evalCase, context.mcp);
 
   // Collect expectation results from expect block
   let expectationResults: EvalCaseResult['expectations'] = {};
+  let toolPrecision: number | undefined;
+  let toolRecall: number | undefined;
 
   if (!error && evalCase.expect) {
-    expectationResults = await runExpectBlockValidations(
-      evalCase.expect,
-      response,
-      {
-        schemas: options.schemas,
-        judgeConfigs: options.judgeConfigs,
-        playwrightExpect: context.expect,
-      }
-    );
+    const {
+      expectations,
+      toolPrecision: tp,
+      toolRecall: tr,
+    } = await runExpectBlockValidations(evalCase.expect, response, {
+      schemas: options.schemas,
+      playwrightExpect: context.expect,
+      judgeReps: evalCase.judgeReps,
+      canonicalAnswer: evalCase.canonicalAnswer,
+    });
+    expectationResults = expectations;
+    toolPrecision = tp;
+    toolRecall = tr;
   }
 
   // Build result - use test context for authType and project (Playwright is source of truth)
@@ -425,7 +491,6 @@ async function runSingleIteration(
     id: evalCase.id,
     datasetName: options.datasetName ?? 'single-case',
     toolName: evalCase.toolName ?? evalCase.scenario ?? 'unknown',
-    mode,
     source: 'eval',
     pass: didCasePass(error, expectationResults),
     response,
@@ -434,6 +499,9 @@ async function runSingleIteration(
     authType: context.mcp.authType,
     project: context.mcp.project,
     durationMs: Date.now() - startTime,
+    tags: evalCase.tags,
+    toolPrecision,
+    toolRecall,
   };
 }
 
@@ -443,7 +511,7 @@ async function runSingleIteration(
  *
  * @param evalCase - The eval case to run
  * @param context - Context containing mcp, testInfo, expect
- * @param options - Optional configuration (datasetName, schemas, judgeConfigs)
+ * @param options - Optional configuration (datasetName, schemas)
  * @returns The result of running the eval case
  *
  * @example
@@ -526,7 +594,7 @@ async function runWithConcurrency<T>(
  * This function composes runEvalCase() for each case in the dataset,
  * adding dataset-level features like stopOnFailure and callbacks.
  *
- * @param options - Eval runner options (dataset, schemas, judgeConfigs)
+ * @param options - Eval runner options (dataset, schemas)
  * @param context - Eval context (mcp fixture, optional testInfo, optional expect)
  * @returns Eval results
  *
@@ -556,11 +624,14 @@ export async function runEvalDataset(
   const {
     dataset,
     schemas,
-    judgeConfigs,
     stopOnFailure = false,
     concurrency = 1,
     defaultLlmIterations,
+    defaultJudgeReps,
     onCaseComplete,
+    filterTags,
+    saveResultsTo,
+    baselineResultsFrom,
   } = options;
 
   const startTime = Date.now();
@@ -571,21 +642,32 @@ export async function runEvalDataset(
     ...schemas,
   };
 
+  // Filter cases by tag if filterTags is set (non-empty array)
+  const casesToRun =
+    filterTags && filterTags.length > 0
+      ? dataset.cases.filter((c) => c.tags?.some((t) => filterTags.includes(t)))
+      : dataset.cases;
+
   // Build task factories for all cases
-  const tasks = dataset.cases.map((evalCase) => async () => {
+  const tasks = casesToRun.map((evalCase) => async () => {
     // Apply defaultLlmIterations to llm_host cases that don't specify iterations.
     // Direct mode cases are deterministic — they always stay at 1 iteration.
-    const effectiveCase =
+    const withIterations =
       evalCase.mode === 'llm_host' &&
       evalCase.iterations === undefined &&
       defaultLlmIterations !== undefined
         ? { ...evalCase, iterations: defaultLlmIterations }
         : evalCase;
 
+    // Apply defaultJudgeReps to any case without explicit judgeReps
+    const effectiveCase =
+      withIterations.judgeReps === undefined && defaultJudgeReps !== undefined
+        ? { ...withIterations, judgeReps: defaultJudgeReps }
+        : withIterations;
+
     const result = await runEvalCase(effectiveCase, context, {
       datasetName: dataset.name,
       schemas: allSchemas,
-      judgeConfigs,
     });
 
     if (onCaseComplete) {
@@ -619,6 +701,42 @@ export async function runEvalDataset(
     caseResults,
     durationMs: Date.now() - startTime,
   };
+
+  // Load baseline and compute delta if requested
+  if (baselineResultsFrom) {
+    try {
+      const baseline = await loadBaseline(baselineResultsFrom);
+      const baselinePassRate =
+        baseline.total > 0 ? baseline.passed / baseline.total : 0;
+      const baselineMap = buildBaselinePassMap(baseline);
+
+      for (const cr of result.caseResults) {
+        const baselinePass = baselineMap.get(cr.id);
+        if (baselinePass !== undefined) {
+          cr.baselinePass = baselinePass;
+        }
+      }
+
+      result.regressions = result.caseResults.filter(
+        (cr) => cr.baselinePass === true && !cr.pass
+      ).length;
+      result.improvements = result.caseResults.filter(
+        (cr) => cr.baselinePass === false && cr.pass
+      ).length;
+      result.deltaPassRate =
+        result.total > 0 ? result.passed / result.total - baselinePassRate : 0;
+    } catch (err) {
+      console.warn(
+        `[mcp-server-tester] Could not load baseline from ${baselineResultsFrom}: ` +
+          `${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  }
+
+  // Save results to file if requested
+  if (saveResultsTo) {
+    await saveBaseline(result, saveResultsTo);
+  }
 
   // Attach results for MCP reporter if testInfo is provided
   if (context.testInfo) {

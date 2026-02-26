@@ -165,7 +165,9 @@ test('LLM judge evaluation', async ({ mcp }) => {
   "args": { "query": "MCP protocol" },
   "expect": {
     "passesJudge": {
-      "rubric": "Results should be relevant to MCP protocol documentation",
+      "rubric": {
+        "text": "Results should be relevant to MCP protocol documentation"
+      },
       "threshold": 0.8
     }
   }

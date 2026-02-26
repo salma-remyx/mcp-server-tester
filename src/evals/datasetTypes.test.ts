@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   validateEvalCase,
   validateEvalDataset,
+  EvalCaseSchema,
   type EvalCase,
   type SerializedEvalDataset,
 } from './datasetTypes.js';
@@ -31,8 +32,7 @@ describe('datasetTypes', () => {
           response: { temperature: 20 },
           schema: 'weather-response',
           passesJudge: {
-            rubric: 'Should contain temperature',
-            configId: 'weather-judge',
+            rubric: { text: 'Should contain temperature' },
           },
         },
         metadata: { priority: 'high' },
@@ -147,6 +147,145 @@ describe('datasetTypes', () => {
     });
   });
 
+  describe('judgeReps', () => {
+    it('accepts judgeReps as a positive integer', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        judgeReps: 3,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects judgeReps: 0', () => {
+      const result = EvalCaseSchema.safeParse({ id: 'test', judgeReps: 0 });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects judgeReps: -1', () => {
+      const result = EvalCaseSchema.safeParse({ id: 'test', judgeReps: -1 });
+      expect(result.success).toBe(false);
+    });
+
+    it('accepts passesJudge.reps', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: { passesJudge: { rubric: 'correctness', reps: 5 } },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects passesJudge.reps: 0', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: { passesJudge: { rubric: 'correctness', reps: 0 } },
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('passesJudge rubric discriminated union', () => {
+    it('accepts a built-in rubric name', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: { passesJudge: { rubric: 'correctness' } },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('accepts a custom rubric object', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: {
+          passesJudge: {
+            rubric: { text: 'Evaluate if the response is helpful' },
+          },
+        },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects a plain string that is not a built-in rubric', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: { passesJudge: { rubric: 'this is not a built-in rubric' } },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('accepts all five built-in rubric names', () => {
+      const names = [
+        'correctness',
+        'completeness',
+        'groundedness',
+        'instruction-following',
+        'conciseness',
+      ];
+      for (const rubric of names) {
+        const result = EvalCaseSchema.safeParse({
+          id: 'test',
+          expect: { passesJudge: { rubric } },
+        });
+        expect(result.success).toBe(true);
+      }
+    });
+
+    it('rejects a custom rubric object with empty text', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: { passesJudge: { rubric: { text: '' } } },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('accepts inline judge config fields on passesJudge', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: {
+          passesJudge: {
+            rubric: 'correctness',
+            provider: 'openai',
+            model: 'gpt-4o',
+            apiKeyEnvVar: 'OPENAI_API_KEY',
+            maxTokens: 512,
+            temperature: 0.2,
+            maxBudgetUsd: 0.05,
+            maxToolOutputSize: 100000,
+          },
+        },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects unknown provider values in passesJudge', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: {
+          passesJudge: { rubric: 'correctness', provider: 'ollama' },
+        },
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('does not accept configId on passesJudge', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        expect: {
+          passesJudge: { rubric: 'correctness', configId: 'my-judge' },
+        },
+      });
+      // configId is no longer a recognized field — strict Zod should reject it
+      // (passesJudge uses .object() which strips unknown fields but does not fail)
+      // After strip, configId should be absent from the result
+      if (result.success) {
+        expect(
+          (result.data.expect?.passesJudge as Record<string, unknown>)[
+            'configId'
+          ]
+        ).toBeUndefined();
+      }
+    });
+  });
+
   describe('toolsTriggered and toolCallCount', () => {
     it('should preserve toolsTriggered in expect block after validation', () => {
       const raw = {
@@ -173,6 +312,49 @@ describe('datasetTypes', () => {
         'search'
       );
       expect(result.cases[0]!.expect?.toolCallCount?.min).toBe(1);
+    });
+  });
+
+  describe('canonicalAnswer', () => {
+    it('accepts a canonical answer string', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        canonicalAnswer: 'Paris is the capital of France.',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('is optional — case without canonicalAnswer still validates', () => {
+      const result = EvalCaseSchema.safeParse({ id: 'test' });
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('tags', () => {
+    it('accepts an array of tag strings', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        tags: ['tool-finding', 'multi-hop'],
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('accepts an empty tags array', () => {
+      const result = EvalCaseSchema.safeParse({ id: 'test', tags: [] });
+      expect(result.success).toBe(true);
+    });
+
+    it('is optional — case without tags still validates', () => {
+      const result = EvalCaseSchema.safeParse({ id: 'test' });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects non-string tag values', () => {
+      const result = EvalCaseSchema.safeParse({
+        id: 'test',
+        tags: [123],
+      });
+      expect(result.success).toBe(false);
     });
   });
 

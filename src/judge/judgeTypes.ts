@@ -38,14 +38,8 @@ export interface UsageMetrics {
   cacheCreationInputTokens?: number;
 }
 
-/**
- * Valid LLM judge provider kinds.
- *
- * @deprecated 'openai' and 'custom-http' are no longer supported and will
- * throw a runtime error directing you to use 'claude' instead. Use 'claude'
- * (or 'anthropic', which is an alias for 'claude').
- */
-export type ProviderKind = 'claude' | 'anthropic' | 'openai' | 'custom-http';
+/** Valid LLM judge provider kinds. */
+export type ProviderKind = 'claude' | 'anthropic' | 'openai' | 'google';
 
 /**
  * Configuration for an LLM judge
@@ -128,6 +122,9 @@ export interface JudgeResult {
    */
   exceedsMaxToolOutputSize?: boolean;
 }
+
+export type { BuiltInRubric, RubricSpec } from './rubrics.js';
+export { BUILT_IN_RUBRICS, resolveRubric, isBuiltInRubric } from './rubrics.js';
 
 /**
  * LLM judge client interface

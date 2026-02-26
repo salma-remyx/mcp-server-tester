@@ -182,11 +182,6 @@ export interface EvalCaseResult {
   durationMs: number;
 
   /**
-   * @deprecated Mode is inferred from test context, not displayed in reports
-   */
-  mode?: 'direct' | 'llm_host';
-
-  /**
    * Accuracy score (0–1) across all iterations.
    * Only present when the case was run with `iterations > 1`.
    */
@@ -197,6 +192,31 @@ export interface EvalCaseResult {
    * Only present when the case was run with `iterations > 1`.
    */
   iterationResults?: Array<IterationResult>;
+
+  /**
+   * Tags from the source eval case, for filtering and slicing reports.
+   */
+  tags?: string[];
+
+  /**
+   * Precision of tool calls made (0–1).
+   * 1.0 means every tool called was expected; <1.0 means unexpected tools were called.
+   * Only populated when exclusive: true in toolsTriggered and the expectation was evaluated.
+   */
+  toolPrecision?: number;
+
+  /**
+   * Recall of required tool calls (0–1).
+   * 1.0 means all required tools were called; <1.0 means some were missed.
+   * Only populated when toolsTriggered expectation was evaluated.
+   */
+  toolRecall?: number;
+
+  /**
+   * Pass/fail status of this case in the baseline run.
+   * Only present when a baseline was provided to runEvalDataset.
+   */
+  baselinePass?: boolean;
 }
 
 /**

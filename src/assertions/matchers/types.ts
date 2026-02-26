@@ -12,7 +12,8 @@ import type {
   PatternValidatorOptions,
   SnapshotSanitizer,
 } from '../validators/types.js';
-import type { JudgeConfig } from '../../judge/judgeTypes.js';
+import type { ProviderKind } from '../../judge/judgeTypes.js';
+import type { RubricSpec } from '../../judge/rubrics.js';
 import type {
   ToolCallExpectation,
   ToolCallCountOptions,
@@ -26,8 +27,12 @@ export interface JudgeMatcherOptions {
   reference?: unknown;
   /** Score threshold for passing (default: 0.7) */
   passingThreshold?: number;
-  /** Judge configuration override */
-  judgeConfig?: JudgeConfig;
+  /** Number of judge evaluations (scores averaged) */
+  reps?: number;
+  /** Override the judge provider */
+  provider?: ProviderKind;
+  /** Override the judge model */
+  model?: string;
 }
 
 /**
@@ -151,7 +156,7 @@ declare global {
        * ```
        */
       toPassToolJudge(
-        rubric: string,
+        rubric: RubricSpec,
         options?: JudgeMatcherOptions
       ): Promise<R>;
 

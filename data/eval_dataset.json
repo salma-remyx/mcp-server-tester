@@ -34,7 +34,7 @@
       },
       "expect": {
         "passesJudge": {
-          "rubric": "Search results should be relevant to MCP",
+          "rubric": { "text": "Search results should be relevant to MCP" },
           "configId": "search-relevance"
         }
       }

@@ -1,5 +1,7 @@
 import type { Judge, JudgeConfig, ProviderKind } from './judgeTypes.js';
 import { createClaudeAgentJudge } from './claudeAgentJudge.js';
+import { createOpenAIJudge } from './openaiJudge.js';
+import { createGoogleJudge } from './googleJudge.js';
 
 /**
  * Creates an LLM judge for evaluating tool responses
@@ -43,17 +45,10 @@ export function createJudge(config: JudgeConfig = {}): Judge {
       return createClaudeAgentJudge(config);
 
     case 'openai':
-      throw new Error(
-        'OpenAI provider is no longer supported. ' +
-          'Please use createJudge() without specifying provider, or use provider: "claude". ' +
-          'See migration guide at https://github.com/gleanwork/mcp-server-tester/blob/main/docs/migration-v0.11.md'
-      );
+      return createOpenAIJudge(config);
 
-    case 'custom-http':
-      throw new Error(
-        'custom-http provider is no longer supported. ' +
-          'Please use createJudge() without specifying provider.'
-      );
+    case 'google':
+      return createGoogleJudge(config);
 
     default:
       throw new Error(`Unsupported LLM provider: ${String(provider)}`);

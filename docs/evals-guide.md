@@ -252,7 +252,9 @@ Did an LLM evaluator (judge) say the response was good? This is for quality, not
 ```json
 {
   "passesJudge": {
-    "rubric": "The response should cite specific documents, not generic advice",
+    "rubric": {
+      "text": "The response should cite specific documents, not generic advice"
+    },
     "threshold": 0.7
   }
 }
@@ -274,7 +276,7 @@ Assertions compose. A case passes only if _all_ assertions pass. This lets you b
     },
     "toolCallCount": { "min": 1, "max": 5 },
     "passesJudge": {
-      "rubric": "The response synthesizes the search results into a clear answer",
+      "rubric": "completeness",
       "threshold": 0.7
     }
   }
@@ -416,7 +418,7 @@ Run both and compare accuracy per tool. The reporter groups results by project, 
         },
         "toolCallCount": { "min": 1, "max": 5 },
         "passesJudge": {
-          "rubric": "Response must cite specific documents",
+          "rubric": { "text": "Response must cite specific documents" },
           "threshold": 0.7
         }
       }

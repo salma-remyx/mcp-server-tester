@@ -235,12 +235,32 @@
       "description": "LLM-as-judge evaluation. The response is scored by a judge LLM using the given rubric. Corresponds to toPassToolJudge().",
       "properties": {
         "rubric": {
-          "type": "string",
-          "description": "Evaluation rubric / criteria the judge will use to score the response",
-          "examples": [
-            "The response must contain accurate pricing information with at least one dollar amount.",
-            "The answer should identify the correct team lead by name."
-          ]
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "correctness",
+                "completeness",
+                "groundedness",
+                "instruction-following",
+                "conciseness"
+              ],
+              "description": "Built-in rubric name"
+            },
+            {
+              "type": "object",
+              "required": ["text"],
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Custom rubric text"
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "description": "Evaluation rubric: a built-in name ('correctness', 'completeness', etc.) or custom { text: string }"
         },
         "reference": {
           "description": "Optional reference response to compare against during judging"
@@ -252,9 +272,44 @@
           "default": 0.7,
           "description": "Minimum score (0–1) required to pass the judge evaluation"
         },
-        "configId": {
+        "reps": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of judge evaluations to run; scores are averaged. Overrides EvalCase.judgeReps."
+        },
+        "provider": {
           "type": "string",
-          "description": "Judge configuration ID — references a named judge config registered in the test runner"
+          "enum": ["claude", "anthropic", "openai", "google"],
+          "description": "Judge LLM provider. Defaults to 'claude'."
+        },
+        "model": {
+          "type": "string",
+          "description": "Model override for the judge LLM (e.g., 'claude-opus-4-20250514')."
+        },
+        "apiKeyEnvVar": {
+          "type": "string",
+          "description": "Environment variable name that holds the API key for the judge provider."
+        },
+        "maxTokens": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum tokens for the judge LLM response."
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Temperature for the judge LLM (0 = deterministic, 1 = max creativity)."
+        },
+        "maxBudgetUsd": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Maximum budget in USD per judge evaluation."
+        },
+        "maxToolOutputSize": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Fail if the response exceeds this size in bytes before judging."
         }
       }
     },

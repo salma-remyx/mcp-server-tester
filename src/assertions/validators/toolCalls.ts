@@ -95,6 +95,25 @@ export function validateToolCalls(
   }
 
   const actual = response.toolCalls;
+
+  // Compute recall: fraction of required calls that were made
+  const requiredCalls = expectation.calls.filter((c) => c.required !== false);
+  const calledRequiredCount = requiredCalls.filter(
+    (expected) => findMatchingCall(actual, expected) !== -1
+  ).length;
+  const recall =
+    requiredCalls.length > 0 ? calledRequiredCount / requiredCalls.length : 1.0;
+
+  // Compute precision: fraction of actual calls that were expected
+  // Only applies when exclusive=true; otherwise precision is 1.0
+  const allowedNames = new Set(expectation.calls.map((c) => c.name));
+  const precision =
+    actual.length > 0 && expectation.exclusive === true
+      ? actual.filter((c) => allowedNames.has(c.name)).length / actual.length
+      : 1.0;
+
+  const metrics = { precision, recall };
+
   const order = expectation.order ?? 'any';
 
   if (order === 'strict') {
@@ -107,6 +126,7 @@ export function validateToolCalls(
           return {
             pass: false,
             message: `Expected tool '${expected.name}' to be called in sequence (starting from position ${searchFrom}), but it was not found`,
+            metrics,
           };
         }
       } else {
@@ -126,24 +146,25 @@ export function validateToolCalls(
         return {
           pass: false,
           message: `Expected tool '${expected.name}'${argsNote} to be called, but it was not`,
+          metrics,
         };
       }
     }
   }
 
   if (expectation.exclusive === true) {
-    const allowedNames = new Set(expectation.calls.map((c) => c.name));
     const unexpected = actual.filter((c) => !allowedNames.has(c.name));
     if (unexpected.length > 0) {
       const names = unexpected.map((c) => `'${c.name}'`).join(', ');
       return {
         pass: false,
         message: `Unexpected tool calls: ${names}. Only ${[...allowedNames].map((n) => `'${n}'`).join(', ')} are allowed`,
+        metrics,
       };
     }
   }
 
-  return { pass: true, message: 'All tool call expectations met' };
+  return { pass: true, message: 'All tool call expectations met', metrics };
 }
 
 /**

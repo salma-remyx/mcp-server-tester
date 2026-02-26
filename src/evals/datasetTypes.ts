@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { LLMHostConfig } from './llmHost/llmHostTypes.js';
 import type { SnapshotSanitizer } from '../assertions/validators/types.js';
+import type { BuiltInRubric } from '../judge/judgeTypes.js';
 
 // Re-export sanitizer types from canonical source (validators/types.ts)
 // Note: For JSON datasets, the Zod schema below validates that patterns are strings.
@@ -89,6 +90,32 @@ export interface EvalCase {
   accuracyThreshold?: number;
 
   /**
+   * Number of times to invoke the LLM judge per `passesJudge` assertion.
+   * Scores are averaged; the mean must meet the threshold to pass.
+   * Reduces judge variance caused by non-determinism.
+   * Per-assertion `passesJudge.reps` overrides this value.
+   * @default 1
+   */
+  judgeReps?: number;
+
+  /**
+   * Golden/expected answer for this case.
+   * When set, automatically passed as `reference` to the LLM judge
+   * (unless passesJudge.reference is explicitly provided).
+   * Mirrors EvalV2's `canonical_answer` field.
+   */
+  canonicalAnswer?: string;
+
+  /**
+   * Arbitrary string labels for this case.
+   * Use for filtering eval runs with `EvalRunnerOptions.filterTags`
+   * and for slicing results by category.
+   *
+   * @example ['tool-finding', 'multi-hop', 'search']
+   */
+  tags?: string[];
+
+  /**
    * Expectations to validate against the tool response
    *
    * Multiple expectations can be combined and will all be validated.
@@ -159,14 +186,28 @@ export interface EvalExpectBlock {
    * LLM-as-judge evaluation (toPassToolJudge)
    */
   passesJudge?: {
-    /** Evaluation rubric/criteria */
-    rubric: string;
+    /** Built-in rubric name or custom rubric object */
+    rubric: BuiltInRubric | { text: string };
     /** Reference response to compare against */
     reference?: unknown;
     /** Score threshold for passing (0-1, default: 0.7) */
     threshold?: number;
-    /** Judge configuration ID */
-    configId?: string;
+    /** Number of judge evaluations for this assertion. Overrides EvalCase.judgeReps. */
+    reps?: number;
+    /** Judge provider. @default 'claude' */
+    provider?: 'claude' | 'anthropic' | 'openai' | 'google';
+    /** Model override (e.g., 'claude-opus-4-20250514') */
+    model?: string;
+    /** Environment variable name for API key */
+    apiKeyEnvVar?: string;
+    /** Max tokens for judge response */
+    maxTokens?: number;
+    /** Temperature for judge LLM (0–1) */
+    temperature?: number;
+    /** Max budget in USD per evaluation */
+    maxBudgetUsd?: number;
+    /** Fail if response exceeds this size in bytes before judging */
+    maxToolOutputSize?: number;
   };
 
   /**
@@ -298,10 +339,26 @@ const EvalExpectBlockSchema = z.object({
   isError: z.union([z.boolean(), z.string(), z.array(z.string())]).optional(),
   passesJudge: z
     .object({
-      rubric: z.string(),
+      rubric: z.union([
+        z.enum([
+          'correctness',
+          'completeness',
+          'groundedness',
+          'instruction-following',
+          'conciseness',
+        ]),
+        z.object({ text: z.string().min(1) }),
+      ]),
       reference: z.unknown().optional(),
       threshold: z.number().min(0).max(1).optional(),
-      configId: z.string().optional(),
+      reps: z.number().int().min(1).optional(),
+      provider: z.enum(['claude', 'anthropic', 'openai', 'google']).optional(),
+      model: z.string().optional(),
+      apiKeyEnvVar: z.string().optional(),
+      maxTokens: z.number().int().positive().optional(),
+      temperature: z.number().min(0).max(1).optional(),
+      maxBudgetUsd: z.number().positive().optional(),
+      maxToolOutputSize: z.number().int().positive().optional(),
     })
     .optional(),
   responseSize: z
@@ -348,6 +405,9 @@ export const EvalCaseSchema = z.object({
   metadata: z.record(z.unknown()).optional(),
   iterations: z.number().int().min(1).optional(),
   accuracyThreshold: z.number().min(0).max(1).optional(),
+  judgeReps: z.number().int().min(1).optional(),
+  canonicalAnswer: z.string().optional(),
+  tags: z.array(z.string()).optional(),
   expect: EvalExpectBlockSchema.optional(),
 });
 

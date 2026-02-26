@@ -96,6 +96,73 @@ describe('validateToolCalls', () => {
   });
 });
 
+describe('validateToolCalls precision and recall metrics', () => {
+  const makeResult = (toolNames: string[]) => ({
+    success: true,
+    toolCalls: toolNames.map((name) => ({ name, arguments: {} })),
+    response: 'done',
+  });
+
+  it('recall is 1.0 when all required tools were called', () => {
+    const result = validateToolCalls(makeResult(['search', 'read']), {
+      calls: [
+        { name: 'search', required: true },
+        { name: 'read', required: true },
+      ],
+    });
+    expect(result.metrics?.recall).toBe(1.0);
+  });
+
+  it('recall is 0.5 when one of two required tools was missed', () => {
+    const result = validateToolCalls(makeResult(['search']), {
+      calls: [
+        { name: 'search', required: true },
+        { name: 'read', required: true },
+      ],
+    });
+    expect(result.metrics?.recall).toBe(0.5);
+  });
+
+  it('recall is 1.0 when no required calls defined', () => {
+    const result = validateToolCalls(makeResult([]), {
+      calls: [],
+    });
+    expect(result.metrics?.recall).toBe(1.0);
+  });
+
+  it('precision is 1.0 when exclusive is false (default)', () => {
+    const result = validateToolCalls(makeResult(['search', 'unexpected']), {
+      calls: [{ name: 'search', required: true }],
+      exclusive: false,
+    });
+    expect(result.metrics?.precision).toBe(1.0);
+  });
+
+  it('precision is 0.5 when exclusive is true and half of calls were unexpected', () => {
+    const result = validateToolCalls(makeResult(['search', 'unexpected']), {
+      calls: [{ name: 'search', required: true }],
+      exclusive: true,
+    });
+    expect(result.metrics?.precision).toBe(0.5);
+  });
+
+  it('precision is 1.0 when exclusive is true and all calls were expected', () => {
+    const result = validateToolCalls(makeResult(['search']), {
+      calls: [{ name: 'search', required: true }],
+      exclusive: true,
+    });
+    expect(result.metrics?.precision).toBe(1.0);
+  });
+
+  it('attaches metrics even on failure', () => {
+    const result = validateToolCalls(makeResult([]), {
+      calls: [{ name: 'search', required: true }],
+    });
+    expect(result.pass).toBe(false);
+    expect(result.metrics?.recall).toBe(0.0);
+  });
+});
+
 describe('validateToolCallCount', () => {
   it('passes exact count', () => {
     const result = makeResult([{ name: 'a' }, { name: 'b' }]);
