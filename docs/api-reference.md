@@ -438,7 +438,7 @@ Assert that the tool response passes an LLM-as-a-judge evaluation. Requires a ju
 test('semantic quality', async ({ mcp }) => {
   const result = await mcp.callTool('search_docs', { query: 'authentication' });
   expect(result).toPassToolJudge(
-    'The results should be relevant to the query about authentication. Score 0-1.',
+    { text: 'The results should be relevant to the query about authentication. Score 0-1.' },
     { threshold: 0.7 }
   );
 });
@@ -686,7 +686,13 @@ interface EvalExpectBlock {
   isError?: boolean | string | string[]; // Error expectation
   passesJudge?: {
     // LLM-as-judge evaluation
-    rubric: string;
+    rubric:
+      | 'correctness'
+      | 'completeness'
+      | 'groundedness'
+      | 'instruction-following'
+      | 'conciseness'
+      | { text: string };
     reference?: unknown;
     threshold?: number;
     configId?: string;

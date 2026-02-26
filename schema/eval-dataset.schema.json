@@ -235,12 +235,26 @@
       "description": "LLM-as-judge evaluation. The response is scored by a judge LLM using the given rubric. Corresponds to toPassToolJudge().",
       "properties": {
         "rubric": {
-          "type": "string",
-          "description": "Evaluation rubric / criteria the judge will use to score the response",
-          "examples": [
-            "The response must contain accurate pricing information with at least one dollar amount.",
-            "The answer should identify the correct team lead by name."
-          ]
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": ["correctness", "completeness", "groundedness", "instruction-following", "conciseness"],
+              "description": "Built-in rubric name"
+            },
+            {
+              "type": "object",
+              "required": ["text"],
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Custom rubric text"
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "description": "Evaluation rubric: a built-in name ('correctness', 'completeness', etc.) or custom { text: string }"
         },
         "reference": {
           "description": "Optional reference response to compare against during judging"

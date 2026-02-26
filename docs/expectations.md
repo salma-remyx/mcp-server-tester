@@ -403,7 +403,7 @@ Use the `expect.passesJudge` field in the eval dataset JSON. Supply a `judgeClie
   "args": { "query": "authentication" },
   "expect": {
     "passesJudge": {
-      "rubric": "Evaluate if the search results are relevant to the query. Score 0-1.",
+      "rubric": { "text": "Evaluate if the search results are relevant to the query. Score 0-1." },
       "threshold": 0.7
     }
   }
@@ -436,7 +436,7 @@ import { expect } from '@gleanwork/mcp-server-tester';
 test('search relevance', async ({ mcp }) => {
   const result = await mcp.callTool('search_docs', { query: 'authentication' });
   expect(result).toPassToolJudge(
-    'Evaluate if the search results are relevant to the query. Score 0-1.',
+    { text: 'Evaluate if the search results are relevant to the query. Score 0-1.' },
     { threshold: 0.7 }
   );
 });
@@ -507,7 +507,7 @@ You can combine multiple expectations for a single test case:
     "containsText": ["London", "Population"],
     "matchesPattern": ["^## City Information", "Population: [\\d.]+M"],
     "passesJudge": {
-      "rubric": "The response should contain accurate information about London.",
+      "rubric": "correctness",
       "threshold": 0.7
     }
   }
