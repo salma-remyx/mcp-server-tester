@@ -42,16 +42,26 @@ export function createGoogleJudge(config: JudgeConfig = {}): Judge {
           'You are an expert evaluator. Respond with valid JSON only: {"pass": true|false, "score": 0.0-1.0, "reasoning": "explanation"}',
       });
 
-      const parts = [
-        `Rubric: ${rubric}`,
-        `Response to evaluate:\n${JSON.stringify(candidate, null, 2)}`,
-      ];
-      if (reference !== null && reference !== undefined) {
-        parts.push(`Reference answer:\n${JSON.stringify(reference, null, 2)}`);
-      }
+      const candidateStr =
+        typeof candidate === 'string'
+          ? candidate
+          : JSON.stringify(candidate, null, 2);
+
+      const referenceStr =
+        reference !== null && reference !== undefined
+          ? typeof reference === 'string'
+            ? reference
+            : JSON.stringify(reference, null, 2)
+          : null;
+
+      const prompt =
+        `Rubric:\n${rubric}\n\n` +
+        `<candidate_response>\n${candidateStr}\n</candidate_response>\n\n` +
+        `<reference_answer>\n${referenceStr ?? 'No reference provided.'}\n</reference_answer>\n\n` +
+        `Evaluate and return JSON: {"pass": boolean, "score": number (0-1), "reasoning": string}`;
 
       const startTime = Date.now();
-      const result = await gemini.generateContent(parts.join('\n\n'));
+      const result = await gemini.generateContent(prompt);
       const durationMs = Date.now() - startTime;
 
       const text = result.response.text() as string;

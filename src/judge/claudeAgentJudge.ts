@@ -161,33 +161,36 @@ function buildJudgePrompt(
   reference: unknown,
   rubric: string
 ): string {
-  const parts: Array<string> = [];
-
-  parts.push('# Evaluation Task\n');
-  parts.push(rubric);
-  parts.push('\n\n# Candidate Response\n');
-  parts.push(
+  const candidateStr =
     typeof candidate === 'string'
       ? candidate
-      : JSON.stringify(candidate, null, 2)
-  );
+      : JSON.stringify(candidate, null, 2);
 
-  if (reference !== null && reference !== undefined) {
-    parts.push('\n\n# Reference Response\n');
-    parts.push(
-      typeof reference === 'string'
+  const referenceStr =
+    reference !== null && reference !== undefined
+      ? typeof reference === 'string'
         ? reference
         : JSON.stringify(reference, null, 2)
-    );
-  }
+      : null;
+
+  const parts: Array<string> = [];
+
+  parts.push('Rubric:\n');
+  parts.push(rubric);
+  parts.push('\n\n<candidate_response>\n');
+  parts.push(candidateStr);
+  parts.push('\n</candidate_response>\n\n');
+
+  parts.push('<reference_answer>\n');
+  parts.push(referenceStr ?? 'No reference provided.');
+  parts.push('\n</reference_answer>\n\n');
 
   parts.push(
-    '\n\n# Instructions\n' +
-      'Evaluate the candidate response based on the rubric. ' +
-      (reference !== null && reference !== undefined
-        ? 'Compare it against the reference response if helpful. '
+    'Evaluate the candidate response against the rubric' +
+      (referenceStr !== null
+        ? ', comparing it with the reference answer if helpful'
         : '') +
-      'Respond with JSON containing "pass" (boolean), "score" (0-1), and "reasoning" (string).'
+      '. Return JSON: {"pass": boolean, "score": number (0-1), "reasoning": string}'
   );
 
   return parts.join('');
