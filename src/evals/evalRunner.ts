@@ -3,7 +3,11 @@ import type { EvalDataset, EvalCase, EvalExpectBlock } from './datasetTypes.js';
 import type { TestInfo, Expect } from '@playwright/test';
 import type { ZodType } from 'zod';
 import { simulateLLMHost } from './llmHost/llmHostSimulation.js';
-import type { EvalCaseResult, IterationResult } from '../types/reporter.js';
+import type {
+  EvalCaseResult,
+  IterationResult,
+  EvalRunMetadata,
+} from '../types/reporter.js';
 import {
   saveBaseline,
   loadBaseline,
@@ -20,6 +24,8 @@ import {
   validateToolCallCount,
   validateJudge,
 } from '../assertions/validators/index.js';
+import { execFileNoThrow } from '../utils/execFileNoThrow.js';
+import packageJson from '../../package.json' with { type: 'json' };
 
 /**
  * Context passed to the eval runner
@@ -45,7 +51,11 @@ export interface EvalContext {
 
 export type { EvalExpectationResult } from '../types/index.js';
 
-export type { EvalCaseResult, IterationResult } from '../types/reporter.js';
+export type {
+  EvalCaseResult,
+  IterationResult,
+  EvalRunMetadata,
+} from '../types/reporter.js';
 
 /**
  * Overall result of running an eval dataset
@@ -114,6 +124,11 @@ export interface EvalRunnerResult {
    * Only present when at least one case contributes precision/recall data.
    */
   datasetToolF1?: number;
+
+  /**
+   * Experiment tracking metadata captured at run time.
+   */
+  metadata?: EvalRunMetadata;
 }
 
 /**
@@ -208,6 +223,22 @@ export interface EvalRunnerOptions {
    * and tags each `EvalCaseResult.baselinePass`.
    */
   baselineResultsFrom?: string;
+
+  /**
+   * LLM host model identifier to record in run metadata.
+   * Use this to identify which model was used when running llm_host cases.
+   *
+   * @example 'claude-opus-4-20250514'
+   */
+  llmHostModel?: string;
+
+  /**
+   * Judge model identifier to record in run metadata.
+   * Use this to identify which model was used for judge evaluations.
+   *
+   * @example 'claude-sonnet-4-20250514'
+   */
+  judgeModel?: string;
 }
 
 /**
@@ -706,6 +737,15 @@ async function runWithConcurrency<T>(
  *   );
  * });
  */
+/**
+ * Retrieves the current git commit hash using git rev-parse.
+ * Returns undefined if git is unavailable or the directory is not a repo.
+ */
+async function getGitHash(): Promise<string | undefined> {
+  const result = await execFileNoThrow('git', ['rev-parse', 'HEAD']);
+  return result.status === 0 ? result.stdout.trim() : undefined;
+}
+
 export async function runEvalDataset(
   options: EvalRunnerOptions,
   context: EvalContext
@@ -721,6 +761,8 @@ export async function runEvalDataset(
     filterTags,
     saveResultsTo,
     baselineResultsFrom,
+    llmHostModel,
+    judgeModel,
   } = options;
 
   const startTime = Date.now();
@@ -796,12 +838,23 @@ export async function runEvalDataset(
   const total = caseResults.length;
   const passed = caseResults.filter((r) => r.pass).length;
 
+  const [gitHash] = await Promise.all([getGitHash()]);
+
+  const metadata: EvalRunMetadata = {
+    gitHash,
+    timestamp: new Date().toISOString(),
+    packageVersion: packageJson.version,
+    ...(llmHostModel !== undefined && { llmHostModel }),
+    ...(judgeModel !== undefined && { judgeModel }),
+  };
+
   const result: EvalRunnerResult = {
     total,
     passed,
     failed: total - passed,
     caseResults,
     durationMs: Date.now() - startTime,
+    metadata,
   };
 
   // Load baseline and compute delta if requested

@@ -15,6 +15,22 @@ import type {
 } from './index.js';
 
 /**
+ * Experiment tracking metadata for an eval run
+ */
+export interface EvalRunMetadata {
+  /** Git commit hash at time of run */
+  gitHash?: string;
+  /** ISO timestamp of the run */
+  timestamp: string;
+  /** Package version from package.json */
+  packageVersion: string;
+  /** LLM host model identifier (if llm_host mode) */
+  llmHostModel?: string;
+  /** Judge model identifier (if judge was used) */
+  judgeModel?: string;
+}
+
+/**
  * Individual conformance check result
  */
 export interface MCPConformanceCheck {

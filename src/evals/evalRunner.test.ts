@@ -1337,3 +1337,46 @@ describe('dataset-level tool precision/recall/F1 aggregation', () => {
     expect(result.datasetToolF1).toBeCloseTo(1.0);
   });
 });
+
+describe('experiment metadata in EvalRunnerResult', () => {
+  function createDataset(cases: EvalCase[]): EvalDataset {
+    return { name: 'metadata-test', cases };
+  }
+
+  it('includes metadata in EvalRunnerResult', async () => {
+    const mcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const dataset = createDataset([createEvalCase({ id: 'case-1' })]);
+
+    const result = await runEvalDataset({ dataset }, createContext(mcp));
+
+    expect(result.metadata).toBeDefined();
+    expect(result.metadata!.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(result.metadata!.packageVersion).toBeTruthy();
+    expect(
+      result.metadata!.gitHash === undefined ||
+        typeof result.metadata!.gitHash === 'string'
+    ).toBe(true);
+  });
+
+  it('includes llmHostModel in metadata when provided', async () => {
+    const mcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const dataset = createDataset([createEvalCase({ id: 'case-1' })]);
+
+    const result = await runEvalDataset(
+      { dataset, llmHostModel: 'claude-opus-4-20250514' },
+      createContext(mcp)
+    );
+
+    expect(result.metadata!.llmHostModel).toBe('claude-opus-4-20250514');
+  });
+
+  it('omits llmHostModel and judgeModel from metadata when not provided', async () => {
+    const mcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const dataset = createDataset([createEvalCase({ id: 'case-1' })]);
+
+    const result = await runEvalDataset({ dataset }, createContext(mcp));
+
+    expect(result.metadata!.llmHostModel).toBeUndefined();
+    expect(result.metadata!.judgeModel).toBeUndefined();
+  });
+});
