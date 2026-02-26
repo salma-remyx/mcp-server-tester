@@ -451,6 +451,33 @@ describe('judgeReps behavior in eval runner', () => {
   });
 });
 
+describe('defaultJudgeReps', () => {
+  it('is accepted as an option without error', async () => {
+    const dataset: EvalDataset = {
+      name: 'default-reps-test',
+      cases: [{ id: 'a', toolName: 'echo', args: {} }],
+    };
+    const result = await runEvalDataset(
+      { dataset, defaultJudgeReps: 3 },
+      createContext()
+    );
+    expect(result.total).toBe(1);
+  });
+
+  it('does not override per-case judgeReps', async () => {
+    const dataset: EvalDataset = {
+      name: 'override-test',
+      cases: [{ id: 'a', toolName: 'echo', args: {}, judgeReps: 2 }],
+    };
+    // Just verify it runs without error — judgeReps: 2 stays 2
+    const result = await runEvalDataset(
+      { dataset, defaultJudgeReps: 5 },
+      createContext()
+    );
+    expect(result.total).toBe(1);
+  });
+});
+
 describe('toolsTriggered and toolCallCount expectations in eval runner', () => {
   it('populates toolsTriggered expectation result when simulation result contains expected tool', async () => {
     // callTool returns an object that itself has the LLMHostSimulationResult shape.

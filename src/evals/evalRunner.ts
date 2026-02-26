@@ -163,6 +163,15 @@ export interface EvalRunnerOptions {
   defaultLlmIterations?: number;
 
   /**
+   * Default number of judge evaluations for cases that do not specify
+   * `judgeReps` explicitly. Applies to any case with a `passesJudge`
+   * expectation. Per-case `judgeReps` overrides this.
+   *
+   * @default 1 (single judge run)
+   */
+  defaultJudgeReps?: number;
+
+  /**
    * When set, only eval cases whose `tags` array contains at least one of
    * the specified tags are run. Cases without a `tags` field are excluded.
    * When undefined or empty, all cases run (default behavior).
@@ -632,6 +641,7 @@ export async function runEvalDataset(
     stopOnFailure = false,
     concurrency = 1,
     defaultLlmIterations,
+    defaultJudgeReps,
     onCaseComplete,
     filterTags,
     saveResultsTo,
@@ -658,12 +668,18 @@ export async function runEvalDataset(
   const tasks = casesToRun.map((evalCase) => async () => {
     // Apply defaultLlmIterations to llm_host cases that don't specify iterations.
     // Direct mode cases are deterministic — they always stay at 1 iteration.
-    const effectiveCase =
+    const withIterations =
       evalCase.mode === 'llm_host' &&
       evalCase.iterations === undefined &&
       defaultLlmIterations !== undefined
         ? { ...evalCase, iterations: defaultLlmIterations }
         : evalCase;
+
+    // Apply defaultJudgeReps to any case without explicit judgeReps
+    const effectiveCase =
+      withIterations.judgeReps === undefined && defaultJudgeReps !== undefined
+        ? { ...withIterations, judgeReps: defaultJudgeReps }
+        : withIterations;
 
     const result = await runEvalCase(effectiveCase, context, {
       datasetName: dataset.name,
