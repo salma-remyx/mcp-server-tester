@@ -50,12 +50,6 @@ export function createJudge(config: JudgeConfig = {}): Judge {
     case 'google':
       return createGoogleJudge(config);
 
-    case 'custom-http':
-      throw new Error(
-        'custom-http provider is no longer supported. ' +
-          'Please use createJudge() without specifying provider.',
-      );
-
     default:
       throw new Error(`Unsupported LLM provider: ${String(provider)}`);
   }

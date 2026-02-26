@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createJudge } from './judgeClient.js';
+import type { ProviderKind } from './judgeTypes.js';
 
 describe('createJudge provider routing', () => {
   it('creates a judge without error for provider "claude"', () => {
@@ -34,12 +35,7 @@ describe('createJudge provider routing', () => {
     expect(() => createJudge({ provider: 'google' })).toThrow('API key');
   });
 
-  it('throws for "custom-http"', () => {
-    expect(() => createJudge({ provider: 'custom-http' })).toThrow('no longer supported');
-  });
-
   it('throws for unknown provider', () => {
-    // @ts-expect-error — testing runtime guard
-    expect(() => createJudge({ provider: 'unknown' })).toThrow('Unsupported');
+    expect(() => createJudge({ provider: 'unknown' as ProviderKind })).toThrow('Unsupported');
   });
 });

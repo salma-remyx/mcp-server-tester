@@ -94,8 +94,6 @@ export interface EvalCaseResult {
   authType?: AuthType;
   project?: string;
   durationMs: number;
-  /** @deprecated Mode is inferred from test context */
-  mode?: 'direct' | 'llm_host';
   // Multi-iteration accuracy fields
   accuracy?: number;
   iterationResults?: Array<{

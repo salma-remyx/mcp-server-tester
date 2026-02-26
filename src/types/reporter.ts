@@ -182,11 +182,6 @@ export interface EvalCaseResult {
   durationMs: number;
 
   /**
-   * @deprecated Mode is inferred from test context, not displayed in reports
-   */
-  mode?: 'direct' | 'llm_host';
-
-  /**
    * Accuracy score (0–1) across all iterations.
    * Only present when the case was run with `iterations > 1`.
    */

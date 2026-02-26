@@ -38,18 +38,8 @@ export interface UsageMetrics {
   cacheCreationInputTokens?: number;
 }
 
-/**
- * Valid LLM judge provider kinds.
- *
- * @deprecated `'custom-http'` is no longer supported and will throw a runtime error.
- * All other values are fully supported.
- */
-export type ProviderKind =
-  | 'claude'
-  | 'anthropic'
-  | 'openai'
-  | 'google'
-  | 'custom-http';
+/** Valid LLM judge provider kinds. */
+export type ProviderKind = 'claude' | 'anthropic' | 'openai' | 'google';
 
 /**
  * Configuration for an LLM judge

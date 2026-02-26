@@ -56,7 +56,6 @@ describe('runEvalCase', () => {
       expect(mcp.callTool).toHaveBeenCalledWith('test-tool', { input: 'test' });
       expect(result.id).toBe('test-case');
       expect(result.toolName).toBe('test-tool');
-      expect(result.mode).toBe('direct');
       expect(result.source).toBe('eval');
       expect(result.response).toBeDefined();
     });

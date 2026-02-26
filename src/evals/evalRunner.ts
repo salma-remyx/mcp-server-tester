@@ -467,7 +467,6 @@ async function runSingleIteration(
   options: EvalCaseOptions
 ): Promise<EvalCaseResult> {
   const startTime = Date.now();
-  const mode = evalCase.mode || 'direct';
 
   // Execute tool call
   const { response, error } = await executeToolCall(evalCase, context.mcp);
@@ -496,7 +495,6 @@ async function runSingleIteration(
     id: evalCase.id,
     datasetName: options.datasetName ?? 'single-case',
     toolName: evalCase.toolName ?? evalCase.scenario ?? 'unknown',
-    mode,
     source: 'eval',
     pass: didCasePass(error, expectationResults),
     response,
