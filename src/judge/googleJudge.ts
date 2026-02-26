@@ -22,7 +22,7 @@ export function createGoogleJudge(config: JudgeConfig = {}): Judge {
       // Dynamic import keeps `@google/generative-ai` an optional runtime dep.
       let googleModule: any;
       try {
-        // @ts-ignore - optional: npm install @google/generative-ai
+        // @ts-expect-error - optional: npm install @google/generative-ai
         googleModule = await import('@google/generative-ai');
       } catch (err) {
         throw new Error(

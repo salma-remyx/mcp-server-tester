@@ -21,10 +21,10 @@ export function createOpenAIJudge(config: JudgeConfig = {}): Judge {
   return {
     async evaluate(candidate, reference, rubric): Promise<JudgeResult> {
       // Dynamic import keeps `openai` an optional runtime dep.
-      // @ts-ignore - optional: npm install openai
+      // @ts-expect-error - optional: npm install openai
       let openaiModule: any;
       try {
-        // @ts-ignore - optional: npm install openai
+        // @ts-expect-error - optional: npm install openai
         openaiModule = await import('openai');
       } catch (err) {
         throw new Error(
