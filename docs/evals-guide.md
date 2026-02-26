@@ -252,7 +252,9 @@ Did an LLM evaluator (judge) say the response was good? This is for quality, not
 ```json
 {
   "passesJudge": {
-    "rubric": { "text": "The response should cite specific documents, not generic advice" },
+    "rubric": {
+      "text": "The response should cite specific documents, not generic advice"
+    },
     "threshold": 0.7
   }
 }

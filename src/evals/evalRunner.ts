@@ -4,7 +4,11 @@ import type { TestInfo, Expect } from '@playwright/test';
 import type { ZodType } from 'zod';
 import { simulateLLMHost } from './llmHost/llmHostSimulation.js';
 import type { EvalCaseResult, IterationResult } from '../types/reporter.js';
-import { saveBaseline, loadBaseline, buildBaselinePassMap } from './baseline.js';
+import {
+  saveBaseline,
+  loadBaseline,
+  buildBaselinePassMap,
+} from './baseline.js';
 import {
   validateResponse,
   validateSchema,
@@ -396,8 +400,7 @@ async function runExpectBlockValidations(
 
   // passesJudge (toPassToolJudge)
   if (expectBlock.passesJudge !== undefined) {
-    const effectiveReps =
-      expectBlock.passesJudge.reps ?? config.judgeReps ?? 1;
+    const effectiveReps = expectBlock.passesJudge.reps ?? config.judgeReps ?? 1;
     const effectiveReference =
       expectBlock.passesJudge.reference !== undefined
         ? expectBlock.passesJudge.reference
@@ -468,13 +471,16 @@ async function runSingleIteration(
   let toolRecall: number | undefined;
 
   if (!error && evalCase.expect) {
-    const { expectations, toolPrecision: tp, toolRecall: tr } =
-      await runExpectBlockValidations(evalCase.expect, response, {
-        schemas: options.schemas,
-        playwrightExpect: context.expect,
-        judgeReps: evalCase.judgeReps,
-        canonicalAnswer: evalCase.canonicalAnswer,
-      });
+    const {
+      expectations,
+      toolPrecision: tp,
+      toolRecall: tr,
+    } = await runExpectBlockValidations(evalCase.expect, response, {
+      schemas: options.schemas,
+      playwrightExpect: context.expect,
+      judgeReps: evalCase.judgeReps,
+      canonicalAnswer: evalCase.canonicalAnswer,
+    });
     expectationResults = expectations;
     toolPrecision = tp;
     toolRecall = tr;
@@ -639,9 +645,7 @@ export async function runEvalDataset(
   // Filter cases by tag if filterTags is set (non-empty array)
   const casesToRun =
     filterTags && filterTags.length > 0
-      ? dataset.cases.filter((c) =>
-          c.tags?.some((t) => filterTags.includes(t))
-        )
+      ? dataset.cases.filter((c) => c.tags?.some((t) => filterTags.includes(t)))
       : dataset.cases;
 
   // Build task factories for all cases
@@ -702,7 +706,8 @@ export async function runEvalDataset(
   if (baselineResultsFrom) {
     try {
       const baseline = await loadBaseline(baselineResultsFrom);
-      const baselinePassRate = baseline.total > 0 ? baseline.passed / baseline.total : 0;
+      const baselinePassRate =
+        baseline.total > 0 ? baseline.passed / baseline.total : 0;
       const baselineMap = buildBaselinePassMap(baseline);
 
       for (const cr of result.caseResults) {

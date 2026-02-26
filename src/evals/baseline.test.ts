@@ -1,11 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { saveBaseline, loadBaseline, buildBaselinePassMap } from './baseline.js';
+import {
+  saveBaseline,
+  loadBaseline,
+  buildBaselinePassMap,
+} from './baseline.js';
 import type { EvalRunnerResult } from './evalRunner.js';
 import { mkdtemp, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
-const makeResult = (overrides: Partial<EvalRunnerResult> = {}): EvalRunnerResult => ({
+const makeResult = (
+  overrides: Partial<EvalRunnerResult> = {}
+): EvalRunnerResult => ({
   total: 2,
   passed: 1,
   failed: 1,
@@ -77,7 +83,13 @@ describe('buildBaselinePassMap', () => {
 
   it('returns empty map for empty results', () => {
     const map = buildBaselinePassMap(
-      makeResult({ total: 0, passed: 0, failed: 0, caseResults: [], durationMs: 0 })
+      makeResult({
+        total: 0,
+        passed: 0,
+        failed: 0,
+        caseResults: [],
+        durationMs: 0,
+      })
     );
     expect(map.size).toBe(0);
   });

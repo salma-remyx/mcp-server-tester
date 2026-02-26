@@ -10,7 +10,7 @@ export function createOpenAIJudge(config: JudgeConfig = {}): Judge {
   const apiKey = process.env[apiKeyEnvVar];
   if (!apiKey) {
     throw new Error(
-      `OpenAI judge requires an API key. Set the ${apiKeyEnvVar} environment variable.`,
+      `OpenAI judge requires an API key. Set the ${apiKeyEnvVar} environment variable.`
     );
   }
 
@@ -52,7 +52,9 @@ export function createOpenAIJudge(config: JudgeConfig = {}): Judge {
       });
       const durationMs = Date.now() - startTime;
 
-      const text = (completion.choices[0]?.message.content as string | null | undefined) ?? '';
+      const text =
+        (completion.choices[0]?.message.content as string | null | undefined) ??
+        '';
       const parsed = parseJudgeResponse(text);
 
       return {
@@ -60,8 +62,10 @@ export function createOpenAIJudge(config: JudgeConfig = {}): Judge {
         score: parsed.score,
         reasoning: parsed.reasoning,
         usage: {
-          inputTokens: (completion.usage?.prompt_tokens as number | undefined) ?? 0,
-          outputTokens: (completion.usage?.completion_tokens as number | undefined) ?? 0,
+          inputTokens:
+            (completion.usage?.prompt_tokens as number | undefined) ?? 0,
+          outputTokens:
+            (completion.usage?.completion_tokens as number | undefined) ?? 0,
           totalCostUsd: 0,
           durationMs,
         },
@@ -73,7 +77,7 @@ export function createOpenAIJudge(config: JudgeConfig = {}): Judge {
 function buildJudgePrompt(
   candidate: unknown,
   reference: unknown,
-  rubric: string,
+  rubric: string
 ): string {
   const parts = [
     `Rubric: ${rubric}`,

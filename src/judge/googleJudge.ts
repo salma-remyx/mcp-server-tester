@@ -10,7 +10,7 @@ export function createGoogleJudge(config: JudgeConfig = {}): Judge {
   const apiKey = process.env[apiKeyEnvVar];
   if (!apiKey) {
     throw new Error(
-      `Google judge requires an API key. Set the ${apiKeyEnvVar} environment variable.`,
+      `Google judge requires an API key. Set the ${apiKeyEnvVar} environment variable.`
     );
   }
 
@@ -80,8 +80,14 @@ export function createGoogleJudge(config: JudgeConfig = {}): Judge {
         score,
         reasoning,
         usage: {
-          inputTokens: (result.response.usageMetadata?.promptTokenCount as number | undefined) ?? 0,
-          outputTokens: (result.response.usageMetadata?.candidatesTokenCount as number | undefined) ?? 0,
+          inputTokens:
+            (result.response.usageMetadata?.promptTokenCount as
+              | number
+              | undefined) ?? 0,
+          outputTokens:
+            (result.response.usageMetadata?.candidatesTokenCount as
+              | number
+              | undefined) ?? 0,
           totalCostUsd: 0,
           durationMs,
         },

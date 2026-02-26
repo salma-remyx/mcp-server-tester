@@ -238,7 +238,13 @@
           "oneOf": [
             {
               "type": "string",
-              "enum": ["correctness", "completeness", "groundedness", "instruction-following", "conciseness"],
+              "enum": [
+                "correctness",
+                "completeness",
+                "groundedness",
+                "instruction-following",
+                "conciseness"
+              ],
               "description": "Built-in rubric name"
             },
             {

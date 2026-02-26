@@ -871,19 +871,14 @@ describe('filterTags', () => {
         { id: 'y', toolName: 'echo', args: {} },
       ],
     };
-    const result = await runEvalDataset(
-      { dataset },
-      createContext()
-    );
+    const result = await runEvalDataset({ dataset }, createContext());
     expect(result.total).toBe(2);
   });
 
   it('returns zero cases when no cases match filterTags', async () => {
     const dataset: EvalDataset = {
       name: 'no-match-test',
-      cases: [
-        { id: 'x', toolName: 'echo', args: {}, tags: ['search'] },
-      ],
+      cases: [{ id: 'x', toolName: 'echo', args: {}, tags: ['search'] }],
     };
     const result = await runEvalDataset(
       { dataset, filterTags: ['nav'] },
@@ -943,7 +938,10 @@ describe('saveResultsTo and baselineResultsFrom', () => {
     ]);
     const filePath = join(tmpDir, 'results.json');
 
-    await runEvalDataset({ dataset, saveResultsTo: filePath }, createContext(mcp));
+    await runEvalDataset(
+      { dataset, saveResultsTo: filePath },
+      createContext(mcp)
+    );
 
     const raw = await readFile(filePath, 'utf8');
     const saved = JSON.parse(raw) as { total: number; passed: number };
@@ -959,7 +957,10 @@ describe('saveResultsTo and baselineResultsFrom', () => {
     const baselinePath = join(tmpDir, 'baseline.json');
 
     // Save baseline first
-    await runEvalDataset({ dataset, saveResultsTo: baselinePath }, createContext(mcp));
+    await runEvalDataset(
+      { dataset, saveResultsTo: baselinePath },
+      createContext(mcp)
+    );
 
     // Run again comparing against baseline
     const result = await runEvalDataset(
@@ -977,14 +978,21 @@ describe('saveResultsTo and baselineResultsFrom', () => {
     const baselinePath = join(tmpDir, 'baseline.json');
 
     // Baseline: case passes (response contains 'hello')
-    const passingMcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const passingMcp = createMockMCP({
+      content: [{ type: 'text', text: 'hello' }],
+    });
     const dataset = createDataset([
       createEvalCase({ id: 'case-1', expect: { containsText: 'hello' } }),
     ]);
-    await runEvalDataset({ dataset, saveResultsTo: baselinePath }, createContext(passingMcp));
+    await runEvalDataset(
+      { dataset, saveResultsTo: baselinePath },
+      createContext(passingMcp)
+    );
 
     // Now: case fails (response contains 'world', not 'hello')
-    const failingMcp = createMockMCP({ content: [{ type: 'text', text: 'world' }] });
+    const failingMcp = createMockMCP({
+      content: [{ type: 'text', text: 'world' }],
+    });
     const result = await runEvalDataset(
       { dataset, baselineResultsFrom: baselinePath },
       createContext(failingMcp)
@@ -1000,14 +1008,21 @@ describe('saveResultsTo and baselineResultsFrom', () => {
     const baselinePath = join(tmpDir, 'baseline.json');
 
     // Baseline: case fails (response contains 'world', not 'hello')
-    const failingMcp = createMockMCP({ content: [{ type: 'text', text: 'world' }] });
+    const failingMcp = createMockMCP({
+      content: [{ type: 'text', text: 'world' }],
+    });
     const dataset = createDataset([
       createEvalCase({ id: 'case-1', expect: { containsText: 'hello' } }),
     ]);
-    await runEvalDataset({ dataset, saveResultsTo: baselinePath }, createContext(failingMcp));
+    await runEvalDataset(
+      { dataset, saveResultsTo: baselinePath },
+      createContext(failingMcp)
+    );
 
     // Now: case passes (response contains 'hello')
-    const passingMcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const passingMcp = createMockMCP({
+      content: [{ type: 'text', text: 'hello' }],
+    });
     const result = await runEvalDataset(
       { dataset, baselineResultsFrom: baselinePath },
       createContext(passingMcp)
@@ -1020,7 +1035,9 @@ describe('saveResultsTo and baselineResultsFrom', () => {
   });
 
   it('warns and continues when baselineResultsFrom file does not exist', async () => {
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const consoleSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined);
     const mcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
     const dataset = createDataset([createEvalCase({ id: 'case-1' })]);
     const nonexistentPath = join(tmpDir, 'does-not-exist.json');

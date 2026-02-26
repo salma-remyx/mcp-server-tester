@@ -210,10 +210,9 @@ export type {
   UsageMetrics,
   ProviderKind,
   BuiltInRubric,
+  RubricSpec,
 } from './judge/judgeTypes.js';
-export {
-  createJudge,
-} from './judge/judgeClient.js';
+export { createJudge } from './judge/judgeClient.js';
 export {
   BUILT_IN_RUBRICS,
   resolveRubric,

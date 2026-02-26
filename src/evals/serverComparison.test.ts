@@ -176,8 +176,12 @@ describe('runServerComparison', () => {
     };
 
     // Both mocks return ordinary text that won't match the impossible strings
-    const mockA = createMockMCP({ content: [{ type: 'text', text: 'response' }] });
-    const mockB = createMockMCP({ content: [{ type: 'text', text: 'response' }] });
+    const mockA = createMockMCP({
+      content: [{ type: 'text', text: 'response' }],
+    });
+    const mockB = createMockMCP({
+      content: [{ type: 'text', text: 'response' }],
+    });
 
     const result = await runServerComparison(
       { dataset: bothFailDataset },
@@ -257,9 +261,9 @@ describe('runServerComparison', () => {
       createContext(mockB)
     );
 
-    expect(result.aWinRate + result.bWinRate + result.tieRate).toBeLessThanOrEqual(
-      1.0 + Number.EPSILON
-    );
+    expect(
+      result.aWinRate + result.bWinRate + result.tieRate
+    ).toBeLessThanOrEqual(1.0 + Number.EPSILON);
   });
 
   it('cases array contains one entry per shared case ID', async () => {

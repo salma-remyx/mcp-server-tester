@@ -35,20 +35,24 @@ export const BUILT_IN_RUBRICS: Record<BuiltInRubric, string> = {
     'Penalize unnecessary verbosity. Score 1.0 for well-sized, 0.5 for somewhat verbose, 0.0 for excessively long.',
 };
 
+/** A rubric specification: either a built-in named rubric or custom text. */
+export type RubricSpec = BuiltInRubric | { text: string };
+
 /**
  * Returns true if `s` is a built-in rubric name.
  */
-export function isBuiltInRubric(s: string): s is BuiltInRubric {
-  return s in BUILT_IN_RUBRICS;
+export function isBuiltInRubric(s: unknown): s is BuiltInRubric {
+  return typeof s === 'string' && s in BUILT_IN_RUBRICS;
 }
 
 /**
- * Resolves a rubric string: if it's a built-in name, returns the expanded text.
- * Otherwise returns the string as-is (allows arbitrary custom rubrics).
+ * Resolves a RubricSpec to its full rubric text.
+ * - Built-in name → returns the expanded rubric text from BUILT_IN_RUBRICS
+ * - Custom object → returns rubric.text as-is
  */
-export function resolveRubric(rubric: string): string {
-  if (isBuiltInRubric(rubric)) {
+export function resolveRubric(rubric: RubricSpec): string {
+  if (typeof rubric === 'string') {
     return BUILT_IN_RUBRICS[rubric];
   }
-  return rubric;
+  return rubric.text;
 }

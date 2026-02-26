@@ -1,5 +1,9 @@
 import { runEvalDataset } from './evalRunner.js';
-import type { EvalRunnerOptions, EvalContext, EvalRunnerResult } from './evalRunner.js';
+import type {
+  EvalRunnerOptions,
+  EvalContext,
+  EvalRunnerResult,
+} from './evalRunner.js';
 import type { EvalCaseResult } from '../types/reporter.js';
 
 /** Outcome of comparing two servers on a single eval case. */

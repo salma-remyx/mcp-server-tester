@@ -102,9 +102,7 @@ export function validateToolCalls(
     (expected) => findMatchingCall(actual, expected) !== -1
   ).length;
   const recall =
-    requiredCalls.length > 0
-      ? calledRequiredCount / requiredCalls.length
-      : 1.0;
+    requiredCalls.length > 0 ? calledRequiredCount / requiredCalls.length : 1.0;
 
   // Compute precision: fraction of actual calls that were expected
   // Only applies when exclusive=true; otherwise precision is 1.0

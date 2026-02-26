@@ -36,6 +36,8 @@ describe('createJudge provider routing', () => {
   });
 
   it('throws for unknown provider', () => {
-    expect(() => createJudge({ provider: 'unknown' as ProviderKind })).toThrow('Unsupported');
+    expect(() => createJudge({ provider: 'unknown' as ProviderKind })).toThrow(
+      'Unsupported'
+    );
   });
 });

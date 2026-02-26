@@ -32,13 +32,14 @@ describe('resolveRubric', () => {
     expect(resolved.length).toBeGreaterThan(10);
   });
 
-  it('returns custom rubric string unchanged', () => {
+  it('returns custom rubric text unchanged when given { text: ... }', () => {
     const custom = 'My custom rubric for evaluating X';
-    expect(resolveRubric(custom)).toBe(custom);
+    expect(resolveRubric({ text: custom })).toBe(custom);
   });
 
-  it('returns unknown single-word strings unchanged', () => {
-    expect(resolveRubric('unknown-rubric')).toBe('unknown-rubric');
+  it('returns text from { text: ... } object as-is', () => {
+    const text = 'Does the response accurately describe the weather?';
+    expect(resolveRubric({ text })).toBe(text);
   });
 });
 
@@ -53,5 +54,20 @@ describe('isBuiltInRubric', () => {
     expect(isBuiltInRubric('my-custom-rubric')).toBe(false);
     expect(isBuiltInRubric('')).toBe(false);
     expect(isBuiltInRubric('CORRECTNESS')).toBe(false); // case sensitive
+  });
+
+  it('returns false for { text: ... } objects', () => {
+    expect(isBuiltInRubric({ text: 'custom rubric' })).toBe(false);
+    expect(isBuiltInRubric({ text: 'correctness' })).toBe(false);
+  });
+
+  it('returns false for null and undefined', () => {
+    expect(isBuiltInRubric(null)).toBe(false);
+    expect(isBuiltInRubric(undefined)).toBe(false);
+  });
+
+  it('returns false for numbers and booleans', () => {
+    expect(isBuiltInRubric(42)).toBe(false);
+    expect(isBuiltInRubric(true)).toBe(false);
   });
 });

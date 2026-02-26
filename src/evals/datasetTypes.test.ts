@@ -196,7 +196,9 @@ describe('datasetTypes', () => {
       const result = EvalCaseSchema.safeParse({
         id: 'test',
         expect: {
-          passesJudge: { rubric: { text: 'Evaluate if the response is helpful' } },
+          passesJudge: {
+            rubric: { text: 'Evaluate if the response is helpful' },
+          },
         },
       });
       expect(result.success).toBe(true);
@@ -267,13 +269,19 @@ describe('datasetTypes', () => {
     it('does not accept configId on passesJudge', () => {
       const result = EvalCaseSchema.safeParse({
         id: 'test',
-        expect: { passesJudge: { rubric: 'correctness', configId: 'my-judge' } },
+        expect: {
+          passesJudge: { rubric: 'correctness', configId: 'my-judge' },
+        },
       });
       // configId is no longer a recognized field — strict Zod should reject it
       // (passesJudge uses .object() which strips unknown fields but does not fail)
       // After strip, configId should be absent from the result
       if (result.success) {
-        expect((result.data.expect?.passesJudge as Record<string, unknown>)['configId']).toBeUndefined();
+        expect(
+          (result.data.expect?.passesJudge as Record<string, unknown>)[
+            'configId'
+          ]
+        ).toBeUndefined();
       }
     });
   });

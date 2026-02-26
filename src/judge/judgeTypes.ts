@@ -123,7 +123,7 @@ export interface JudgeResult {
   exceedsMaxToolOutputSize?: boolean;
 }
 
-export type { BuiltInRubric } from './rubrics.js';
+export type { BuiltInRubric, RubricSpec } from './rubrics.js';
 export { BUILT_IN_RUBRICS, resolveRubric, isBuiltInRubric } from './rubrics.js';
 
 /**
