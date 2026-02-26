@@ -307,8 +307,9 @@ export async function injectTokens(
  * ```typescript
  * // After running: npx mcp-server-tester login https://api.example.com/mcp
  * const tokens = await loadTokens('https://api.example.com/mcp');
- * if (tokens) {
- *   console.log('Access token:', tokens.accessToken);
+ * if (tokens?.accessToken) {
+ *   // Use the token — never log raw token values
+ *   headers.Authorization = `Bearer ${tokens.accessToken}`;
  * }
  * ```
  */
