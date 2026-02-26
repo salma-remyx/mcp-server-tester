@@ -659,6 +659,19 @@ export async function runEvalDataset(
         ? { ...evalCase, iterations: defaultLlmIterations }
         : evalCase;
 
+    // Warn when an llm_host case runs fewer than the guide-recommended iterations.
+    // The evals guide recommends >= 10 iterations for statistical reliability.
+    if (evalCase.mode === 'llm_host') {
+      const effectiveIterations = withIterations.iterations ?? 1;
+      if (effectiveIterations < 10) {
+        console.warn(
+          `[mcp-server-tester] Eval case "${evalCase.id}" uses llm_host mode with only ` +
+            `${effectiveIterations} iteration(s). The evals guide recommends >= 10 iterations. ` +
+            `See docs/evals-guide.md for guidance on statistical reliability.`
+        );
+      }
+    }
+
     // Apply defaultJudgeReps to any case without explicit judgeReps
     const effectiveCase =
       withIterations.judgeReps === undefined && defaultJudgeReps !== undefined
