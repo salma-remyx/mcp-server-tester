@@ -79,14 +79,24 @@ function buildJudgePrompt(
   reference: unknown,
   rubric: string
 ): string {
-  const parts = [
-    `Rubric: ${rubric}`,
-    `Response to evaluate:\n${JSON.stringify(candidate, null, 2)}`,
-  ];
-  if (reference !== null && reference !== undefined) {
-    parts.push(`Reference answer:\n${JSON.stringify(reference, null, 2)}`);
-  }
-  return parts.join('\n\n');
+  const candidateStr =
+    typeof candidate === 'string'
+      ? candidate
+      : JSON.stringify(candidate, null, 2);
+
+  const referenceStr =
+    reference !== null && reference !== undefined
+      ? typeof reference === 'string'
+        ? reference
+        : JSON.stringify(reference, null, 2)
+      : null;
+
+  return (
+    `Rubric:\n${rubric}\n\n` +
+    `<candidate_response>\n${candidateStr}\n</candidate_response>\n\n` +
+    `<reference_answer>\n${referenceStr ?? 'No reference provided.'}\n</reference_answer>\n\n` +
+    `Evaluate and return JSON: {"pass": boolean, "score": number (0-1), "reasoning": string}`
+  );
 }
 
 function parseJudgeResponse(text: string): {
