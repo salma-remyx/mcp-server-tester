@@ -97,7 +97,12 @@ export async function createMCPClientForConfig(
       cwd: validatedConfig.cwd,
     });
 
-    await client.connect(transport);
+    await client.connect(
+      transport,
+      validatedConfig.connectTimeoutMs !== undefined
+        ? { timeout: validatedConfig.connectTimeoutMs }
+        : undefined
+    );
   } else if (isHttpConfig(validatedConfig)) {
     // Build headers, including static token auth if configured and no authProvider
     const headers: Record<string, string> = { ...validatedConfig.headers };
@@ -130,7 +135,11 @@ export async function createMCPClientForConfig(
         requestInit,
         authProvider: options?.authProvider,
       });
-      await client.connect(streamableTransport);
+      const connectOptions =
+        validatedConfig.connectTimeoutMs !== undefined
+          ? { timeout: validatedConfig.connectTimeoutMs }
+          : undefined;
+      await client.connect(streamableTransport, connectOptions);
       debugClient('Connected via Streamable HTTP');
       debugHttp('Connection established via streamableHttp');
     } catch (err) {
@@ -141,7 +150,11 @@ export async function createMCPClientForConfig(
       debugClient('Streamable HTTP failed, falling back to SSE transport');
       debugHttp('Attempting transport: sse');
       const sseTransport = new SSEClientTransport(url, { requestInit });
-      await client.connect(sseTransport);
+      const connectOptions =
+        validatedConfig.connectTimeoutMs !== undefined
+          ? { timeout: validatedConfig.connectTimeoutMs }
+          : undefined;
+      await client.connect(sseTransport, connectOptions);
       debugClient('Connected via SSE');
       debugHttp('Connection established via sse');
     }
