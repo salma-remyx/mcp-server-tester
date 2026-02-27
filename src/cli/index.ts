@@ -1,5 +1,9 @@
 /**
  * CLI entry point for @gleanwork/mcp-server-tester
+ *
+ * Node.js >= 22.0.0 is required. The version check below runs after ESM
+ * module linking, so it catches cases where a user bypasses the `engines`
+ * field and invokes the CLI with an unsupported Node version.
  */
 
 import { Command } from 'commander';
@@ -7,6 +11,16 @@ import { init } from './commands/init/index.js';
 import { generate } from './commands/generate/index.js';
 import { login } from './commands/login/index.js';
 import { token } from './commands/token/index.js';
+
+const nodeMajor = parseInt(process.versions.node.split('.')[0] ?? '0', 10);
+if (nodeMajor < 22) {
+  process.stderr.write(
+    `Error: @gleanwork/mcp-server-tester requires Node.js >= 22.0.0.\n` +
+      `You are running Node.js ${process.versions.node}.\n` +
+      `Please upgrade to Node.js 22 LTS or higher.\n`
+  );
+  process.exit(1);
+}
 
 const program = new Command();
 

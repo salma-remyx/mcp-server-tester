@@ -71,6 +71,11 @@ Direct mode is the default for most tests. LLM host mode (`mode: "llm_host"` in 
 
 > **Cost note:** LLM host mode makes real API calls to the configured provider on every iteration. See the [LLM Host Guide](docs/llm-host.md) for cost management guidance.
 
+## Requirements
+
+- **Node.js >= 22.0.0** — Required for import assertions syntax (`import ... with { type: 'json' }`). Node 20 LTS is not supported.
+- **pnpm** (for development) or **npm/yarn** (for consumption)
+
 ## Installation
 
 ```bash

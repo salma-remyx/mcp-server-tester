@@ -14,8 +14,8 @@ Thank you for your interest in contributing! This project is experimental and co
 
 ### Prerequisites
 
-- Node.js 18 or higher
-- npm or yarn
+- Node.js >= 22.0.0 (required; see [Requirements](./README.md#requirements))
+- pnpm (for development)
 
 ### Setup
 
