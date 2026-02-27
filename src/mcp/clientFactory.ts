@@ -13,6 +13,54 @@ import { debugClient, debugHttp } from '../debug.js';
 import { ProxyAgent } from 'undici';
 
 /**
+ * Returns true if the error is a transient network error that may succeed on retry
+ */
+function isTransientNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const msg = err.message.toLowerCase();
+  return (
+    msg.includes('econnreset') ||
+    msg.includes('econnrefused') ||
+    msg.includes('etimedout') ||
+    msg.includes('enotfound') ||
+    msg.includes('network') ||
+    msg.includes('socket hang up') ||
+    msg.includes('fetch failed')
+  );
+}
+
+/**
+ * Retries an async operation with exponential backoff
+ */
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxAttempts: number
+): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt < maxAttempts && isTransientNetworkError(err)) {
+        const delayMs = Math.min(1000 * 2 ** attempt, 30000);
+        debugClient(
+          'Transient error on attempt %d/%d, retrying in %dms: %s',
+          attempt + 1,
+          maxAttempts + 1,
+          delayMs,
+          (err as Error).message
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      } else {
+        throw err;
+      }
+    }
+  }
+  throw lastErr;
+}
+
+/**
  * Options for creating an MCP client
  */
 export interface CreateMCPClientOptions {
@@ -144,39 +192,39 @@ export async function createMCPClientForConfig(
       debugHttp('Request header names: %O', Object.keys(headers));
     }
 
+    const retryAttempts = validatedConfig.retryAttempts ?? 0;
+    const connectOptions =
+      validatedConfig.connectTimeoutMs !== undefined
+        ? { timeout: validatedConfig.connectTimeoutMs }
+        : undefined;
+
     // Try Streamable HTTP first (MCP spec 2025-03-26), fall back to SSE (2024-11-05)
-    try {
-      debugHttp('Attempting transport: streamableHttp');
-      const streamableTransport = new StreamableHTTPClientTransport(url, {
-        requestInit,
-        authProvider: options?.authProvider,
-      });
-      const connectOptions =
-        validatedConfig.connectTimeoutMs !== undefined
-          ? { timeout: validatedConfig.connectTimeoutMs }
-          : undefined;
-      await client.connect(streamableTransport, connectOptions);
-      debugClient('Connected via Streamable HTTP');
-      debugHttp('Connection established via streamableHttp');
-    } catch (err) {
-      debugHttp(
-        'streamableHttp failed (%s), falling back to SSE',
-        (err as Error).message
-      );
-      debugClient('Streamable HTTP failed, falling back to SSE transport');
-      debugHttp('Attempting transport: sse');
-      const sseTransport = new SSEClientTransport(url, {
-        requestInit,
-        authProvider: options?.authProvider,
-      });
-      const connectOptions =
-        validatedConfig.connectTimeoutMs !== undefined
-          ? { timeout: validatedConfig.connectTimeoutMs }
-          : undefined;
-      await client.connect(sseTransport, connectOptions);
-      debugClient('Connected via SSE');
-      debugHttp('Connection established via sse');
-    }
+    await retryWithBackoff(async () => {
+      try {
+        debugHttp('Attempting transport: streamableHttp');
+        const streamableTransport = new StreamableHTTPClientTransport(url, {
+          requestInit,
+          authProvider: options?.authProvider,
+        });
+        await client.connect(streamableTransport, connectOptions);
+        debugClient('Connected via Streamable HTTP');
+        debugHttp('Connection established via streamableHttp');
+      } catch (err) {
+        debugHttp(
+          'streamableHttp failed (%s), falling back to SSE',
+          (err as Error).message
+        );
+        debugClient('Streamable HTTP failed, falling back to SSE transport');
+        debugHttp('Attempting transport: sse');
+        const sseTransport = new SSEClientTransport(url, {
+          requestInit,
+          authProvider: options?.authProvider,
+        });
+        await client.connect(sseTransport, connectOptions);
+        debugClient('Connected via SSE');
+        debugHttp('Connection established via sse');
+      }
+    }, retryAttempts);
   }
 
   debugClient('Connected successfully');
