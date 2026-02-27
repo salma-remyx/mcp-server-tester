@@ -10,7 +10,8 @@ import {
   isHttpConfig,
 } from '../config/mcpConfig.js';
 import { debugClient, debugHttp } from '../debug.js';
-import { ProxyAgent } from 'undici';
+import { ProxyAgent, Agent as UndiciAgent } from 'undici';
+import { readFileSync } from 'node:fs';
 import packageJson from '../../package.json' with { type: 'json' };
 
 /**
@@ -234,6 +235,37 @@ export async function createMCPClientForConfig(
         dispatcher: proxyAgent,
       } as unknown as RequestInit;
     }
+
+    // Apply TLS configuration if present
+    if (validatedConfig.tls) {
+      const tlsCfg = validatedConfig.tls;
+      try {
+        const dispatcher = new UndiciAgent({
+          connect: {
+            ...(tlsCfg.ca && { ca: readFileSync(tlsCfg.ca) }),
+            ...(tlsCfg.cert && { cert: readFileSync(tlsCfg.cert) }),
+            ...(tlsCfg.key && { key: readFileSync(tlsCfg.key) }),
+            rejectUnauthorized: tlsCfg.rejectUnauthorized ?? true,
+          },
+        });
+        requestInit = {
+          ...requestInit,
+          dispatcher,
+        } as unknown as RequestInit;
+        debugClient('TLS configuration applied');
+      } catch (error) {
+        const filePath = tlsCfg.ca ?? tlsCfg.cert ?? tlsCfg.key;
+        const fileType = tlsCfg.ca
+          ? 'CA certificate'
+          : tlsCfg.cert
+            ? 'client certificate'
+            : 'client key';
+        throw new Error(
+          `Failed to load TLS ${fileType} from ${filePath}: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+
 
     debugClient('Connecting via HTTP: %O', {
       serverUrl: validatedConfig.serverUrl,
