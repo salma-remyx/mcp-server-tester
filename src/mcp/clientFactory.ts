@@ -266,7 +266,6 @@ export async function createMCPClientForConfig(
       }
     }
 
-
     debugClient('Connecting via HTTP: %O', {
       serverUrl: validatedConfig.serverUrl,
       headers:
