@@ -1057,3 +1057,137 @@ describe('saveResultsTo and baselineResultsFrom', () => {
     consoleSpy.mockRestore();
   });
 });
+
+describe('evals guide iteration count guardrail warnings', () => {
+  function createDataset(cases: EvalCase[]): EvalDataset {
+    return { name: 'test-dataset', cases };
+  }
+
+  it('warns when an llm_host case has fewer than 10 iterations (explicit)', async () => {
+    const consoleSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined);
+
+    const dataset = createDataset([
+      createEvalCase({
+        id: 'low-iter-case',
+        mode: 'llm_host',
+        scenario: 'find something',
+        llmHostConfig: { provider: 'openai' },
+        iterations: 3,
+      }),
+    ]);
+
+    await runEvalDataset({ dataset }, createContext());
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('3 iteration(s)')
+    );
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('evals guide recommends >= 10')
+    );
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('low-iter-case')
+    );
+
+    consoleSpy.mockRestore();
+  });
+
+  it('warns when an llm_host case defaults to 1 iteration (no explicit iterations)', async () => {
+    const consoleSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined);
+
+    const dataset = createDataset([
+      createEvalCase({
+        id: 'default-iter-case',
+        mode: 'llm_host',
+        scenario: 'find something',
+        llmHostConfig: { provider: 'openai' },
+      }),
+    ]);
+
+    await runEvalDataset({ dataset }, createContext());
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('1 iteration(s)')
+    );
+
+    consoleSpy.mockRestore();
+  });
+
+  it('does not warn when an llm_host case has 10 or more iterations', async () => {
+    const consoleSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined);
+
+    const dataset = createDataset([
+      createEvalCase({
+        id: 'sufficient-iter-case',
+        mode: 'llm_host',
+        scenario: 'find something',
+        llmHostConfig: { provider: 'openai' },
+        iterations: 10,
+      }),
+    ]);
+
+    await runEvalDataset({ dataset }, createContext());
+
+    expect(consoleSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('evals guide recommends')
+    );
+
+    consoleSpy.mockRestore();
+  });
+
+  it('does not warn for direct mode cases regardless of iterations', async () => {
+    const consoleSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined);
+
+    const mcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const dataset = createDataset([
+      createEvalCase({
+        id: 'direct-case',
+        toolName: 'test-tool',
+        args: { input: 'test' },
+        iterations: 1,
+      }),
+    ]);
+
+    await runEvalDataset({ dataset }, createContext(mcp));
+
+    expect(consoleSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('evals guide recommends')
+    );
+
+    consoleSpy.mockRestore();
+  });
+
+  it('does not warn when defaultLlmIterations raises the count to >= 10', async () => {
+    const consoleSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined);
+
+    const dataset = createDataset([
+      createEvalCase({
+        id: 'default-raised-case',
+        mode: 'llm_host',
+        scenario: 'find something',
+        llmHostConfig: { provider: 'openai' },
+        // No explicit iterations — defaultLlmIterations will apply
+      }),
+    ]);
+
+    await runEvalDataset(
+      { dataset, defaultLlmIterations: 10 },
+      createContext()
+    );
+
+    expect(consoleSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('evals guide recommends')
+    );
+
+    consoleSpy.mockRestore();
+  });
+});
