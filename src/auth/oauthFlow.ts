@@ -354,6 +354,86 @@ export async function refreshAccessToken(
 }
 
 /**
+ * Configuration for client credentials grant
+ */
+export interface ClientCredentialsConfig {
+  /**
+   * Token endpoint URL
+   */
+  tokenEndpoint: string;
+
+  /**
+   * OAuth client ID
+   */
+  clientId: string;
+
+  /**
+   * OAuth client secret
+   */
+  clientSecret: string;
+
+  /**
+   * Scopes to request (optional)
+   */
+  scopes?: string[];
+}
+
+/**
+ * Performs the OAuth 2.1 client credentials grant to obtain an access token.
+ * Suitable for CI/CD machine-to-machine authentication.
+ *
+ * @param config - Client credentials configuration
+ * @returns Token result
+ */
+export async function performClientCredentialsFlow(
+  config: ClientCredentialsConfig
+): Promise<TokenResult> {
+  const body = new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: config.clientId,
+    client_secret: config.clientSecret,
+  });
+
+  if (config.scopes && config.scopes.length > 0) {
+    body.set('scope', config.scopes.join(' '));
+  }
+
+  const response = await fetch(config.tokenEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')}`,
+    },
+    body: body.toString(),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(
+      `Client credentials token request failed: ${response.status} ${response.statusText}${text ? ` - ${text}` : ''}`
+    );
+  }
+
+  const data = (await response.json()) as {
+    access_token: string;
+    token_type: string;
+    expires_in?: number;
+    scope?: string;
+  };
+
+  if (!data.access_token) {
+    throw new Error('Client credentials response missing access_token');
+  }
+
+  return {
+    accessToken: data.access_token,
+    tokenType: data.token_type ?? 'Bearer',
+    expiresIn: data.expires_in,
+    scope: data.scope,
+  };
+}
+
+/**
  * Validates the callback URL from OAuth redirect
  *
  * @param callbackUrl - The full callback URL with query parameters
