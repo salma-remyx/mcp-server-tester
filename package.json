@@ -1,6 +1,6 @@
 {
   "name": "@gleanwork/mcp-server-tester",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Playwright-based testing and evaluation framework for MCP servers",
   "keywords": [
     "playwright",
