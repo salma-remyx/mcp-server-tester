@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, @typescript-eslint/ban-ts-comment */
 /**
  * Vercel AI SDK-based LLM host orchestrator.
  *
@@ -96,7 +96,6 @@ function enrichErrorMessage(err: unknown, provider: string): string {
 
 // Dynamic import helper bypasses TypeScript module resolution for optional peer deps.
 // Each @ai-sdk/* package is optional — install only the providers you need.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function loadModel(provider: LLMProvider, model: string): Promise<any> {
   switch (provider) {
     case 'openai': {
@@ -121,52 +120,38 @@ async function loadModel(provider: LLMProvider, model: string): Promise<any> {
       return (vertexAnthropic as unknown as (m: string) => unknown)(model);
     }
     case 'google': {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore - optional: npm install @ai-sdk/google
       const { google } = await import('@ai-sdk/google');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (google as any)(model);
     }
     case 'mistral': {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore - optional: npm install @ai-sdk/mistral
       const { mistral } = await import('@ai-sdk/mistral');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (mistral as any)(model);
     }
     case 'azure': {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore - optional: npm install @ai-sdk/azure
       const { azure } = await import('@ai-sdk/azure');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (azure as any)(model);
     }
     case 'ollama': {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore - optional: npm install @ai-sdk/ollama
       const { ollama } = await import('@ai-sdk/ollama');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (ollama as any)(model);
     }
     case 'deepseek': {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore - optional: npm install @ai-sdk/deepseek
       const { deepseek } = await import('@ai-sdk/deepseek');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (deepseek as any)(model);
     }
     case 'openrouter': {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore - optional: npm install @openrouter/ai-sdk-provider
       const { openrouter } = await import('@openrouter/ai-sdk-provider');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (openrouter as any)(model);
     }
     case 'xai': {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore - optional: npm install @ai-sdk/xai
       const { xai } = await import('@ai-sdk/xai');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (xai as any)(model);
     }
     default:
@@ -222,7 +207,6 @@ export function createVercelOrchestrator(): LLMHostSimulator {
         // Build tool definitions in Vercel AI SDK format.
         // Uses any because the tool() generic requires inferred parameter types
         // which aren't available from MCP's JSON Schema at compile time.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         // Build tool definitions using explicit inputSchema (a Schema object with .jsonSchema).
         // We bypass the tool() helper because ai v6 tool() stores schema as .parameters
         // but prepareToolsAndToolChoice reads .inputSchema — they're inconsistent in v6.
@@ -252,7 +236,6 @@ export function createVercelOrchestrator(): LLMHostSimulator {
         const maxSteps = config.maxToolCalls ?? 10;
         const llmStart = Date.now();
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const result = await (generateText as any)({
           model,
           prompt: scenario,
@@ -265,7 +248,6 @@ export function createVercelOrchestrator(): LLMHostSimulator {
         const totalDurationMs = Date.now() - llmStart;
         const llmDurationMs = totalDurationMs - mcpDurationMs;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const conversationHistory = (result.steps ?? []).map((step: any) => ({
           role: (step.toolCalls?.length > 0 ? 'tool' : 'assistant') as
             | 'tool'
