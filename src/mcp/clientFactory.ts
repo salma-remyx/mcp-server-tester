@@ -358,6 +358,10 @@ export async function createMCPClientForConfig(
  * @param client - The client to close
  */
 export async function closeMCPClient(client: Client): Promise<void> {
+  // notifications/cancelled requires a specific requestId to be useful — without one
+  // the server cannot identify which request to abort. The MCP SDK does not expose
+  // outstanding request IDs as a public API, so we close directly and let the
+  // transport teardown signal disconnection to the server.
   try {
     await client.close();
   } catch (error) {
