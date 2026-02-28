@@ -14,6 +14,7 @@ export type {
   MCPHostCapabilities,
   MCPAuthConfig,
   MCPOAuthConfig,
+  MCPClientCredentialsConfig,
 } from './config/mcpConfig.js';
 export {
   MCPConfigSchema,
@@ -44,6 +45,10 @@ export {
   performOAuthSetup,
   performOAuthSetupIfNeeded,
 } from './auth/setupOAuth.js';
+export {
+  performClientCredentialsFlow,
+  type ClientCredentialsConfig,
+} from './auth/oauthFlow.js';
 
 // Discovery (RFC 9728)
 export {

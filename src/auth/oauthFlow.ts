@@ -354,6 +354,86 @@ export async function refreshAccessToken(
 }
 
 /**
+ * Configuration for client credentials grant
+ */
+export interface ClientCredentialsConfig {
+  /**
+   * Token endpoint URL
+   */
+  tokenEndpoint: string;
+
+  /**
+   * OAuth client ID
+   */
+  clientId: string;
+
+  /**
+   * OAuth client secret
+   */
+  clientSecret: string;
+
+  /**
+   * Scopes to request (optional)
+   */
+  scopes?: string[];
+}
+
+/**
+ * Performs the OAuth 2.1 client credentials grant to obtain an access token.
+ * Suitable for CI/CD machine-to-machine authentication.
+ *
+ * Uses oauth4webapi for spec-compliant request construction and response validation,
+ * consistent with how the rest of this module handles OAuth flows.
+ *
+ * @param config - Client credentials configuration
+ * @returns Token result
+ */
+export async function performClientCredentialsFlow(
+  config: ClientCredentialsConfig
+): Promise<TokenResult> {
+  // Construct minimal AuthorizationServer from the token endpoint URL.
+  // oauth4webapi requires an issuer; we use the origin of the token endpoint.
+  const tokenEndpointUrl = new URL(config.tokenEndpoint);
+  const authServer: oauth.AuthorizationServer = {
+    issuer: tokenEndpointUrl.origin,
+    token_endpoint: config.tokenEndpoint,
+  };
+
+  const client: oauth.Client = {
+    client_id: config.clientId,
+  };
+
+  // ClientSecretBasic transmits credentials via Authorization: Basic header (RFC 6749 §2.3.1).
+  // This is the recommended method — avoids placing secrets in the request body.
+  const clientAuth = oauth.ClientSecretBasic(config.clientSecret);
+
+  const parameters: Record<string, string> = {};
+  if (config.scopes && config.scopes.length > 0) {
+    parameters['scope'] = config.scopes.join(' ');
+  }
+
+  const response = await oauth.clientCredentialsGrantRequest(
+    authServer,
+    client,
+    clientAuth,
+    parameters
+  );
+
+  const result = await oauth.processClientCredentialsResponse(
+    authServer,
+    client,
+    response
+  );
+
+  return {
+    accessToken: result.access_token,
+    tokenType: result.token_type,
+    expiresIn: result.expires_in,
+    scope: result.scope,
+  };
+}
+
+/**
  * Validates the callback URL from OAuth redirect
  *
  * @param callbackUrl - The full callback URL with query parameters

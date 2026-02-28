@@ -13,6 +13,7 @@ import { debugClient, debugHttp } from '../debug.js';
 import { ProxyAgent, Agent as UndiciAgent } from 'undici';
 import { readFileSync } from 'node:fs';
 import packageJson from '../../package.json' with { type: 'json' };
+import { performClientCredentialsFlow } from '../auth/oauthFlow.js';
 
 /**
  * Extracts the Retry-After delay in milliseconds from an error response, if present.
@@ -211,6 +212,35 @@ export async function createMCPClientForConfig(
   } else if (isHttpConfig(validatedConfig)) {
     // Build headers, including static token auth if configured and no authProvider
     const headers: Record<string, string> = { ...validatedConfig.headers };
+
+    // If using client credentials grant, fetch a token first
+    if (validatedConfig.auth?.clientCredentials && !options?.authProvider) {
+      const ccConfig = validatedConfig.auth.clientCredentials;
+      const clientId = ccConfig.clientId ?? process.env['MCP_CLIENT_ID'];
+      const clientSecret =
+        ccConfig.clientSecret ?? process.env['MCP_CLIENT_SECRET'];
+
+      if (!clientId || !clientSecret) {
+        throw new Error(
+          'Client credentials require clientId/clientSecret in config or MCP_CLIENT_ID/MCP_CLIENT_SECRET env vars'
+        );
+      }
+
+      if (!ccConfig.tokenEndpoint) {
+        throw new Error(
+          'Client credentials require tokenEndpoint in auth.clientCredentials config'
+        );
+      }
+
+      debugClient('Fetching token via client credentials grant');
+      const tokenResult = await performClientCredentialsFlow({
+        tokenEndpoint: ccConfig.tokenEndpoint,
+        clientId,
+        clientSecret,
+        scopes: ccConfig.scopes,
+      });
+      headers.Authorization = `Bearer ${tokenResult.accessToken}`;
+    }
 
     // If using static token auth (no authProvider), add Authorization header
     if (validatedConfig.auth?.accessToken && !options?.authProvider) {

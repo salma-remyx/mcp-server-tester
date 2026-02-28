@@ -43,6 +43,32 @@ export interface MCPOAuthConfig {
 }
 
 /**
+ * OAuth 2.1 client credentials configuration for machine-to-machine (CI/CD) authentication.
+ * Credentials can be provided here or via MCP_CLIENT_ID/MCP_CLIENT_SECRET environment variables.
+ */
+export interface MCPClientCredentialsConfig {
+  /**
+   * OAuth client ID (falls back to MCP_CLIENT_ID env var)
+   */
+  clientId?: string;
+
+  /**
+   * OAuth client secret (falls back to MCP_CLIENT_SECRET env var)
+   */
+  clientSecret?: string;
+
+  /**
+   * Token endpoint URL (required)
+   */
+  tokenEndpoint?: string;
+
+  /**
+   * Scopes to request
+   */
+  scopes?: string[];
+}
+
+/**
  * Authentication configuration for MCP connections
  */
 export interface MCPAuthConfig {
@@ -55,6 +81,11 @@ export interface MCPAuthConfig {
    * Full OAuth configuration for browser-based authentication
    */
   oauth?: MCPOAuthConfig;
+
+  /**
+   * OAuth 2.1 client credentials grant for machine-to-machine authentication
+   */
+  clientCredentials?: MCPClientCredentialsConfig;
 }
 
 /**
@@ -252,12 +283,23 @@ const MCPOAuthConfigSchema = z.object({
 });
 
 /**
+ * Zod schema for MCPClientCredentialsConfig
+ */
+const MCPClientCredentialsConfigSchema = z.object({
+  clientId: z.string().optional(),
+  clientSecret: z.string().optional(),
+  tokenEndpoint: z.string().url('tokenEndpoint must be a valid URL').optional(),
+  scopes: z.array(z.string()).optional(),
+});
+
+/**
  * Zod schema for MCPAuthConfig
  */
 const MCPAuthConfigSchema = z
   .object({
     accessToken: z.string().optional(),
     oauth: MCPOAuthConfigSchema.optional(),
+    clientCredentials: MCPClientCredentialsConfigSchema.optional(),
   })
   .refine(
     (data) => !(data.accessToken && data.oauth),
