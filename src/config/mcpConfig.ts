@@ -187,6 +187,33 @@ export interface HttpMCPConfig {
    * Uses exponential backoff with Retry-After header awareness. Defaults to 0 (no retries).
    */
   retryAttempts?: number;
+
+  /**
+   * TLS/mTLS configuration for custom certificates or disabling cert validation.
+   * File paths should point to PEM-encoded certificate files.
+   */
+  tls?: {
+    /**
+     * Path to CA certificate PEM file (for custom/self-signed CAs)
+     */
+    ca?: string;
+
+    /**
+     * Path to client certificate PEM file (for mutual TLS)
+     */
+    cert?: string;
+
+    /**
+     * Path to client private key PEM file (for mutual TLS)
+     */
+    key?: string;
+
+    /**
+     * Whether to reject unauthorized certificates. Defaults to true.
+     * Set to false to disable certificate validation (not recommended for production).
+     */
+    rejectUnauthorized?: boolean;
+  };
 }
 
 /**
@@ -296,6 +323,14 @@ const HttpConfigSchema = z.object({
     })
     .optional(),
   retryAttempts: z.number().int().min(0).optional(),
+  tls: z
+    .object({
+      ca: z.string().optional(),
+      cert: z.string().optional(),
+      key: z.string().optional(),
+      rejectUnauthorized: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 /**
