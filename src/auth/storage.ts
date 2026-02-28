@@ -454,7 +454,11 @@ class FileOAuthStorage implements OAuthStorage {
    * Files are created with 0o600 permissions (user read/write only)
    */
   private async atomicWrite(filePath: string, data: unknown): Promise<void> {
-    // Ensure directory exists with restrictive permissions
+    // Note: The `mode` parameter is ignored on Windows (Win32) where file
+    // permissions are controlled by NTFS ACLs, not Unix permission bits.
+    // On Windows, token files may be readable by other users on the system
+    // depending on the directory's inherited ACL. This is a Node.js fs
+    // limitation. Windows users should verify %LOCALAPPDATA% permissions manually.
     await fs.mkdir(this.stateDir, { recursive: true, mode: 0o700 });
 
     const tmpPath = `${filePath}.tmp`;

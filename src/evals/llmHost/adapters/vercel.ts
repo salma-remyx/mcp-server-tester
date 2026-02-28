@@ -1,5 +1,23 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any */
 /**
+ * Vercel AI SDK adapter for llm_host mode.
+ *
+ * NOTE: This file contains several `@typescript-eslint/no-explicit-any` and
+ * similar suppressions. These are necessary because:
+ *
+ * 1. The @ai-sdk/* packages are optional peer dependencies, so their types
+ *    may not be available at compile time. We use dynamic imports to handle
+ *    the case where they're not installed.
+ *
+ * 2. The Vercel AI SDK's `generateText` response types for tool calls use
+ *    complex generics that don't narrow cleanly when providers are dynamically
+ *    loaded. The `any` casts are intentional bridges between the SDK's
+ *    internal types and our domain types.
+ *
+ * Each suppression is intentional and accepted as a trade-off between
+ * runtime flexibility and compile-time safety.
+ *
+ * ---
+ *
  * Vercel AI SDK-based LLM host orchestrator.
  *
  * Replaces the custom agentic loop with generateText + stopWhen (ai v6),
@@ -8,6 +26,7 @@
  * Requires the `ai` package (v6+) as an optional peer dependency.
  * Additional providers require their respective @ai-sdk/* packages.
  */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any */
 import type {
   LLMHostConfig,
   LLMHostSimulationResult,
@@ -96,7 +115,7 @@ function enrichErrorMessage(err: unknown, provider: string): string {
 
 // Dynamic import helper bypasses TypeScript module resolution for optional peer deps.
 // Each @ai-sdk/* package is optional — install only the providers you need.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- return type is a provider-specific model object whose type is unavailable at compile time (optional peer dep)
 async function loadModel(provider: LLMProvider, model: string): Promise<any> {
   switch (provider) {
     case 'openai': {
@@ -121,52 +140,52 @@ async function loadModel(provider: LLMProvider, model: string): Promise<any> {
       return (vertexAnthropic as unknown as (m: string) => unknown)(model);
     }
     case 'google': {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- suppresses ts-ignore lint warning; @ai-sdk/google is an optional peer dep with no installed types
       // @ts-ignore - optional: npm install @ai-sdk/google
       const { google } = await import('@ai-sdk/google');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic import result type unavailable (optional peer dep)
       return (google as any)(model);
     }
     case 'mistral': {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- suppresses ts-ignore lint warning; @ai-sdk/mistral is an optional peer dep with no installed types
       // @ts-ignore - optional: npm install @ai-sdk/mistral
       const { mistral } = await import('@ai-sdk/mistral');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic import result type unavailable (optional peer dep)
       return (mistral as any)(model);
     }
     case 'azure': {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- suppresses ts-ignore lint warning; @ai-sdk/azure is an optional peer dep with no installed types
       // @ts-ignore - optional: npm install @ai-sdk/azure
       const { azure } = await import('@ai-sdk/azure');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic import result type unavailable (optional peer dep)
       return (azure as any)(model);
     }
     case 'ollama': {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- suppresses ts-ignore lint warning; @ai-sdk/ollama is an optional peer dep with no installed types
       // @ts-ignore - optional: npm install @ai-sdk/ollama
       const { ollama } = await import('@ai-sdk/ollama');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic import result type unavailable (optional peer dep)
       return (ollama as any)(model);
     }
     case 'deepseek': {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- suppresses ts-ignore lint warning; @ai-sdk/deepseek is an optional peer dep with no installed types
       // @ts-ignore - optional: npm install @ai-sdk/deepseek
       const { deepseek } = await import('@ai-sdk/deepseek');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic import result type unavailable (optional peer dep)
       return (deepseek as any)(model);
     }
     case 'openrouter': {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- suppresses ts-ignore lint warning; @openrouter/ai-sdk-provider is an optional peer dep with no installed types
       // @ts-ignore - optional: npm install @openrouter/ai-sdk-provider
       const { openrouter } = await import('@openrouter/ai-sdk-provider');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic import result type unavailable (optional peer dep)
       return (openrouter as any)(model);
     }
     case 'xai': {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- suppresses ts-ignore lint warning; @ai-sdk/xai is an optional peer dep with no installed types
       // @ts-ignore - optional: npm install @ai-sdk/xai
       const { xai } = await import('@ai-sdk/xai');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic import result type unavailable (optional peer dep)
       return (xai as any)(model);
     }
     default:
@@ -222,11 +241,11 @@ export function createVercelOrchestrator(): LLMHostSimulator {
         // Build tool definitions in Vercel AI SDK format.
         // Uses any because the tool() generic requires inferred parameter types
         // which aren't available from MCP's JSON Schema at compile time.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         // Build tool definitions using explicit inputSchema (a Schema object with .jsonSchema).
         // We bypass the tool() helper because ai v6 tool() stores schema as .parameters
         // but prepareToolsAndToolChoice reads .inputSchema — they're inconsistent in v6.
         // Using jsonSchema() from @ai-sdk/provider-utils produces the correct Schema object.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tool() generic can't be inferred from MCP's JSON Schema at compile time; any is intentional
         const tools: Record<string, any> = {};
         for (const mcpTool of mcpTools) {
           const toolName = mcpTool.name;
@@ -252,7 +271,7 @@ export function createVercelOrchestrator(): LLMHostSimulator {
         const maxSteps = config.maxToolCalls ?? 10;
         const llmStart = Date.now();
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- generateText's generic parameters can't be inferred when tools are built dynamically from MCP JSON Schema
         const result = await (generateText as any)({
           model,
           prompt: scenario,
@@ -265,7 +284,7 @@ export function createVercelOrchestrator(): LLMHostSimulator {
         const totalDurationMs = Date.now() - llmStart;
         const llmDurationMs = totalDurationMs - mcpDurationMs;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- result.steps type is a complex generic from ai v6 that doesn't narrow after the dynamic generateText call
         const conversationHistory = (result.steps ?? []).map((step: any) => ({
           role: (step.toolCalls?.length > 0 ? 'tool' : 'assistant') as
             | 'tool'
