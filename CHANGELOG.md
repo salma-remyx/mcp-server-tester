@@ -6,6 +6,23 @@
 
 
 
+
+## v1.0.0-beta.2 (2026-03-02)
+
+#### :bug: Bug Fix
+* [#95](https://github.com/gleanwork/mcp-server-tester/pull/95) fix: guard toMatchToolSnapshot against invalid regex + confirm partialMatch key-order safety ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#96](https://github.com/gleanwork/mcp-server-tester/pull/96) fix: warn on low iterations in llm_host mode and poor baseline coverage ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### :memo: Documentation
+* [#97](https://github.com/gleanwork/mcp-server-tester/pull/97) docs: document missing matchers, add 1.0 migration guide, add troubleshooting guide ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### :house: Internal
+* [#98](https://github.com/gleanwork/mcp-server-tester/pull/98) chore: update CLAUDE.md LLMProvider list (remove ollama, add vertex-anthropic) ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### Committers: 1
+- Steve Calvert ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+
 ## v1.0.0-beta.1 (2026-03-02)
 
 #### :rocket: Enhancement
