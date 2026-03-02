@@ -7,6 +7,23 @@
 
 
 
+
+## v1.0.0-beta.3 (2026-03-02)
+
+#### :rocket: Enhancement
+* [#103](https://github.com/gleanwork/mcp-server-tester/pull/103) feat: set User-Agent header on all HTTP MCP requests ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### :bug: Bug Fix
+* [#102](https://github.com/gleanwork/mcp-server-tester/pull/102) fix: add mise.toml and align all Node version references to Node 22 LTS ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#99](https://github.com/gleanwork/mcp-server-tester/pull/99) fix: remove accuracy alias, document snapshot context, complete README matcher table ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### :memo: Documentation
+* [#100](https://github.com/gleanwork/mcp-server-tester/pull/100) docs: document mcpAuthTest export and when to use it vs test fixture ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### Committers: 1
+- Steve Calvert ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+
 ## v1.0.0-beta.2 (2026-03-02)
 
 #### :bug: Bug Fix
