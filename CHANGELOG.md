@@ -5,6 +5,30 @@
 
 
 
+
+## v1.0.0-beta.1 (2026-03-02)
+
+#### :rocket: Enhancement
+* [#93](https://github.com/gleanwork/mcp-server-tester/pull/93) feat: re-export test fixtures from top-level package path ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### :bug: Bug Fix
+* [#91](https://github.com/gleanwork/mcp-server-tester/pull/91) fix: remove 'claude' judge provider alias, canonicalize on 'anthropic' ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#92](https://github.com/gleanwork/mcp-server-tester/pull/92) fix: add env to StdioMCPConfig, type samplingHandler, replace console.error ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#87](https://github.com/gleanwork/mcp-server-tester/pull/87) fix: classify infrastructure errors by err.code and document concurrency safety ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#86](https://github.com/gleanwork/mcp-server-tester/pull/86) fix: compute tool call precision accurately in non-exclusive mode ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#85](https://github.com/gleanwork/mcp-server-tester/pull/85) fix: remove @ai-sdk/ollama — package does not exist on npm ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### :house: Internal
+* [#88](https://github.com/gleanwork/mcp-server-tester/pull/88) test: add comprehensive test suite for setupOAuth ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#89](https://github.com/gleanwork/mcp-server-tester/pull/89) test: add unit tests for toMatchToolSnapshot sanitizer logic ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#90](https://github.com/gleanwork/mcp-server-tester/pull/90) test: add CLI init and generate command tests ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#94](https://github.com/gleanwork/mcp-server-tester/pull/94) chore: remove internal QA review documents from docs/ ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#84](https://github.com/gleanwork/mcp-server-tester/pull/84) test: add bintastic integration tests for CLI commands ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### Committers: 1
+- Steve Calvert ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+
 ## v1.0.0-beta.0 (2026-03-01)
 
 #### :rocket: Enhancement
