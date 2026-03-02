@@ -46,13 +46,54 @@ function computeMetrics(results: EvalCaseResult[]): MetricsSummary {
   };
 }
 
+interface ToolDiscoveryMetrics {
+  meanRecall: number;
+  count: number;
+}
+
+interface RegressionMetrics {
+  regressions: number;
+  fixes: number;
+}
+
+function computeToolDiscovery(
+  results: EvalCaseResult[]
+): ToolDiscoveryMetrics | null {
+  const withRecall = results.filter((r) => r.toolRecall !== undefined);
+  if (withRecall.length === 0) return null;
+  const meanRecall =
+    withRecall.reduce((sum, r) => sum + (r.toolRecall ?? 0), 0) /
+    withRecall.length;
+  return { meanRecall, count: withRecall.length };
+}
+
+function computeRegressions(results: EvalCaseResult[]): RegressionMetrics | null {
+  const withBaseline = results.filter((r) => r.baselinePass !== undefined);
+  if (withBaseline.length === 0) return null;
+  const regressions = withBaseline.filter(
+    (r) => r.baselinePass === true && r.pass === false
+  ).length;
+  const fixes = withBaseline.filter(
+    (r) => r.baselinePass === false && r.pass === true
+  ).length;
+  return { regressions, fixes };
+}
+
 export function MetricsCards({ results }: MetricsCardsProps) {
   const overall = useMemo(() => computeMetrics(results), [results]);
+  const toolDiscovery = useMemo(() => computeToolDiscovery(results), [results]);
+  const regressionMetrics = useMemo(() => computeRegressions(results), [results]);
   const showAccuracy = overall.avgAccuracy !== undefined;
+
+  const extraCards =
+    (showAccuracy ? 1 : 0) +
+    (toolDiscovery !== null ? 1 : 0) +
+    (regressionMetrics !== null ? 1 : 0);
+  const totalCols = 4 + extraCards;
 
   return (
     <div
-      className={`grid grid-cols-2 gap-4 ${showAccuracy ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
+      className={`grid grid-cols-2 gap-4 lg:grid-cols-${totalCols}`}
     >
       <MetricCard
         title="Pass Rate"
@@ -72,6 +113,23 @@ export function MetricsCards({ results }: MetricsCardsProps) {
                 : 'error'
           }
         />
+      )}
+      {toolDiscovery !== null && (
+        <MetricCard
+          title="Tool Discovery Rate"
+          value={`${(toolDiscovery.meanRecall * 100).toFixed(1)}%`}
+          subtitle="avg recall across llm_host cases"
+          variant={
+            toolDiscovery.meanRecall >= 0.8
+              ? 'success'
+              : toolDiscovery.meanRecall >= 0.6
+                ? 'warning'
+                : 'error'
+          }
+        />
+      )}
+      {regressionMetrics !== null && (
+        <RegressionCard metrics={regressionMetrics} />
       )}
       <MetricCard
         title="Total Cases"
@@ -93,6 +151,44 @@ export function MetricsCards({ results }: MetricsCardsProps) {
         value={overall.failed.toString()}
         variant={overall.failed === 0 ? 'neutral' : 'error'}
       />
+    </div>
+  );
+}
+
+interface RegressionCardProps {
+  metrics: RegressionMetrics;
+}
+
+function RegressionCard({ metrics }: RegressionCardProps) {
+  const hasRegressions = metrics.regressions > 0;
+
+  return (
+    <div className="rounded-lg border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex flex-col">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Regressions / Fixed
+        </span>
+        <div className="mt-2 flex flex-col gap-1">
+          <span
+            className={`text-sm font-semibold ${
+              hasRegressions
+                ? 'text-red-600 dark:text-red-400'
+                : 'text-muted-foreground'
+            }`}
+          >
+            ▼ {metrics.regressions} regression{metrics.regressions !== 1 ? 's' : ''}
+          </span>
+          <span
+            className={`text-sm font-semibold ${
+              metrics.fixes > 0
+                ? 'text-green-600 dark:text-green-400'
+                : 'text-muted-foreground'
+            }`}
+          >
+            ▲ {metrics.fixes} fixed
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
