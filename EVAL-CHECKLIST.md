@@ -12,13 +12,13 @@ Generated: 2026-03-02 | Current version: 1.0.0-beta.2 | Next target: 1.0.0
 
 ## P0 — Release Blockers
 
-*None currently open.*
+_None currently open._
 
 ---
 
 ## P1 — Should Fix Before Release
 
-*None currently open.*
+_None currently open._
 
 ---
 
