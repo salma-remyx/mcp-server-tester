@@ -19,21 +19,19 @@ For most regression testing, use direct mode (`callTool`). Reserve MCP host simu
 
 ## Supported Providers
 
-**Native adapters** (built-in, require their SDK):
-| Provider | Env Variable | Install |
-|---|---|---|
-| `anthropic` | `ANTHROPIC_API_KEY` | `npm install @anthropic-ai/sdk` |
-| `openai` | `OPENAI_API_KEY` | `npm install openai` |
+All providers use the Vercel AI SDK. Install `ai` plus the provider-specific package:
 
-**Via Vercel AI SDK** (require `ai` + provider SDK):
-| Provider | Env Variable | Install |
-|---|---|---|
-| `google` | `GOOGLE_GENERATIVE_AI_API_KEY` | `npm install ai @ai-sdk/google` |
-| `mistral` | `MISTRAL_API_KEY` | `npm install ai @ai-sdk/mistral` |
-| `azure` | `AZURE_API_KEY` | `npm install ai @ai-sdk/azure` |
-| `deepseek` | `DEEPSEEK_API_KEY` | `npm install ai @ai-sdk/deepseek` |
-| `openrouter` | `OPENROUTER_API_KEY` | `npm install ai @openrouter/ai-sdk-provider` |
-| `xai` | `XAI_API_KEY` | `npm install ai @ai-sdk/xai` |
+| Provider           | Env Variable                   | Install                                      |
+| ------------------ | ------------------------------ | -------------------------------------------- |
+| `anthropic`        | `ANTHROPIC_API_KEY`            | `npm install ai @ai-sdk/anthropic`           |
+| `openai`           | `OPENAI_API_KEY`               | `npm install ai @ai-sdk/openai`              |
+| `google`           | `GOOGLE_GENERATIVE_AI_API_KEY` | `npm install ai @ai-sdk/google`              |
+| `vertex-anthropic` | `GOOGLE_VERTEX_PROJECT`        | `npm install ai @ai-sdk/google-vertex`       |
+| `mistral`          | `MISTRAL_API_KEY`              | `npm install ai @ai-sdk/mistral`             |
+| `azure`            | `AZURE_API_KEY`                | `npm install ai @ai-sdk/azure`               |
+| `deepseek`         | `DEEPSEEK_API_KEY`             | `npm install ai @ai-sdk/deepseek`            |
+| `openrouter`       | `OPENROUTER_API_KEY`           | `npm install ai @openrouter/ai-sdk-provider` |
+| `xai`              | `XAI_API_KEY`                  | `npm install ai @ai-sdk/xai`                 |
 
 ## Basic Usage
 
@@ -127,6 +125,7 @@ interface MCPHostConfig {
     | 'openai'
     | 'anthropic'
     | 'google'
+    | 'vertex-anthropic'
     | 'mistral'
     | 'azure'
     | 'deepseek'
@@ -162,7 +161,6 @@ LLM host simulation calls a real LLM API. Approximate costs:
 
 - Anthropic Claude 3.5 Sonnet: ~$0.003–0.01 per test (varies by tool count)
 - OpenAI GPT-4o: ~$0.005–0.02 per test
-- Ollama (local): Free
 
 **Recommendation:** Use `mode: "direct"` for regression testing. Use `mode: "mcp_host"` selectively for tool description quality validation.
 

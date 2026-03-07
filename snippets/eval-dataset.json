@@ -1,0 +1,22 @@
+{
+  "name": "file-ops",
+  "cases": [
+    {
+      "id": "read-config",
+      "toolName": "read_file",
+      "args": { "path": "/tmp/config.json" },
+      "expect": {
+        "schema": "file-content",
+        "containsText": ["version", "name"]
+      }
+    },
+    {
+      "id": "read-readme",
+      "toolName": "read_file",
+      "args": { "path": "/tmp/README.md" },
+      "expect": {
+        "snapshot": "readme-snapshot"
+      }
+    }
+  ]
+}

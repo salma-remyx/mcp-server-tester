@@ -236,8 +236,7 @@ Captures and compares tool responses against stored snapshots using Playwright's
 > **Requires Playwright test context.** `toMatchToolSnapshot()` calls Playwright's native
 > snapshot infrastructure internally and only works inside a Playwright test function.
 > If you call it outside a test or in a programmatic validator, you will get a cryptic
-> context error. To use sanitizer logic outside tests, import `applySanitizers` directly
-> from the matchers module.
+> context error.
 
 > **Important:** Snapshot testing works best with deterministic, stable responses. For responses containing timestamps, IDs, or live data, use [sanitizers](#snapshot-sanitizers) or consider [Schema Validation](#schema-validation) instead.
 
@@ -373,20 +372,7 @@ When responses contain variable data that would cause snapshot mismatches, use s
 
 ### Programmatic Sanitizer Use
 
-For advanced use cases, you can apply sanitizers directly:
-
-```typescript
-import {
-  applySanitizers,
-  BUILT_IN_PATTERNS,
-} from '@gleanwork/mcp-server-tester';
-
-const sanitized = applySanitizers(response, [
-  'uuid',
-  'timestamp',
-  { pattern: 'custom_\\d+', replacement: '[CUSTOM]' },
-]);
-```
+Sanitizers are applied automatically by `toMatchToolSnapshot()`. The sanitizer names (`'uuid'`, `'timestamp'`, etc.) and custom regex patterns are specified inline on the expectation as shown above.
 
 ### Best Practices
 
@@ -402,7 +388,7 @@ Semantic evaluation using LLMs (OpenAI or Anthropic). Best for subjective criter
 
 ### Dataset Format
 
-Use the `expect.passesJudge` field in the eval dataset JSON. Supply a `judgeClient` to `runEvalDataset`:
+Use the `expect.passesJudge` field in the eval dataset JSON. Supply a `judge` to `runEvalDataset`:
 
 ```json
 {
@@ -420,22 +406,16 @@ Use the `expect.passesJudge` field in the eval dataset JSON. Supply a `judgeClie
 }
 ```
 
-```typescript
-import {
-  createLLMJudgeClient,
-  runEvalDataset,
-} from '@gleanwork/mcp-server-tester';
+```typescript snippet=snippets/judge-config.ts
+import { createJudge, runEvalDataset } from '@gleanwork/mcp-server-tester';
 
-const judgeClient = createLLMJudgeClient({
-  provider: 'openai',
-  model: 'gpt-4',
+const judge = createJudge({
+  provider: 'anthropic',
+  model: 'claude-sonnet-4-20250514',
   temperature: 0.0,
 });
 
-const result = await runEvalDataset(
-  { dataset, judgeClient },
-  { mcp, testInfo }
-);
+const result = await runEvalDataset({ dataset, judge }, { mcp, testInfo });
 ```
 
 ### Inline Test Usage
@@ -459,7 +439,7 @@ test('search relevance', async ({ mcp }) => {
 - **OpenAI** - Requires `OPENAI_API_KEY` environment variable
 
   ```typescript
-  createLLMJudgeClient({
+  createJudge({
     provider: 'openai',
     model: 'gpt-4',
     temperature: 0.0,
@@ -468,7 +448,7 @@ test('search relevance', async ({ mcp }) => {
 
 - **Anthropic** - Requires `ANTHROPIC_API_KEY` environment variable
   ```typescript
-  createLLMJudgeClient({
+  createJudge({
     provider: 'anthropic',
     model: 'claude-3-opus-20240229',
     temperature: 0.0,
@@ -623,10 +603,7 @@ The predicate may be synchronous or `async`. Errors thrown inside the predicate 
 A single eval case can declare multiple expectation types at once. The runner evaluates each defined field independently and reports results per expectation:
 
 ```typescript
-const result = await runEvalDataset(
-  { dataset, judgeClient },
-  { mcp, testInfo }
-);
+const result = await runEvalDataset({ dataset, judge }, { mcp, testInfo });
 ```
 
 Each eval case uses whichever `expect` fields are defined:

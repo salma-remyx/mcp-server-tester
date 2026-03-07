@@ -11,7 +11,7 @@ A testing and evaluation framework for [Model Context Protocol (MCP)](https://mo
 
 The `mcp` Playwright fixture connects to your MCP server (stdio or HTTP) and exposes a high-level API for calling tools and asserting responses. Custom matchers keep assertions readable.
 
-```typescript
+```typescript snippet=snippets/basic-test.ts
 import { test, expect } from '@gleanwork/mcp-server-tester/fixtures/mcp';
 
 test('read_file returns file contents', async ({ mcp }) => {
@@ -48,7 +48,7 @@ Available matchers:
 
 Eval datasets let you define test cases as JSON files and run them with `runEvalDataset()`. Each case specifies a tool call and one or more assertions.
 
-```json
+```json snippet=snippets/eval-dataset.json
 {
   "name": "file-ops",
   "cases": [
@@ -73,7 +73,7 @@ Eval datasets let you define test cases as JSON files and run them with `runEval
 }
 ```
 
-```typescript
+```typescript snippet=snippets/run-eval-dataset.ts
 import { test, expect } from '@gleanwork/mcp-server-tester/fixtures/mcp';
 import { loadEvalDataset, runEvalDataset } from '@gleanwork/mcp-server-tester';
 import { z } from 'zod';
@@ -102,7 +102,7 @@ Supported assertion types:
 
 In LLM host mode, a real LLM receives your server's tool list and a natural language prompt, then decides which tools to call. This tests whether your tool names, descriptions, and input schemas are clear enough for autonomous use — a different question from whether the tools return correct output.
 
-```json
+```json snippet=snippets/mcp-host-dataset.json
 {
   "id": "find-config",
   "mode": "mcp_host",
@@ -119,7 +119,7 @@ In LLM host mode, a real LLM receives your server's tool list and a natural lang
 }
 ```
 
-LLM host mode makes real API calls and produces non-deterministic results. Use `iterations` to run a case multiple times and measure pass rate rather than expecting 100% on a single run. See the [LLM Host Guide](docs/llm-host.md) for configuration and cost management.
+LLM host mode makes real API calls and produces non-deterministic results. Use `iterations` to run a case multiple times and measure pass rate rather than expecting 100% on a single run. See the [LLM Host Guide](docs/mcp-host.md) for configuration and cost management.
 
 ## Installation
 
@@ -147,7 +147,7 @@ The CLI wizard creates a `playwright.config.ts`, example tests, and a sample eva
 
 Point the framework at your MCP server in `playwright.config.ts`:
 
-```typescript
+```typescript snippet=snippets/playwright-config.ts
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
@@ -174,7 +174,7 @@ For HTTP servers, set `transport: 'http'` and `serverUrl`. For servers that requ
 
 - [Quick Start](./docs/quickstart.md) — detailed setup and configuration
 - [Expectations](./docs/expectations.md) — all assertion types including snapshot sanitizers
-- [LLM Host Simulation](docs/llm-host.md) — tool discoverability testing
+- [LLM Host Simulation](docs/mcp-host.md) — tool discoverability testing
 - [API Reference](./docs/api-reference.md)
 - [Transports](./docs/transports.md) — stdio and HTTP configuration, OAuth
 - [CLI Commands](./docs/cli.md) — init, generate, login, token

@@ -134,7 +134,7 @@ Use `--snapshot` to create datasets that use Playwright's built-in snapshot test
 npx mcp-server-tester generate --snapshot -o data/snapshot-tests.json
 ```
 
-This sets `expectedSnapshot: "<case-id>"` for each case. When you run tests:
+This sets `expect.snapshot: "<case-id>"` for each case. When you run tests:
 
 1. **First run**: Playwright captures snapshots to `__snapshots__/` folder
 2. **Subsequent runs**: Compares responses against captured snapshots
@@ -169,7 +169,7 @@ Response preview:
 }
 
 # Step 4: Auto-suggested expectations
-📋 Suggested expectations:
+Suggested expectations:
   Text contains:
     - "London"
     - "temperature"
@@ -264,8 +264,10 @@ The generated dataset is a JSON file:
       "id": "weather-london",
       "toolName": "get_weather",
       "args": { "city": "London" },
-      "expectedTextContains": ["London", "temperature"],
-      "expectedRegex": ["\\d+"]
+      "expect": {
+        "containsText": ["London", "temperature"],
+        "matchesPattern": ["\\d+"]
+      }
     }
   ]
 }

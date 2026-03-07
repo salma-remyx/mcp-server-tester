@@ -311,9 +311,9 @@ If your description is genuinely good, you should comfortably exceed this thresh
 When your eval runs, the reporter shows:
 
 ```
-✅ llm-search-phrasing-a  (accuracy: 90%)  — 9/10 iterations passed
-✅ llm-employee-search     (accuracy: 100%) — 10/10 iterations passed
-❌ llm-meeting-lookup       (accuracy: 60%)  — 6/10 iterations passed  ← needs work
+PASS  llm-search-phrasing-a  (accuracy: 90%)  — 9/10 iterations passed
+PASS  llm-employee-search     (accuracy: 100%) — 10/10 iterations passed
+FAIL  llm-meeting-lookup       (accuracy: 60%)  — 6/10 iterations passed  ← needs work
 ```
 
 **100% accuracy:** Your tool description is crystal clear for this scenario phrasing. The LLM always knows exactly what to do.
