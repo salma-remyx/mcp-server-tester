@@ -42,6 +42,7 @@ module.exports = {
     'dist',
     'node_modules',
     'examples',
+    'snippets',
     'scripts',
     'src/cli',
     'src/reporters/ui-src',
