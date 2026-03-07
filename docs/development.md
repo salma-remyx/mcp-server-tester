@@ -199,14 +199,13 @@ npm run build      # Build succeeds
 
 **Configuration:**
 
-- `src/config/mcpConfig.ts` - Transport configuration types
-- `src/config/mcpConfigSchema.ts` - Zod validation schemas
+- `src/config/mcpConfig.ts` - Transport configuration types and Zod validation schemas
 
 **Evaluations:**
 
-- `src/evals/evalTypes.ts` - Dataset and case types
+- `src/evals/datasetTypes.ts` - Dataset and case types
 - `src/evals/evalRunner.ts` - Dataset execution logic
-- `src/evals/expectations/` - All expectation implementations
+- `src/assertions/validators/` - All validator implementations
 
 ## Contributing
 
@@ -296,7 +295,7 @@ Follow these conventions:
 
    ```typescript
    // ✓ Good
-   (EvalDataset, MCPFixtureApi, LLMJudgeClient);
+   (EvalDataset, MCPFixtureApi, Judge);
 
    // ✗ Avoid
    (Data, Api, Client);
@@ -313,33 +312,18 @@ Follow these conventions:
 
 ### Adding Features
 
-#### New Expectation Type
+#### New Validator
 
-1. Create `src/evals/expectations/myExpectation.ts`
-2. Export function returning `EvalExpectation`
-3. Add to `src/index.ts` exports
-4. Add unit tests in `*.test.ts`
-5. Update `docs/expectations.md`
-
-Example:
-
-```typescript
-// src/evals/expectations/myExpectation.ts
-import type { EvalExpectation } from '../evalTypes';
-
-export function createMyExpectation(): EvalExpectation {
-  return async (context, evalCase, response) => {
-    // Implementation
-    return { pass: true, details: 'Success' };
-  };
-}
-```
+1. Create `src/assertions/validators/myValidator.ts` returning `ValidationResult`
+2. Export from `src/assertions/validators/index.ts`
+3. Add unit tests in `validators.test.ts`
+4. Update `docs/expectations.md`
 
 #### New LLM Judge Provider
 
-1. Add provider to `LLMProviderKind` union in `src/judge/judgeTypes.ts`
-2. Create `src/judge/myProviderJudge.ts` implementing `LLMJudgeClient`
-3. Add case to `createLLMJudgeClient()` switch in `src/judge/index.ts`
+1. Add provider to `ProviderKind` union in `src/judge/judgeTypes.ts`
+2. Create `src/judge/myProviderJudge.ts` implementing `Judge`
+3. Add case to `createJudge()` switch in `src/judge/judgeClient.ts`
 4. Use environment variables for API keys
 5. Add tests
 6. Update `docs/expectations.md`
@@ -347,11 +331,10 @@ export function createMyExpectation(): EvalExpectation {
 #### New Transport Type
 
 1. Add to `MCPConfig` discriminated union in `src/config/mcpConfig.ts`
-2. Update `createMCPClientForConfig()` in `src/mcp/createClient.ts` with SDK transport class
-3. Add Zod schema in `src/config/mcpConfigSchema.ts`
-4. Update type guards if needed
-5. Add tests
-6. Update `docs/transports.md`
+2. Update `createMCPClientForConfig()` in `src/mcp/clientFactory.ts` with SDK transport class
+3. Update type guards and Zod schema in `src/config/mcpConfig.ts`
+4. Add tests
+5. Update `docs/transports.md`
 
 ### Testing Guidelines
 

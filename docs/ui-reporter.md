@@ -2,19 +2,21 @@
 
 `@gleanwork/mcp-server-tester` includes a custom Playwright reporter with an interactive web UI for visualizing test results.
 
-![MCP Test Reporter UI](../ui.png)
+![MCP Server Tester — Tests tab](img/ui-tests.png)
+
+![MCP Server Tester — Evals tab](img/ui-evals.png)
 
 ## Features
 
-- **📊 Dual Test Tracking** - Automatically captures both Playwright test results and eval dataset executions
-- **🎯 Tab-Based Filtering** - Switch between All Results, Eval Datasets, and Test Suites views
-- **📈 Real-Time Metrics** - Pass rate, total tests, duration with source breakdowns
-- **✅ MCP Conformance Checks** - Protocol compliance validation with per-check details
-- **🔧 Server Capabilities** - View available tools and their descriptions
-- **🔍 Detailed Inspection** - Click any result to see full tool call details, responses, and validation results
-- **📁 Multi-Project Support** - Filter results by Playwright project when running multiple configurations
-- **🌓 Dark Mode** - Automatic theme detection with manual toggle
-- **📱 Responsive Design** - Works on desktop and mobile browsers
+- **Tabbed layout** — separate tabs for Overview, Tests, and Evals so each result type is easy to navigate
+- **Pass rate trend** — historical chart showing pass rate over time across runs
+- **Performance by tool** — per-tool pass rate, precision, and recall for eval runs
+- **MCP conformance checks** — protocol compliance validation with per-check details
+- **Server capabilities** — view available tools and their descriptions
+- **Detailed inspection** — click any result to see full tool call details, responses, and validation results
+- **Tag filtering** — filter eval results by tag across multiple scenarios
+- **Multi-project support** — filter results by Playwright project when running multiple configurations
+- **Dark mode** — automatic theme detection with manual toggle
 
 ## Configuration
 
@@ -94,11 +96,11 @@ A collapsible panel showing available MCP tools:
 
 ### Tabs
 
-Filter results by source type:
+The reporter uses three primary tabs:
 
-- **All Results** - Show both eval datasets and test suites
-- **Eval Datasets** - Show only dataset-driven evals (icon: BarChart3)
-- **Test Suites** - Show only traditional Playwright tests (icon: FlaskConical)
+- **Overview** — aggregate metrics across all result types, pass rate trend chart, and per-source breakdowns (Test Suites and Eval Datasets)
+- **Tests** — Playwright test suite results with conformance checks and server capabilities
+- **Evals** — eval dataset results with failure breakdown, performance-by-tool table, and tag filter
 
 ### Results Table
 
@@ -298,13 +300,13 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
       - run: npm ci
       - run: npm test
 
       # Upload results as artifact
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: mcp-test-results

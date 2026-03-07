@@ -6,10 +6,10 @@ This guide covers detailed setup and configuration for `@gleanwork/mcp-server-te
 
 There are two ways to test an MCP server with this library — choose before you write your first test:
 
-| Mode         | What it tests                                               | When to use                                                             |
-| ------------ | ----------------------------------------------------------- | ----------------------------------------------------------------------- |
-| **Direct**   | You call a tool with specific args and assert on the output | Regression tests, CI, smoke checks — fast and deterministic             |
-| **LLM host** | A real LLM receives your tools and decides which to call    | Testing tool discoverability — requires 10+ iterations, costs API money |
+| Mode                      | What it tests                                               | When to use                                                             |
+| ------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------- |
+| **Direct**                | You call a tool with specific args and assert on the output | Regression tests, CI, smoke checks — fast and deterministic             |
+| **MCP host** (`mcp_host`) | A real LLM receives your tools and decides which to call    | Testing tool discoverability — requires 10+ iterations, costs API money |
 
 Start with direct mode. Add LLM host mode when you need to validate that your tool descriptions work for real users.
 
@@ -64,26 +64,23 @@ npm install --save-dev @gleanwork/mcp-server-tester @playwright/test @modelconte
 
 Add MCP configuration to your `playwright.config.ts`:
 
-```typescript
+```typescript snippet=snippets/playwright-config.ts
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
+  reporter: [['list'], ['@gleanwork/mcp-server-tester/reporters/mcpReporter']],
   projects: [
     {
-      name: 'mcp-local',
+      name: 'my-server',
       use: {
         mcpConfig: {
           transport: 'stdio',
           command: 'node',
-          args: ['path/to/your/server.js'],
-          capabilities: {
-            roots: { listChanged: true },
-          },
+          args: ['server.js'],
         },
       },
     },
-    // Add more projects for different transports/servers
   ],
 });
 ```
@@ -141,7 +138,7 @@ Response preview:
   "conditions": "Sunny"
 }
 
-📋 Suggested expectations:
+Suggested expectations:
   Text contains:
     - "London"
     - "temperature"

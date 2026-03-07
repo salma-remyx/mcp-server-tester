@@ -264,90 +264,47 @@ export default async function globalSetup() {
 
 ### Custom Login Flow
 
-For complex login flows, implement custom Playwright automation:
+For complex login flows (MFA, custom consent screens), use `PlaywrightOAuthClientProvider` in a `globalSetup` and automate the browser interaction with Playwright. `PlaywrightOAuthClientProvider` handles PKCE, state management, token exchange, and storage — you only need to automate the IdP-specific UI steps.
 
 ```typescript
 // global-setup.ts
 import { chromium } from '@playwright/test';
-import {
-  discoverAuthServer,
-  generatePKCE,
-  generateState,
-  buildAuthorizationUrl,
-  exchangeCodeForTokens,
-  saveOAuthState,
-} from '@gleanwork/mcp-server-tester';
+import { PlaywrightOAuthClientProvider } from '@gleanwork/mcp-server-tester';
 
 export default async function globalSetup() {
-  // 1. Discover OAuth metadata
-  const authServer = await discoverAuthServer('https://auth.example.com');
-
-  // 2. Generate PKCE and state
-  const pkce = await generatePKCE();
-  const state = generateState();
-
-  // 3. Build authorization URL
-  const authUrl = buildAuthorizationUrl({
-    authServer,
-    clientId: process.env.MCP_OAUTH_CLIENT_ID!,
+  const provider = new PlaywrightOAuthClientProvider({
+    storagePath: 'playwright/.auth/mcp-oauth-state.json',
     redirectUri: 'http://localhost:3000/oauth/callback',
-    scopes: ['mcp:read', 'mcp:write'],
-    codeChallenge: pkce.codeChallenge,
-    state,
+    clientId: process.env.MCP_OAUTH_CLIENT_ID,
+    clientSecret: process.env.MCP_OAUTH_CLIENT_SECRET,
   });
 
-  // 4. Launch browser and navigate to login
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
+
+  // Navigate to the authorization URL produced by the provider
+  const authUrl = await provider.getAuthorizationUrl(
+    'https://api.example.com/mcp'
+  );
   await page.goto(authUrl.toString());
 
-  // 5. Custom login automation
-  // Example: Multi-factor authentication
+  // Automate your IdP's login UI
   await page.fill('#username', process.env.TEST_USERNAME!);
-  await page.click('#next-button');
   await page.fill('#password', process.env.TEST_PASSWORD!);
   await page.click('#submit-button');
 
-  // Wait for MFA code input (if applicable)
   if (await page.isVisible('#mfa-input')) {
-    // Get MFA code from environment or TOTP generator
-    const mfaCode = process.env.TEST_MFA_CODE!;
-    await page.fill('#mfa-input', mfaCode);
+    await page.fill('#mfa-input', process.env.TEST_MFA_CODE!);
     await page.click('#verify-mfa');
   }
 
-  // Handle consent screen
   if (await page.isVisible('#consent-form')) {
     await page.click('#authorize-button');
   }
 
-  // 6. Capture redirect with authorization code
+  // Wait for the callback and let the provider complete the token exchange
   await page.waitForURL(/localhost:3000\/oauth\/callback/);
-  const callbackUrl = new URL(page.url());
-  const code = callbackUrl.searchParams.get('code')!;
-
-  // 7. Exchange code for tokens
-  const tokens = await exchangeCodeForTokens({
-    authServer,
-    clientId: process.env.MCP_OAUTH_CLIENT_ID!,
-    clientSecret: process.env.MCP_OAUTH_CLIENT_SECRET,
-    code,
-    codeVerifier: pkce.codeVerifier,
-    redirectUri: 'http://localhost:3000/oauth/callback',
-  });
-
-  // 8. Save tokens to disk
-  await saveOAuthState('playwright/.auth/mcp-oauth-state.json', {
-    tokens: {
-      accessToken: tokens.accessToken,
-      tokenType: tokens.tokenType,
-      refreshToken: tokens.refreshToken,
-      expiresAt: tokens.expiresIn
-        ? Date.now() + tokens.expiresIn * 1000
-        : undefined,
-    },
-    savedAt: Date.now(),
-  });
+  await provider.handleCallback(new URL(page.url()));
 
   await browser.close();
 }
@@ -524,35 +481,6 @@ import type {
   MCPOAuthConfig,
   StoredOAuthState,
   OAuthSetupConfig,
-} from '@gleanwork/mcp-server-tester';
-```
-
-### OAuth Flow Functions
-
-```typescript
-import {
-  // Discovery
-  discoverAuthServer,
-
-  // PKCE
-  generatePKCE,
-  generateState,
-
-  // Authorization
-  buildAuthorizationUrl,
-  validateCallback,
-
-  // Token Exchange
-  exchangeCodeForTokens,
-  refreshAccessToken,
-
-  // State Storage
-  loadOAuthState,
-  saveOAuthState,
-
-  // Setup Helpers
-  performOAuthSetup,
-  performOAuthSetupIfNeeded,
 } from '@gleanwork/mcp-server-tester';
 ```
 

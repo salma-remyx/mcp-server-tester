@@ -470,7 +470,7 @@ Create an LLM judge for semantic evaluation of tool responses.
 **Parameters:**
 
 - `config?: JudgeConfig` (all fields optional)
-  - `provider?: 'claude' | 'anthropic' | 'openai' | 'google'` - LLM provider (default: `'claude'`)
+  - `provider?: 'anthropic' | 'openai' | 'google'` - LLM provider (default: `'anthropic'`)
   - `model?: string` - Model name (default: `'claude-sonnet-4-20250514'`)
   - `temperature?: number` - Temperature 0–1 (default: `0.0`)
   - `maxTokens?: number` - Maximum tokens for response (default: `1000`)
