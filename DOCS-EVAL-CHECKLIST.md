@@ -3,6 +3,7 @@
 Generated: 2026-03-07 | Panel: docs-quality-audit-v1 | Mode: Discovery
 
 ## How to read this
+
 - P0 = breaks copy-paste code / causes runtime errors; P1 = should fix before 1.0; P2 = nice to have
 - Acceptance criteria must be verifiable by reading the named file
 - Items are OPEN until acceptance criteria are verifiably met
