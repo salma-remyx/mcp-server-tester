@@ -407,7 +407,12 @@ Use the `expect.passesJudge` field in the eval dataset JSON. Supply a `judge` to
 ```
 
 ```typescript snippet=snippets/judge-config.ts
-import { createJudge, runEvalDataset } from '@gleanwork/mcp-server-tester';
+import { test, expect } from '@gleanwork/mcp-server-tester/fixtures/mcp';
+import {
+  createJudge,
+  loadEvalDataset,
+  runEvalDataset,
+} from '@gleanwork/mcp-server-tester';
 
 const judge = createJudge({
   provider: 'anthropic',
@@ -415,7 +420,11 @@ const judge = createJudge({
   temperature: 0.0,
 });
 
-const result = await runEvalDataset({ dataset, judge }, { mcp, testInfo });
+test('search relevance eval with judge', async ({ mcp }, testInfo) => {
+  const dataset = await loadEvalDataset('./data/evals.json');
+  const result = await runEvalDataset({ dataset, judge }, { mcp, testInfo });
+  expect(result.passed).toBe(result.total);
+});
 ```
 
 ### Inline Test Usage
