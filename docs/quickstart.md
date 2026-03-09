@@ -214,3 +214,4 @@ See the [Expectations Guide](./expectations.md) for all available expectation ty
 - Set up [Authentication](./authentication.md) for OAuth or token auth
 - Check out the [Examples](../examples) for real-world usage
 - Set up the [UI Reporter](./ui-reporter.md) for interactive test results
+- Upgrading from a pre-1.0 release? See the [Migration Guide](./migrations/migration-1.0.md)

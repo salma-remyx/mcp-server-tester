@@ -224,7 +224,7 @@ Run an eval dataset. Expectations are defined per-case in the dataset's `expect`
   - `mcp: MCPFixtureApi` - MCP fixture API
   - `testInfo: TestInfo` - Playwright test info (required for snapshot support)
 
-**Returns:** `Promise<EvalResult>`
+**Returns:** `Promise<EvalRunnerResult>`
 
 ```typescript
 const result = await runEvalDataset(
@@ -241,15 +241,11 @@ console.log(`Passed: ${result.passed}/${result.total}`);
 **Result Structure:**
 
 ```typescript
-interface EvalResult {
+interface EvalRunnerResult {
   total: number;
   passed: number;
   failed: number;
-  results: Array<{
-    caseId: string;
-    passed: boolean;
-    expectations: Record<string, { pass: boolean; details: string }>;
-  }>;
+  caseResults: Array<EvalCaseResult>;
 }
 ```
 

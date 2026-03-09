@@ -122,7 +122,7 @@ Eval cases can be run multiple times to compute accuracy (win rate):
 }
 ```
 
-- `iterations`: Run case N times (default: 1). When > 1, result has `accuracy` (0-1) and `iterationResults[]`
+- `iterations`: Run case N times (default: 1). When > 1, result has `assertionPassRate` (0-1) and `iterationResults[]`
 - `accuracyThreshold`: Minimum accuracy to pass (default: 1.0)
 
 ### Concurrency

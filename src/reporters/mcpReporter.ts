@@ -17,8 +17,8 @@ import type {
   MCPConformanceResultData,
   MCPServerCapabilitiesData,
   EvalCaseResult,
+  MCPConformanceCheck,
 } from '../types/reporter.js';
-import type { MCPConformanceCheck } from '../spec/conformanceChecks.js';
 
 /**
  * Custom Playwright reporter for MCP eval results

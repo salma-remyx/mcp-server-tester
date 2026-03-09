@@ -268,7 +268,7 @@ export type MCPConfig = StdioMCPConfig | HttpMCPConfig;
  * Zod schema for MCPHostCapabilities
  */
 const MCPHostCapabilitiesSchema = z.object({
-  sampling: z.record(z.unknown()).optional(),
+  sampling: z.record(z.string(), z.unknown()).optional(),
   roots: z
     .object({
       listChanged: z.boolean(),
@@ -361,7 +361,7 @@ const HttpConfigSchema = z.object({
       }
       return true;
     }),
-  headers: z.record(z.string()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
   capabilities: MCPHostCapabilitiesSchema.optional(),
   connectTimeoutMs: z.number().positive().optional(),
   requestTimeoutMs: z.number().positive().optional(),

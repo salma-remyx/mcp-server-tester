@@ -69,7 +69,7 @@ Canonical shared type definitions, kept here to prevent drift between modules:
 - `index.ts` — core types: `AuthType`, `ResultSource`, `ExpectationType`, `EvalExpectationResult`.
 - `reporter.ts` — reporter-specific types: `MCPEvalRunData`, `EvalCaseResult`, `MCPConformanceResultData`.
 
-The UI types in `src/reporters/ui-src/types.ts` must be kept manually in sync with `src/types/reporter.ts` — there is no automated sync step.
+`src/reporters/ui-src/types.ts` re-exports all types directly from the canonical backend sources (`src/types/index.ts` and `src/types/reporter.ts`) — no manual sync is required.
 
 ---
 

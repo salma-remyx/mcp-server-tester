@@ -18,7 +18,6 @@ export default defineConfig([
       '@ai-sdk/google',
       '@ai-sdk/mistral',
       '@ai-sdk/azure',
-      '@ai-sdk/ollama',
       '@ai-sdk/deepseek',
       '@openrouter/ai-sdk-provider',
       '@ai-sdk/xai',

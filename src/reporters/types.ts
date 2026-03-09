@@ -26,7 +26,7 @@ export type {
 } from '../types/index.js';
 
 // Re-export conformance check type
-export type { MCPConformanceCheck } from '../spec/conformanceChecks.js';
+export type { MCPConformanceCheck } from '../types/reporter.js';
 
 /**
  * Configuration options for MCP Eval Reporter
