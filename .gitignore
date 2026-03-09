@@ -42,5 +42,7 @@ yarn-error.log*
 *.tmp
 .cache/
 .claude/worktrees/
+.claude/settings.local.json
 EVAL-CHECKLIST.md
 DOCS-EVAL-CHECKLIST.md
+.worktrees/
