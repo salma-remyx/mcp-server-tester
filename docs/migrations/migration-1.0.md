@@ -224,3 +224,7 @@ export default defineConfig({
 ```
 
 Variables in `env` override the corresponding `process.env` values for the child process only.
+
+## Related Migrations
+
+- [LLM Host Unified to Vercel AI SDK](./llm-host-vercel-unification.md) — if you use `simulateMCPHost()` or custom LLM host adapters, see this guide.

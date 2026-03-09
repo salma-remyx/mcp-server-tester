@@ -76,7 +76,7 @@ export interface EvalCase {
   metadata?: Record<string, unknown>;
 
   /**
-   * Number of times to run this case and compute an accuracy score.
+   * Number of times to run this case and compute an assertion pass rate.
    * When > 1, `EvalCaseResult.assertionPassRate` is populated and `pass` is determined
    * by `accuracyThreshold` rather than a single run.
    * @default 1
@@ -371,7 +371,7 @@ const EvalExpectBlockSchema = z.object({
       calls: z.array(
         z.object({
           name: z.string(),
-          arguments: z.record(z.unknown()).optional(),
+          arguments: z.record(z.string(), z.unknown()).optional(),
           required: z.boolean().optional(),
         })
       ),
@@ -398,10 +398,10 @@ export const EvalCaseSchema = z.object({
   description: z.string().optional(),
   mode: z.enum(['direct', 'mcp_host']).optional(),
   toolName: z.string().min(1, 'toolName must not be empty').optional(),
-  args: z.record(z.unknown()).optional(),
+  args: z.record(z.string(), z.unknown()).optional(),
   scenario: z.string().optional(),
   mcpHostConfig: MCPHostConfigSchema.optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   iterations: z.number().int().min(1).optional(),
   accuracyThreshold: z.number().min(0).max(1).optional(),
   judgeReps: z.number().int().min(1).optional(),
@@ -417,7 +417,7 @@ export const EvalDatasetSchema = z.object({
   name: z.string().min(1, 'name must not be empty'),
   description: z.string().optional(),
   cases: z.array(EvalCaseSchema).min(1, 'dataset must have at least one case'),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

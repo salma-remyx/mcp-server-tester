@@ -49,8 +49,7 @@
     "mcp-server-tester": "./dist/cli/index.js"
   },
   "files": [
-    "dist",
-    "src/reporters/ui-dist"
+    "dist"
   ],
   "scripts": {
     "build": "npm run build:ui && tsup && npm run build:copy-ui",
@@ -73,7 +72,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "0.1.69",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.71",
     "@inkjs/ui": "^2.0.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "commander": "^14.0.2",
@@ -84,7 +83,7 @@
     "open": "^10.1.0",
     "react": "^18.3.1",
     "undici": "^7.22.0",
-    "zod": "^3.24.1"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@ai-sdk/provider-utils": "^4.0.15",

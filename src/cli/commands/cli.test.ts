@@ -102,6 +102,33 @@ describe('mcp-server-tester CLI', () => {
       expect(result.stdout).toContain('server-url');
       expect(result.stdout).toContain('--format');
     });
+
+    it('open --help shows --dir option', async () => {
+      const result = await runBin('open', '--help');
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('--dir');
+    });
+  });
+
+  describe('open command', () => {
+    it('exits with code 1 when no report exists in default directory', async () => {
+      const result = await runBin('open');
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain('No report found');
+    });
+
+    it('exits with code 1 when --dir points to a directory with no report', async () => {
+      const result = await runBin(
+        'open',
+        '--dir',
+        '/tmp/nonexistent-report-dir'
+      );
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain('No report found');
+    });
   });
 
   /**

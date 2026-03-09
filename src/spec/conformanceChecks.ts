@@ -7,6 +7,9 @@ import type {
   ServerCapabilities,
   Implementation,
 } from '@modelcontextprotocol/sdk/types.js';
+import type { MCPConformanceCheck } from '../types/reporter.js';
+
+export type { MCPConformanceCheck };
 
 /**
  * Options for conformance checks
@@ -40,15 +43,6 @@ export interface MCPConformanceOptions {
    * @default true
    */
   checkPrompts?: boolean;
-}
-
-/**
- * Individual check result
- */
-export interface MCPConformanceCheck {
-  name: string;
-  pass: boolean;
-  message: string;
 }
 
 /**
