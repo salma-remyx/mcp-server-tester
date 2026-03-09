@@ -8,6 +8,49 @@
 
 
 
+
+## v1.0.0-beta.4 (2026-03-09)
+
+#### :boom: Breaking Change
+* [#123](https://github.com/gleanwork/mcp-server-tester/pull/123) refactor!: rename llm_host eval mode to mcp_host ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### :rocket: Enhancement
+* [#124](https://github.com/gleanwork/mcp-server-tester/pull/124) feat(reporter-ui): show CI badge in report header for CI-generated reports ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#125](https://github.com/gleanwork/mcp-server-tester/pull/125) feat(reporter-ui): respect prefers-reduced-motion OS preference ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#123](https://github.com/gleanwork/mcp-server-tester/pull/123) refactor!: rename llm_host eval mode to mcp_host ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#117](https://github.com/gleanwork/mcp-server-tester/pull/117) refactor(reporter-ui): extract shared rateColorClass and formatMs utilities ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#110](https://github.com/gleanwork/mcp-server-tester/pull/110) feat(reporter-ui): tabbed layout separating Tests and Evals views ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### :bug: Bug Fix
+* [#132](https://github.com/gleanwork/mcp-server-tester/pull/132) fix: update init template deps to match library versions ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#130](https://github.com/gleanwork/mcp-server-tester/pull/130) fix: resolve all v1.0.0 release verification blockers ([@scalvert](https://github.com/scalvert))
+* [#129](https://github.com/gleanwork/mcp-server-tester/pull/129) fix: resolve all pre-1.0.0 release blockers ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#126](https://github.com/gleanwork/mcp-server-tester/pull/126) docs: fix stale content, add markdown-code for snippet sync ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#121](https://github.com/gleanwork/mcp-server-tester/pull/121) fix(reporter-ui): show performance table for single-tool MCP servers ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#122](https://github.com/gleanwork/mcp-server-tester/pull/122) fix(reporter-ui): aggregate conformance checks across projects conservatively ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#120](https://github.com/gleanwork/mcp-server-tester/pull/120) fix(types): correct stale toolPrecision JSDoc ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#118](https://github.com/gleanwork/mcp-server-tester/pull/118) fix(reporter-ui): remove redundant guard on ConformanceCheck.message ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#119](https://github.com/gleanwork/mcp-server-tester/pull/119) fix(reporter-ui): aria-live filter announcements and remove source fallback ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#111](https://github.com/gleanwork/mcp-server-tester/pull/111) fix(reporter-ui): accessible names and Lucide icons for DarkModeToggle and Logo ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#114](https://github.com/gleanwork/mcp-server-tester/pull/114) fix: remove duplicate recharts dependency and phantom accuracy field in preview script ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#113](https://github.com/gleanwork/mcp-server-tester/pull/113) perf(reporter-ui): memoize TrendChart data and stabilize Recharts prop references ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#112](https://github.com/gleanwork/mcp-server-tester/pull/112) fix(reporter-ui): ARIA tab pattern, error boundaries, and data fallback fix in App ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#115](https://github.com/gleanwork/mcp-server-tester/pull/115) fix(reporter-ui): keyboard navigation, ARIA roles, and search performance in ResultsTable ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#116](https://github.com/gleanwork/mcp-server-tester/pull/116) fix(reporter-ui): accessibility and structure fixes for DetailModal ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### :memo: Documentation
+* [#135](https://github.com/gleanwork/mcp-server-tester/pull/135) docs: extract 22 freehand code blocks into tracked snippets ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#134](https://github.com/gleanwork/mcp-server-tester/pull/134) docs: wire MCPFixtureApi and EvalExpectBlock to source via markdown-code ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#133](https://github.com/gleanwork/mcp-server-tester/pull/133) docs: wire EvalCase and EvalRunnerResult to source via markdown-code ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#128](https://github.com/gleanwork/mcp-server-tester/pull/128) docs: document clientCredentials, baseline regression, and server comparison ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#126](https://github.com/gleanwork/mcp-server-tester/pull/126) docs: fix stale content, add markdown-code for snippet sync ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#123](https://github.com/gleanwork/mcp-server-tester/pull/123) refactor!: rename llm_host eval mode to mcp_host ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### Committers: 2
+- Steve Calvert ([@scalvert](https://github.com/scalvert))
+- Steve Calvert ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+
 ## v1.0.0-beta.3 (2026-03-02)
 
 #### :rocket: Enhancement
