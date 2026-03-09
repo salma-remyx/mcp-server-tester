@@ -35,7 +35,7 @@ The simplest authentication method - pass a pre-acquired token directly.
 
 ### Basic Configuration
 
-```typescript
+```typescript snippet=snippets/auth-static-token-config.ts
 // playwright.config.ts
 import { defineConfig } from '@playwright/test';
 
@@ -75,7 +75,7 @@ mcpConfig: {
 
 The library provides utilities for working with tokens:
 
-```typescript
+```typescript snippet=snippets/auth-bearer-header.ts
 import {
   createTokenAuthHeaders,
   validateAccessToken,
@@ -83,13 +83,14 @@ import {
   isTokenExpiringSoon,
 } from '@gleanwork/mcp-server-tester';
 
-// Create auth headers
-const headers = createTokenAuthHeaders(process.env.MCP_ACCESS_TOKEN);
-// => { Authorization: 'Bearer eyJ...' }
+const token = process.env.MCP_ACCESS_TOKEN;
+const expiresAt = Number(process.env.MCP_TOKEN_EXPIRES_AT);
 
-// Validate token is present
-validateAccessToken(process.env.MCP_ACCESS_TOKEN);
-// Throws if token is missing or empty
+// Create auth headers — { Authorization: 'Bearer eyJ...' }
+const _headers = createTokenAuthHeaders(token);
+
+// Validate token is present (throws if missing or empty)
+validateAccessToken(token);
 
 // Check JWT expiration (best-effort)
 if (isTokenExpired(token)) {
@@ -313,9 +314,8 @@ Create a global setup file to perform the OAuth flow before tests run.
 
 ### Basic Setup
 
-```typescript
+```typescript snippet=snippets/auth-global-setup.ts
 // global-setup.ts
-import { chromium } from '@playwright/test';
 import {
   performOAuthSetupIfNeeded,
   type OAuthSetupConfig,
@@ -717,11 +717,42 @@ DEBUG=mcp-server-tester:client npm test
 
 **Okta:**
 
-```typescript
-loginSelectors: {
-  usernameInput: '#okta-signin-username',
-  passwordInput: '#okta-signin-password',
-  submitButton: '#okta-signin-submit',
+```typescript snippet=snippets/auth-idp-selector.ts
+import type { OAuthSetupConfig } from '@gleanwork/mcp-server-tester';
+
+type LoginSelectors = OAuthSetupConfig['loginSelectors'];
+
+const idpSelectors: Record<string, LoginSelectors> = {
+  okta: {
+    usernameInput: '#okta-signin-username',
+    passwordInput: '#okta-signin-password',
+    submitButton: '#okta-signin-submit',
+  },
+  auth0: {
+    usernameInput: 'input[name="email"]',
+    passwordInput: 'input[name="password"]',
+    submitButton: 'button[type="submit"]',
+  },
+  azureAd: {
+    usernameInput: 'input[name="loginfmt"]',
+    passwordInput: 'input[name="passwd"]',
+    submitButton: 'input[type="submit"]',
+  },
+  google: {
+    usernameInput: 'input[type="email"]',
+    passwordInput: 'input[type="password"]',
+    submitButton: '#passwordNext',
+  },
+};
+
+export function getIdpSelectors(provider: string): LoginSelectors {
+  const selectors = idpSelectors[provider];
+  if (!selectors) {
+    throw new Error(
+      `Unknown IdP provider: ${provider}. Known providers: ${Object.keys(idpSelectors).join(', ')}`
+    );
+  }
+  return selectors;
 }
 ```
 
