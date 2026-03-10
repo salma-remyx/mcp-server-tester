@@ -9,6 +9,17 @@
 
 
 
+
+## v1.0.0-beta.5 (2026-03-10)
+
+#### :rocket: Enhancement
+* [#137](https://github.com/gleanwork/mcp-server-tester/pull/137) feat: reporter UX improvements ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#136](https://github.com/gleanwork/mcp-server-tester/pull/136) feat: add 95% Wilson CI to multi-iteration eval results ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### Committers: 1
+- Steve Calvert ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+
 ## v1.0.0-beta.4 (2026-03-09)
 
 #### :boom: Breaking Change
