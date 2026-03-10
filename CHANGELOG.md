@@ -10,6 +10,19 @@
 
 
 
+
+## v1.0.0-beta.6 (2026-03-10)
+
+#### :rocket: Enhancement
+* [#138](https://github.com/gleanwork/mcp-server-tester/pull/138) feat: omit tool responses from saved baseline files by default ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### :bug: Bug Fix
+* [#139](https://github.com/gleanwork/mcp-server-tester/pull/139) fix: per-iteration tool call trace and prompt overflow as infra error ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### Committers: 1
+- Steve Calvert ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+
 ## v1.0.0-beta.5 (2026-03-10)
 
 #### :rocket: Enhancement
