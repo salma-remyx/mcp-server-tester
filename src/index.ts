@@ -222,6 +222,22 @@ export {
   claudeCodeAdapter,
 } from './evals/mcpHost/index.js';
 
+// CLI Host Adapters
+export type {
+  CLIHostAdapter,
+  CLIInvocation,
+  CLIHostOptions,
+} from './evals/mcpHost/index.js';
+export {
+  registerCLIHost,
+  getCLIHost,
+  isCLIHost,
+  clearCLIHostRegistry,
+  runCLIHost,
+  parseStreamJson,
+  createJsonParser,
+} from './evals/mcpHost/index.js';
+
 // Judge
 export type {
   JudgeConfig,

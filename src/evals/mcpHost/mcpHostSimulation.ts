@@ -29,7 +29,7 @@ import type {
   SDKProvider,
 } from './mcpHostTypes.js';
 import { createVercelOrchestrator } from './adapters/vercel.js';
-import { claudeCodeAdapter, runCLIHost } from './adapters/cli/index.js';
+import { isCLIHost, getCLIHost, runCLIHost } from './adapters/cli/index.js';
 
 const vercelOrchestrator: MCPHostSimulator = createVercelOrchestrator();
 
@@ -59,7 +59,7 @@ const simulatorRegistry = new Map<string, MCPHostSimulator>(
  * @param mcp - MCP fixture API
  * @param scenario - Natural language prompt describing what the LLM should do
  * @param config - MCP host configuration (provider, model, temperature, etc.)
- * @param mcpConfig - MCP server connection details (required for 'claude-code' provider)
+ * @param mcpConfig - MCP server connection details (required for CLI host providers)
  * @returns Simulation result with tool calls, final response, and latency data
  *
  * @example
@@ -79,15 +79,16 @@ export async function simulateMCPHost(
   config: MCPHostConfig,
   mcpConfig?: MCPConfig
 ): Promise<MCPHostSimulationResult> {
-  if (config.provider === 'claude-code') {
+  if (isCLIHost(config.provider)) {
     if (!mcpConfig) {
       throw new Error(
-        `CLI host "claude-code" requires mcpConfig (the MCP server connection details) ` +
+        `CLI host "${config.provider}" requires mcpConfig (the MCP server connection details) ` +
           `to be available. Ensure mcpConfig is set in your Playwright project configuration ` +
           `(project.use.mcpConfig in playwright.config.ts).`
       );
     }
-    return runCLIHost(claudeCodeAdapter, scenario, mcpConfig, {
+    const adapter = getCLIHost(config.provider)!;
+    return runCLIHost(adapter, scenario, mcpConfig, {
       model: config.model,
       maxToolCalls: config.maxToolCalls,
       temperature: config.temperature,
@@ -98,7 +99,8 @@ export async function simulateMCPHost(
   if (!simulator) {
     throw new Error(
       `Unsupported provider: "${config.provider}". ` +
-        `Supported: ${[...sdkProviders, 'claude-code'].join(', ')}`
+        `SDK providers: ${sdkProviders.join(', ')}. ` +
+        `CLI hosts can be registered with registerCLIHost().`
     );
   }
   return simulator.simulate(mcp, scenario, config);
@@ -111,7 +113,7 @@ export async function simulateMCPHost(
  * installed — that is validated at simulation time with a helpful error.
  */
 export function isProviderAvailable(provider: string): boolean {
-  return provider === 'claude-code' || simulatorRegistry.has(provider);
+  return simulatorRegistry.has(provider) || isCLIHost(provider);
 }
 
 /**
@@ -121,8 +123,8 @@ export function isProviderAvailable(provider: string): boolean {
  * @ai-sdk/* packages are installed. Not part of the primary usage path.
  */
 export function getMissingDependencyMessage(provider: string): string {
-  if (provider === 'claude-code') {
-    return 'claude-code requires the Claude Code CLI to be installed. See https://docs.anthropic.com/en/docs/claude-code';
+  if (isCLIHost(provider)) {
+    return `${provider} is a CLI host provider. Ensure the CLI binary is installed and on your PATH.`;
   }
 
   const packageMap: Record<string, string> = {

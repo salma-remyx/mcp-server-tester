@@ -8,5 +8,19 @@
 export * from './mcpHostTypes.js';
 export * from './mcpHostSimulation.js';
 
-// Built-in Claude Code CLI adapter
-export { claudeCodeAdapter } from './adapters/cli/index.js';
+// CLI host adapters
+export type {
+  CLIHostAdapter,
+  CLIInvocation,
+  CLIHostOptions,
+} from './adapters/cli/index.js';
+export {
+  registerCLIHost,
+  getCLIHost,
+  isCLIHost,
+  clearCLIHostRegistry,
+  runCLIHost,
+  claudeCodeAdapter,
+  parseStreamJson,
+  createJsonParser,
+} from './adapters/cli/index.js';

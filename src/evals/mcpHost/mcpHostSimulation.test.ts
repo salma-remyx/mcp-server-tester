@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { MCPFixtureApi } from '../../mcp/fixtures/mcpFixture.js';
+import type { StdioMCPConfig } from '../../config/mcpConfig.js';
 
 // Mock the Vercel orchestrator — it's the only runtime path now
 vi.mock('./adapters/vercel.js', () => ({
@@ -19,6 +20,12 @@ import {
   isProviderAvailable,
   getMissingDependencyMessage,
 } from './mcpHostSimulation.js';
+import {
+  registerCLIHost,
+  clearCLIHostRegistry,
+} from './adapters/cli/registry.js';
+import { claudeCodeAdapter } from './adapters/cli/claudeCode.js';
+import type { CLIHostAdapter } from './adapters/cli/types.js';
 
 function createMockMCP(): MCPFixtureApi {
   return {
@@ -67,7 +74,6 @@ describe('simulateMCPHost', () => {
     const mcp = createMockMCP();
     await expect(
       simulateMCPHost(mcp, 'scenario', {
-        // @ts-expect-error - testing invalid provider
         provider: 'unknown-provider',
       })
     ).rejects.toThrow('Unsupported provider');
@@ -133,7 +139,7 @@ describe('getMissingDependencyMessage', () => {
 
   it('returns CLI-specific message for claude-code', () => {
     const msg = getMissingDependencyMessage('claude-code');
-    expect(msg).toContain('Claude Code CLI');
+    expect(msg).toContain('CLI host provider');
   });
 
   it('returns generic message for unknown provider', () => {
@@ -142,11 +148,62 @@ describe('getMissingDependencyMessage', () => {
   });
 });
 
-describe('claude-code CLI routing', () => {
-  it('throws when claude-code is used without mcpConfig', async () => {
+describe('CLI host routing', () => {
+  const testMcpConfig: StdioMCPConfig = {
+    transport: 'stdio',
+    command: 'node',
+    args: ['server.js'],
+  };
+
+  beforeEach(() => {
+    clearCLIHostRegistry();
+    registerCLIHost('claude-code', claudeCodeAdapter);
+  });
+
+  it('throws when CLI host is used without mcpConfig', async () => {
     const mcp = createMockMCP();
     await expect(
       simulateMCPHost(mcp, 'scenario', { provider: 'claude-code' })
     ).rejects.toThrow('requires mcpConfig');
+  });
+
+  it('routes to CLI adapter when provider is a registered CLI host', async () => {
+    const mockAdapter: CLIHostAdapter = {
+      buildCommand: () => ({ command: 'echo', args: ['{}'] }),
+      parseOutput: () => ({
+        success: true,
+        toolCalls: [{ name: 'my_tool', arguments: {} }],
+        response: 'CLI response',
+      }),
+    };
+    registerCLIHost('my-cli', mockAdapter);
+
+    const mcp = createMockMCP();
+    const result = await simulateMCPHost(
+      mcp,
+      'test scenario',
+      { provider: 'my-cli' },
+      testMcpConfig
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.toolCalls[0]!.name).toBe('my_tool');
+  });
+
+  it('isProviderAvailable returns true for registered CLI hosts', () => {
+    registerCLIHost('my-cli', {
+      buildCommand: () => ({ command: 'test', args: [] }),
+      parseOutput: () => ({ success: true, toolCalls: [] }),
+    });
+    expect(isProviderAvailable('my-cli')).toBe(true);
+  });
+
+  it('getMissingDependencyMessage returns CLI-specific message for custom host', () => {
+    registerCLIHost('my-cli', {
+      buildCommand: () => ({ command: 'test', args: [] }),
+      parseOutput: () => ({ success: true, toolCalls: [] }),
+    });
+    const msg = getMissingDependencyMessage('my-cli');
+    expect(msg).toContain('CLI host provider');
   });
 });

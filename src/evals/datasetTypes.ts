@@ -290,17 +290,20 @@ export interface EvalDataset {
  * Zod schema for MCPHostConfig (simplified for serialization)
  */
 const MCPHostConfigSchema = z.object({
-  provider: z.enum([
-    'openai',
-    'anthropic',
-    'azure',
-    'google',
-    'mistral',
-    'deepseek',
-    'openrouter',
-    'xai',
-    'vertex-anthropic',
-    'claude-code',
+  provider: z.union([
+    z.enum([
+      'openai',
+      'anthropic',
+      'azure',
+      'google',
+      'mistral',
+      'deepseek',
+      'openrouter',
+      'xai',
+      'vertex-anthropic',
+      'claude-code',
+    ]),
+    z.string().min(1), // custom CLI hosts registered via registerCLIHost()
   ]),
   apiKeyEnvVar: z.string().optional(),
   model: z.string().optional(),

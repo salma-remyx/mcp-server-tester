@@ -42,9 +42,13 @@ export type SDKProvider =
 /**
  * LLM provider for host simulation.
  *
- * Includes SDK providers (Vercel AI SDK) and the built-in 'claude-code' CLI adapter.
+ * Includes SDK providers (Vercel AI SDK), the built-in 'claude-code' CLI adapter,
+ * and any custom CLI host registered via `registerCLIHost()`.
+ *
+ * The `(string & {})` arm preserves IDE autocomplete for known literals while
+ * allowing arbitrary strings for user-registered CLI hosts.
  */
-export type LLMProvider = SDKProvider | 'claude-code';
+export type LLMProvider = SDKProvider | 'claude-code' | (string & {});
 
 /**
  * Configuration for MCP host simulation
