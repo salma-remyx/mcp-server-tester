@@ -209,6 +209,7 @@ export { runServerComparison } from './evals/serverComparison.js';
 // MCP Host Simulation
 export type {
   LLMProvider,
+  SDKProvider,
   MCPHostConfig,
   LLMToolCall,
   MCPHostSimulationResult,
@@ -218,6 +219,7 @@ export {
   simulateMCPHost,
   isProviderAvailable,
   getMissingDependencyMessage,
+  claudeCodeAdapter,
 } from './evals/mcpHost/index.js';
 
 // Judge

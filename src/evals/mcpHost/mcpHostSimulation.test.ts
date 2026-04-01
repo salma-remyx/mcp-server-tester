@@ -92,8 +92,11 @@ describe('isProviderAvailable', () => {
     });
   }
 
+  it('returns true for claude-code', () => {
+    expect(isProviderAvailable('claude-code')).toBe(true);
+  });
+
   it('returns false for unknown provider', () => {
-    // @ts-expect-error - testing invalid provider
     expect(isProviderAvailable('unknown')).toBe(false);
   });
 });
@@ -128,9 +131,22 @@ describe('getMissingDependencyMessage', () => {
     }
   });
 
+  it('returns CLI-specific message for claude-code', () => {
+    const msg = getMissingDependencyMessage('claude-code');
+    expect(msg).toContain('Claude Code CLI');
+  });
+
   it('returns generic message for unknown provider', () => {
-    // @ts-expect-error - testing invalid provider
     const msg = getMissingDependencyMessage('unknown');
     expect(msg).toContain('Unknown provider');
+  });
+});
+
+describe('claude-code CLI routing', () => {
+  it('throws when claude-code is used without mcpConfig', async () => {
+    const mcp = createMockMCP();
+    await expect(
+      simulateMCPHost(mcp, 'scenario', { provider: 'claude-code' })
+    ).rejects.toThrow('requires mcpConfig');
   });
 });

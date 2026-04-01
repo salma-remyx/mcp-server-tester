@@ -1,12 +1,15 @@
 /**
  * MCP Host Simulation - Main entry point
  *
- * All providers (openai, anthropic, google, azure, mistral, deepseek,
+ * SDK providers (openai, anthropic, google, azure, mistral, deepseek,
  * openrouter, xai) run through the Vercel AI SDK orchestrator, which uses
- * generateText + stopWhen for a uniform multi-turn tool-calling loop with
- * built-in latency decomposition.
+ * generateText with maxSteps for a uniform multi-turn tool-calling loop
+ * with built-in latency decomposition.
  *
- * Required packages per provider:
+ * The 'claude-code' provider spawns the Claude Code CLI process instead,
+ * passing the MCP server config via `--mcp-config`.
+ *
+ * Required packages per SDK provider:
  *   openai      → npm install ai @ai-sdk/openai
  *   anthropic   → npm install ai @ai-sdk/anthropic
  *   google      → npm install ai @ai-sdk/google
@@ -18,19 +21,19 @@
  */
 
 import type { MCPFixtureApi } from '../../mcp/fixtures/mcpFixture.js';
+import type { MCPConfig } from '../../config/mcpConfig.js';
 import type {
   MCPHostConfig,
   MCPHostSimulationResult,
   MCPHostSimulator,
-  LLMProvider,
+  SDKProvider,
 } from './mcpHostTypes.js';
 import { createVercelOrchestrator } from './adapters/vercel.js';
+import { claudeCodeAdapter, runCLIHost } from './adapters/cli/index.js';
 
-// Single orchestrator instance shared across all providers.
-// Each provider is dynamically imported inside the orchestrator on first use.
 const vercelOrchestrator: MCPHostSimulator = createVercelOrchestrator();
 
-const allProviders: LLMProvider[] = [
+const sdkProviders: SDKProvider[] = [
   'openai',
   'anthropic',
   'azure',
@@ -42,8 +45,8 @@ const allProviders: LLMProvider[] = [
   'vertex-anthropic',
 ];
 
-const simulatorRegistry = new Map<LLMProvider, MCPHostSimulator>(
-  allProviders.map((p) => [p, vercelOrchestrator])
+const simulatorRegistry = new Map<string, MCPHostSimulator>(
+  sdkProviders.map((p) => [p, vercelOrchestrator])
 );
 
 /**
@@ -53,13 +56,10 @@ const simulatorRegistry = new Map<LLMProvider, MCPHostSimulator>(
  * schemas, testing discoverability and parameter clarity at the level a real
  * user (via Claude Desktop, ChatGPT, etc.) would experience.
  *
- * All providers run through the Vercel AI SDK's generateText with maxSteps,
- * which handles multi-turn tool calling natively and provides per-step latency
- * decomposition (llmDurationMs vs. mcpDurationMs).
- *
  * @param mcp - MCP fixture API
  * @param scenario - Natural language prompt describing what the LLM should do
  * @param config - MCP host configuration (provider, model, temperature, etc.)
+ * @param mcpConfig - MCP server connection details (required for 'claude-code' provider)
  * @returns Simulation result with tool calls, final response, and latency data
  *
  * @example
@@ -76,13 +76,29 @@ const simulatorRegistry = new Map<LLMProvider, MCPHostSimulator>(
 export async function simulateMCPHost(
   mcp: MCPFixtureApi,
   scenario: string,
-  config: MCPHostConfig
+  config: MCPHostConfig,
+  mcpConfig?: MCPConfig
 ): Promise<MCPHostSimulationResult> {
+  if (config.provider === 'claude-code') {
+    if (!mcpConfig) {
+      throw new Error(
+        `CLI host "claude-code" requires mcpConfig (the MCP server connection details) ` +
+          `to be available. Ensure mcpConfig is set in your Playwright project configuration ` +
+          `(project.use.mcpConfig in playwright.config.ts).`
+      );
+    }
+    return runCLIHost(claudeCodeAdapter, scenario, mcpConfig, {
+      model: config.model,
+      maxToolCalls: config.maxToolCalls,
+      temperature: config.temperature,
+    });
+  }
+
   const simulator = simulatorRegistry.get(config.provider);
   if (!simulator) {
     throw new Error(
-      `Unsupported provider: ${String(config.provider)}. ` +
-        `Supported: ${allProviders.join(', ')}`
+      `Unsupported provider: "${config.provider}". ` +
+        `Supported: ${[...sdkProviders, 'claude-code'].join(', ')}`
     );
   }
   return simulator.simulate(mcp, scenario, config);
@@ -94,8 +110,8 @@ export async function simulateMCPHost(
  * Note: this does not check whether the required @ai-sdk/* package is
  * installed — that is validated at simulation time with a helpful error.
  */
-export function isProviderAvailable(provider: LLMProvider): boolean {
-  return simulatorRegistry.has(provider);
+export function isProviderAvailable(provider: string): boolean {
+  return provider === 'claude-code' || simulatorRegistry.has(provider);
 }
 
 /**
@@ -104,8 +120,12 @@ export function isProviderAvailable(provider: LLMProvider): boolean {
  * @remarks This is a diagnostic utility for checking whether optional
  * @ai-sdk/* packages are installed. Not part of the primary usage path.
  */
-export function getMissingDependencyMessage(provider: LLMProvider): string {
-  const packageMap: Partial<Record<LLMProvider, string>> = {
+export function getMissingDependencyMessage(provider: string): string {
+  if (provider === 'claude-code') {
+    return 'claude-code requires the Claude Code CLI to be installed. See https://docs.anthropic.com/en/docs/claude-code';
+  }
+
+  const packageMap: Record<string, string> = {
     openai: 'npm install ai @ai-sdk/openai',
     anthropic: 'npm install ai @ai-sdk/anthropic',
     google: 'npm install ai @ai-sdk/google',

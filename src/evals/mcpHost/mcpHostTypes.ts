@@ -8,9 +8,8 @@
 import type { MCPFixtureApi } from '../../mcp/fixtures/mcpFixture.js';
 
 /**
- * LLM provider for host simulation.
+ * SDK-based LLM providers that run through the Vercel AI SDK.
  *
- * All providers run through the Vercel AI SDK (`ai` package).
  * Each provider requires its corresponding @ai-sdk/* package:
  *
  *   openai      → npm install ai @ai-sdk/openai
@@ -22,7 +21,7 @@ import type { MCPFixtureApi } from '../../mcp/fixtures/mcpFixture.js';
  *   openrouter  → npm install ai @openrouter/ai-sdk-provider
  *   xai         → npm install ai @ai-sdk/xai
  */
-export type LLMProvider =
+export type SDKProvider =
   | 'openai'
   | 'anthropic'
   | 'azure'
@@ -39,6 +38,13 @@ export type LLMProvider =
    * @example model: 'claude-3-5-haiku@20241022'
    */
   | 'vertex-anthropic';
+
+/**
+ * LLM provider for host simulation.
+ *
+ * Includes SDK providers (Vercel AI SDK) and the built-in 'claude-code' CLI adapter.
+ */
+export type LLMProvider = SDKProvider | 'claude-code';
 
 /**
  * Configuration for MCP host simulation

@@ -300,6 +300,7 @@ const MCPHostConfigSchema = z.object({
     'openrouter',
     'xai',
     'vertex-anthropic',
+    'claude-code',
   ]),
   apiKeyEnvVar: z.string().optional(),
   model: z.string().optional(),

@@ -1,4 +1,5 @@
 import type { MCPFixtureApi } from '../mcp/fixtures/mcpFixture.js';
+import type { MCPConfig } from '../config/mcpConfig.js';
 import type { EvalDataset, EvalCase, EvalExpectBlock } from './datasetTypes.js';
 import type { TestInfo, Expect } from '@playwright/test';
 import type { ZodType } from 'zod';
@@ -50,6 +51,9 @@ export interface EvalContext {
    * Required for snapshot expectations to work properly
    */
   expect?: Expect;
+
+  /** MCP server config — required for CLI host providers (e.g., 'claude-code'). */
+  mcpConfig?: MCPConfig;
 }
 
 export type { EvalExpectationResult } from '../types/index.js';
@@ -273,7 +277,8 @@ export interface EvalCaseOptions {
 
 async function executeToolCall(
   evalCase: EvalCase,
-  mcp: MCPFixtureApi
+  mcp: MCPFixtureApi,
+  mcpConfig?: MCPConfig
 ): Promise<{ response: unknown; error?: string }> {
   const mode = evalCase.mode || 'direct';
 
@@ -295,7 +300,8 @@ async function executeToolCall(
       const simulationResult = await simulateMCPHost(
         mcp,
         evalCase.scenario,
-        evalCase.mcpHostConfig
+        evalCase.mcpHostConfig,
+        mcpConfig
       );
 
       if (!simulationResult.success) {
@@ -564,8 +570,18 @@ async function runSingleIteration(
 ): Promise<EvalCaseResult> {
   const startTime = Date.now();
 
+  // Resolve mcpConfig: explicit context > testInfo fallback
+  const mcpConfig =
+    context.mcpConfig ??
+    (context.testInfo?.project?.use as { mcpConfig?: MCPConfig } | undefined)
+      ?.mcpConfig;
+
   // Execute tool call
-  const { response, error } = await executeToolCall(evalCase, context.mcp);
+  const { response, error } = await executeToolCall(
+    evalCase,
+    context.mcp,
+    mcpConfig
+  );
 
   // Collect expectation results from expect block
   let expectationResults: EvalCaseResult['expectations'] = {};
