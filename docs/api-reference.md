@@ -666,7 +666,7 @@ interface ConformanceResult {
 
 ### `EvalExpectBlock`
 
-```typescript snippet=src/evals/datasetTypes.ts#L146-L257
+```typescript snippet=src/evals/datasetTypes.ts#L146-L264
 export interface EvalExpectBlock {
   /**
    * Exact response match (toMatchToolResponse)
@@ -710,8 +710,15 @@ export interface EvalExpectBlock {
    * LLM-as-judge evaluation (toPassToolJudge)
    */
   passesJudge?: {
-    /** Built-in rubric name or custom rubric object */
-    rubric: BuiltInRubric | { text: string };
+    /**
+     * Name of a registered custom judge executor.
+     * When set, the named judge handles evaluation and returns a normalized score.
+     * The `threshold` determines pass/fail. `reps` and LLM config fields
+     * (provider, model, etc.) are ignored.
+     */
+    judge?: string;
+    /** Built-in rubric name or custom rubric object. Required when no `judge` is specified. */
+    rubric?: BuiltInRubric | { text: string };
     /** Reference response to compare against */
     reference?: unknown;
     /** Score threshold for passing (0-1, default: 0.7) */

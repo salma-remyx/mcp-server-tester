@@ -186,8 +186,15 @@ export interface EvalExpectBlock {
    * LLM-as-judge evaluation (toPassToolJudge)
    */
   passesJudge?: {
-    /** Built-in rubric name or custom rubric object */
-    rubric: BuiltInRubric | { text: string };
+    /**
+     * Name of a registered custom judge executor.
+     * When set, the named judge handles evaluation and returns a normalized score.
+     * The `threshold` determines pass/fail. `reps` and LLM config fields
+     * (provider, model, etc.) are ignored.
+     */
+    judge?: string;
+    /** Built-in rubric name or custom rubric object. Required when no `judge` is specified. */
+    rubric?: BuiltInRubric | { text: string };
     /** Reference response to compare against */
     reference?: unknown;
     /** Score threshold for passing (0-1, default: 0.7) */
@@ -338,16 +345,19 @@ const EvalExpectBlockSchema = z.object({
   isError: z.union([z.boolean(), z.string(), z.array(z.string())]).optional(),
   passesJudge: z
     .object({
-      rubric: z.union([
-        z.enum([
-          'correctness',
-          'completeness',
-          'groundedness',
-          'instruction-following',
-          'conciseness',
-        ]),
-        z.object({ text: z.string().min(1) }),
-      ]),
+      judge: z.string().min(1).optional(),
+      rubric: z
+        .union([
+          z.enum([
+            'correctness',
+            'completeness',
+            'groundedness',
+            'instruction-following',
+            'conciseness',
+          ]),
+          z.object({ text: z.string().min(1) }),
+        ])
+        .optional(),
       reference: z.unknown().optional(),
       threshold: z.number().min(0).max(1).optional(),
       reps: z.number().int().min(1).optional(),
@@ -358,6 +368,9 @@ const EvalExpectBlockSchema = z.object({
       temperature: z.number().min(0).max(1).optional(),
       maxBudgetUsd: z.number().positive().optional(),
       maxToolOutputSize: z.number().int().positive().optional(),
+    })
+    .refine((data) => data.judge !== undefined || data.rubric !== undefined, {
+      message: 'Either "judge" or "rubric" must be provided in passesJudge',
     })
     .optional(),
   responseSize: z
