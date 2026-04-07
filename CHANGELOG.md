@@ -11,6 +11,28 @@
 
 
 
+
+## v1.0.0-beta.8 (2026-04-07)
+
+#### :rocket: Enhancement
+* [#157](https://github.com/gleanwork/mcp-server-tester/pull/157) feat: support multiple judges per eval case ([@chenhao-yang-glean](https://github.com/chenhao-yang-glean))
+* [#155](https://github.com/gleanwork/mcp-server-tester/pull/155) feat: add CLI host type for MCP host simulation ([@chenhao-yang-glean](https://github.com/chenhao-yang-glean))
+* [#160](https://github.com/gleanwork/mcp-server-tester/pull/160) feat(auth): add customLoginFlow callback for complex OAuth flows ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#152](https://github.com/gleanwork/mcp-server-tester/pull/152) feat: add vertex-anthropic and anthropic-agent-sdk judge providers ([@chenhao-yang-glean](https://github.com/chenhao-yang-glean))
+* [#153](https://github.com/gleanwork/mcp-server-tester/pull/153) feat: include judge metadata in eval results ([@chenhao-yang-glean](https://github.com/chenhao-yang-glean))
+* [#149](https://github.com/gleanwork/mcp-server-tester/pull/149) feat: custom judge registry for user-defined judge executors ([@chenhao-yang-glean](https://github.com/chenhao-yang-glean))
+* [#143](https://github.com/gleanwork/mcp-server-tester/pull/143) feat: regex pattern matching for tool call arguments ([@chenhao-yang-glean](https://github.com/chenhao-yang-glean))
+* [#142](https://github.com/gleanwork/mcp-server-tester/pull/142) feat: include request data in eval results and HTML report ([@chenhao-yang-glean](https://github.com/chenhao-yang-glean))
+
+#### :bug: Bug Fix
+* [#159](https://github.com/gleanwork/mcp-server-tester/pull/159) chore(deps): override release-it's undici to fix 3 security alerts ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+* [#144](https://github.com/gleanwork/mcp-server-tester/pull/144) fix: DetailModal crash when clicking on failed eval cases ([@chenhao-yang-glean](https://github.com/chenhao-yang-glean))
+
+#### Committers: 2
+- Chenhao Yang ([@chenhao-yang-glean](https://github.com/chenhao-yang-glean))
+- Steve Calvert ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+
 ## v1.0.0-beta.7 (2026-03-18)
 
 
