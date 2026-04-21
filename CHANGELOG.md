@@ -12,6 +12,40 @@
 
 
 
+## v1.0.0 (2026-04-21)
+
+#### :rocket: Enhancement
+
+- [#185](https://github.com/gleanwork/mcp-server-tester/pull/185) feat: add AI skills for test, eval, and host eval generation ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#177](https://github.com/gleanwork/mcp-server-tester/pull/177) fix: include response preview in matcher failure messages ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### :bug: Bug Fix
+
+- [#186](https://github.com/gleanwork/mcp-server-tester/pull/186) fix: terminate MCP session before closing client ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#182](https://github.com/gleanwork/mcp-server-tester/pull/182) fix: pre-release cleanup for documentation accuracy and validator diagnostics ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#181](https://github.com/gleanwork/mcp-server-tester/pull/181) fix: resolve pre-release gate P0/P1 blockers in examples and docs ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#179](https://github.com/gleanwork/mcp-server-tester/pull/179) fix: remove zod from install command in README ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#178](https://github.com/gleanwork/mcp-server-tester/pull/178) fix: remove stale glean-server references from example READMEs ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#174](https://github.com/gleanwork/mcp-server-tester/pull/174) fix: remove phantom systemPromptAdditions from docs ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#173](https://github.com/gleanwork/mcp-server-tester/pull/173) fix: export refreshAccessToken from public API ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#172](https://github.com/gleanwork/mcp-server-tester/pull/172) fix: case-insensitive AbortError check in eval runner ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### :memo: Documentation
+
+- [#183](https://github.com/gleanwork/mcp-server-tester/pull/183) docs: clarify runEvalDataset two-argument signature ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#176](https://github.com/gleanwork/mcp-server-tester/pull/176) docs: document programmatic validators and createMCPFixture ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#180](https://github.com/gleanwork/mcp-server-tester/pull/180) docs: add security warning about http:// for remote servers ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#179](https://github.com/gleanwork/mcp-server-tester/pull/179) fix: remove zod from install command in README ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#178](https://github.com/gleanwork/mcp-server-tester/pull/178) fix: remove stale glean-server references from example READMEs ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#175](https://github.com/gleanwork/mcp-server-tester/pull/175) docs: document runEvalCase() in API reference ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#174](https://github.com/gleanwork/mcp-server-tester/pull/174) fix: remove phantom systemPromptAdditions from docs ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### Committers: 1
+
+- Steve Calvert ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+
+
 ## v1.0.0-beta.8 (2026-04-07)
 
 #### :rocket: Enhancement
