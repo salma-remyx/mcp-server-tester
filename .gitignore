@@ -46,3 +46,4 @@ yarn-error.log*
 EVAL-CHECKLIST.md
 DOCS-EVAL-CHECKLIST.md
 .worktrees/
+.omc/
