@@ -251,6 +251,23 @@ authType?: 'oauth' | 'api-token' | 'none';  // Don't do this!
 - No `any` types - TypeScript strict mode is enabled
 - Keep `async` keyword even if no `await` currently used
 
+## Pre-Push Checklist
+
+Before pushing commits or creating a PR, run all CI checks locally and fix any failures. These mirror the CI pipeline (`.github/workflows/ci.yml`) exactly:
+
+```bash
+npm run format:check        # Prettier (run `npm run format` to auto-fix)
+npm run typecheck           # TypeScript validation
+npm run lint                # ESLint (run `npm run lint:fix` to auto-fix)
+npm run docs:check          # Docs snippet sync
+npm run build               # Full build including UI reporter
+npm test                    # Unit tests (Vitest)
+```
+
+If `format:check` or `lint` fails, run `npm run format` or `npm run lint:fix` to auto-fix, then re-check. If `docs:check` fails with "content-mismatch", update the snippet line range in the markdown file to match the current source.
+
+**Keep in sync:** If `.github/workflows/ci.yml` changes, update this checklist to match.
+
 ## Commit Messages
 
 Use conventional commits: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`
