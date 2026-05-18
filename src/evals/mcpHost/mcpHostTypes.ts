@@ -113,6 +113,62 @@ export interface CLIConfig {
 }
 
 /**
+ * A cookie to inject into the browser context before running the script.
+ * Matches the shape expected by Playwright's `BrowserContext.addCookies()`.
+ */
+export interface BrowserCookie {
+  name: string;
+  value: string;
+  url?: string;
+  domain?: string;
+  path?: string;
+  expires?: number;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: 'Strict' | 'Lax' | 'None';
+  partitionKey?: string;
+}
+
+/**
+ * Configuration for a browser-based host.
+ *
+ * Uses Playwright to launch a Chromium instance, inject auth state,
+ * and execute a user-provided script that drives a web-based MCP host
+ * (e.g., claude.ai).
+ */
+export interface BrowserConfig {
+  /**
+   * Path to the browser script (resolved relative to cwd).
+   * The script must default-export an async function
+   * `(page: Page, scenario: string) => Promise<MCPHostSimulationResult>`.
+   */
+  script: string;
+
+  /**
+   * Timeout in milliseconds for the browser script.
+   * @default 120000 (2 minutes)
+   */
+  timeout?: number;
+
+  /**
+   * Whether to launch in headless mode.
+   * @default true
+   */
+  headless?: boolean;
+
+  /**
+   * Path to a Playwright storage state JSON file (cookies + localStorage).
+   * Resolved relative to cwd.
+   */
+  storageState?: string;
+
+  /**
+   * Extra cookies to inject into the browser context.
+   */
+  cookies?: BrowserCookie[];
+}
+
+/**
  * Configuration for MCP host simulation
  */
 export interface MCPHostConfig {
@@ -164,6 +220,11 @@ export interface MCPHostConfig {
    * CLI host configuration (required for 'cli' host type).
    */
   cli?: CLIConfig;
+
+  /**
+   * Browser host configuration (required for 'browser' host type).
+   */
+  browser?: BrowserConfig;
 }
 
 /**
