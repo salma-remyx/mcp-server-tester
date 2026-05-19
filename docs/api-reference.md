@@ -390,6 +390,8 @@ console.log(`Improved cases: ${comparison.improvedCases.length}`);
 console.log(`Regressed cases: ${comparison.regressedCases.length}`);
 ```
 
+For a complete baseline → candidate → comparison → proposal harness, see [Runtime Tool Override Experiments](./mcp-host.md#runtime-tool-override-experiments).
+
 ```typescript
 interface ToolOverrideVariant {
   id: string;

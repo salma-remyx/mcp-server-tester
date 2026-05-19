@@ -106,6 +106,17 @@ test('LLM discovers directory contents', async ({ mcp }) => {
 });
 ```
 
+### Runtime Tool Metadata Experiments
+
+Use runtime `toolOverrides` when you want to test description or input schema variants without changing the eval dataset or MCP server source. The harness pattern is:
+
+1. Run the unchanged dataset as the baseline.
+2. Run the same dataset with one `toolOverrides` candidate.
+3. Compare completed runs with `compareEvalRuns`.
+4. Emit structured proposal data for the next candidate when failures remain.
+
+See [Runtime Tool Override Experiments](../docs/mcp-host.md#runtime-tool-override-experiments) for a complete example.
+
 ## Example Comparison
 
 | Feature             | basic | filesystem | sqlite |

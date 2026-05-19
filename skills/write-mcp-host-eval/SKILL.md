@@ -349,6 +349,14 @@ For agent-driven remediation loops:
 - Report pass-rate delta, tool precision/recall/F1 deltas, improved cases, regressed cases, and unchanged failures.
 - Emit a structured override proposal. Do not edit MCP server source unless the user explicitly asks for source remediation.
 
+Preferred harness shape:
+
+1. Run the unchanged dataset as `baseline`.
+2. Run the same dataset with exactly one `toolOverrides` candidate.
+3. Call `compareEvalRuns({ baseline, candidate, labels })`.
+4. If regressions or unchanged failures remain, emit JSON-like proposal data with `variantId`, `reason`, `toolOverrides`, and evidence case IDs.
+5. Let the caller decide whether to run the next candidate. Do not build a hidden self-edit loop into the generated test.
+
 ## Step 7 — Project-Based A/B Testing
 
 Use project-based A/B testing when the variant is not limited to runtime tool metadata. This is the right path for changed tool behavior, changed auth/config/transport, different server builds, changed response shapes, or any experiment that needs to run against a real MCP server variant.
