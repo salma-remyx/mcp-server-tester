@@ -435,7 +435,7 @@ The result includes pass-rate deltas, optional tool precision/recall/F1 deltas, 
 
 **Result Structure:**
 
-```typescript snippet=src/evals/evalRunner.ts#L106-L184
+```typescript snippet=src/evals/evalRunner.ts#L121-L195
 /**
  * Overall result of running an eval dataset
  */
