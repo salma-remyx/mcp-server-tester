@@ -12,6 +12,26 @@
 
 
 
+## v1.1.0 (2026-06-18)
+
+#### :rocket: Enhancement
+
+- [#204](https://github.com/gleanwork/mcp-server-tester/pull/204) feat: add external eval result storage ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#213](https://github.com/gleanwork/mcp-server-tester/pull/213) feat: add runVariantExperiment for AI-driven tool variant optimization ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#201](https://github.com/gleanwork/mcp-server-tester/pull/201) feat: add eval run comparison utility ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+- [#200](https://github.com/gleanwork/mcp-server-tester/pull/200) feat: add runtime tool overrides ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### :house: Internal
+
+- [#203](https://github.com/gleanwork/mcp-server-tester/pull/203) internal: centralize public type exports ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+#### Committers: 2
+
+- Robert Jackson ([@rwjblue-glean](https://github.com/rwjblue-glean))
+- Steve Calvert ([@steve-calvert-glean](https://github.com/steve-calvert-glean))
+
+
+
 ## v1.0.1-beta.0 (2026-05-18)
 
 
