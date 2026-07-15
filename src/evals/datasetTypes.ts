@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { MCPHostConfig } from './mcpHost/mcpHostTypes.js';
 import type { SnapshotSanitizer } from '../assertions/validators/types.js';
 import type { BuiltInRubric } from '../judge/judgeTypes.js';
+import type { JudgeVoteStrategy } from './judgePanelVote.js';
 
 // Re-export sanitizer types from canonical source (validators/types.ts)
 // Note: For JSON datasets, the Zod schema below validates that patterns are strings.
@@ -105,6 +106,15 @@ export interface EvalCase {
    * Mirrors EvalV2's `canonical_answer` field.
    */
   canonicalAnswer?: string;
+
+  /**
+   * How a multi-judge `passesJudge` panel resolves disagreement.
+   * - `unanimous`: every judge must pass (default, strict AND).
+   * - `majority`: a strict majority of judges must pass (ensemble vote).
+   * Ignored for single-judge assertions.
+   * @default 'unanimous'
+   */
+  judgeVoteStrategy?: JudgeVoteStrategy;
 
   /**
    * Arbitrary string labels for this case.
@@ -457,6 +467,7 @@ export const EvalCaseSchema = z.object({
   accuracyThreshold: z.number().min(0).max(1).optional(),
   judgeReps: z.number().int().min(1).optional(),
   canonicalAnswer: z.string().optional(),
+  judgeVoteStrategy: z.enum(['unanimous', 'majority']).optional(),
   tags: z.array(z.string()).optional(),
   expect: EvalExpectBlockSchema.optional(),
 });
