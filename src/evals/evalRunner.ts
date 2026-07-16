@@ -35,6 +35,7 @@ import {
   validateJudge,
 } from '../assertions/validators/index.js';
 import { execFileNoThrow } from '../utils/execFileNoThrow.js';
+import { planJudgeBudget } from '../judge/budgetAllocator.js';
 import { debugEval } from '../debug.js';
 import { sumUsage } from '../utils/usageUtils.js';
 import packageJson from '../../package.json' with { type: 'json' };
@@ -618,9 +619,26 @@ async function runExpectBlockValidations(
       ? expectBlock.passesJudge
       : [expectBlock.passesJudge];
 
+    // Budget-aware resample-or-reroute allocation across the configured judges.
+    // When any judge sets maxBudgetUsd, the tightest value is treated as a shared
+    // per-query budget and distributed across resampling (reps) and rerouting
+    // (escalating to a stronger judge) by estimated marginal correctness per
+    // unit cost. With no budget set, each judge keeps its own reps (existing
+    // behavior). Adapted from arXiv:2607.08665.
+    const definedBudgets = judgeConfigs
+      .map((j) => j.maxBudgetUsd)
+      .filter((v): v is number => typeof v === 'number');
+    const budgetPlan = planJudgeBudget({
+      judges: judgeConfigs,
+      defaultReps: config.judgeReps ?? 1,
+      budgetUsd:
+        definedBudgets.length > 0 ? Math.min(...definedBudgets) : undefined,
+    });
+
     const judgeResultEntries = await Promise.all(
-      judgeConfigs.map(async (judgeConfig) => {
-        const effectiveReps = judgeConfig.reps ?? config.judgeReps ?? 1;
+      judgeConfigs.map(async (judgeConfig, index) => {
+        const effectiveReps =
+          budgetPlan.reps[index] ?? judgeConfig.reps ?? config.judgeReps ?? 1;
         const effectiveReference =
           judgeConfig.reference !== undefined
             ? judgeConfig.reference
