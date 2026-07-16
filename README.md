@@ -223,3 +223,46 @@ If any of these affect your use case, please open an issue.
 ## License
 
 MIT
+
+## Continuous Verification Scoring
+
+A custom judge that scores tool responses continuously instead of discretely. Rather than prompting the LLM for a single pass/fail verdict, it reads the model's logit distribution over a small set of scoring tokens and computes the expected score `E[s] = Σ score_i · P(token_i)`. The result is calibrated and separates strong responses from weak ones more sharply than a discrete verdict.
+
+Verification scales along three axes, all configurable on the judge:
+
+- **Granularity** — `scale` (`FIVE_POINT_SCALE` or `TEN_POINT_SCALE`) widens the scoring range for finer separation.
+- **Repetition** — `reps` averages several samples to cut variance.
+- **Criteria decomposition** — `criteria` scores each sub-criterion independently and averages, reducing per-judge complexity.
+
+Register it in your test setup, then reference it by name through any registered-judge assertion:
+
+```typescript
+import {
+  TEN_POINT_SCALE,
+  createAnthropicLogProbProvider,
+  registerVerifierScoringJudge,
+} from '@gleanwork/mcp-server-tester';
+
+registerVerifierScoringJudge('llm-verifier', {
+  rubric: 'Does the response fully and correctly answer the request?',
+  scale: TEN_POINT_SCALE,
+  reps: 3,
+  provider: createAnthropicLogProbProvider({
+    model: 'claude-sonnet-4-20250514',
+  }),
+});
+```
+
+```typescript
+import { test, expect } from '@gleanwork/mcp-server-tester/fixtures/mcp';
+
+test('answer quality', async ({ mcp }) => {
+  const result = await mcp.callTool('search', { query: 'planning docs' });
+  await expect(result).toPassToolJudge({
+    judge: 'llm-verifier',
+    passingThreshold: 0.8,
+  });
+});
+```
+
+Adapted from _LLM-as-a-Verifier: A General-Purpose Verification Framework_ (arXiv:2607.05391v1).
