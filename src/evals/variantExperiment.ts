@@ -8,6 +8,10 @@ import type {
 import type { EvalDataset } from './datasetTypes.js';
 import { compareEvalRuns } from './evalRunComparison.js';
 import type { EvalRunComparisonResult } from './evalRunComparison.js';
+import {
+  createToolPlayProposer,
+  type ToolPlayProposerOptions,
+} from './toolPlayVariants.js';
 import type { ZodType } from 'zod';
 
 /**
@@ -127,6 +131,15 @@ export interface VariantExperimentOptions {
   proposeVariants?: (
     context: ProposeVariantsContext
   ) => Promise<ToolOverrideVariant[]>;
+  /**
+   * Built-in "tool play" policy (adapted from PLAY2PROMPT,
+   * arXiv:2503.14432). When set and neither `variants` nor `proposeVariants`
+   * is supplied, the experiment plays each tool to synthesize candidate
+   * description overrides. Pass `true` for defaults, or an options object to
+   * customize which tools/strategies are played. Playing invokes each tool,
+   * so it can have side effects on the target server.
+   */
+  toolPlay?: boolean | ToolPlayProposerOptions;
   /** Metric to optimize. @default 'passRate' */
   metric?: ExperimentMetric;
   /** Maximum number of rounds to run. @default 1 */
@@ -231,8 +244,17 @@ export async function runVariantExperiment(
   let bestAttempted: VariantCandidateResult | undefined;
   let reason: VariantExperimentReason = 'max-rounds';
 
+  const effectivePropose =
+    options.proposeVariants ??
+    (options.toolPlay
+      ? createToolPlayProposer(
+          context.mcp,
+          options.toolPlay === true ? {} : options.toolPlay
+        )
+      : undefined);
+
   for (let round = 0; round < maxRounds; round++) {
-    const variants = await gatherVariants(options, {
+    const variants = await gatherVariants(options, effectivePropose, {
       round,
       baseline,
       metric,
@@ -296,13 +318,16 @@ export async function runVariantExperiment(
 
 async function gatherVariants(
   options: VariantExperimentOptions,
+  proposeVariants:
+    | ((context: ProposeVariantsContext) => Promise<ToolOverrideVariant[]>)
+    | undefined,
   context: ProposeVariantsContext
 ): Promise<ToolOverrideVariant[]> {
   if (context.round === 0 && options.variants && options.variants.length > 0) {
     return options.variants;
   }
-  if (options.proposeVariants) {
-    return options.proposeVariants(context);
+  if (proposeVariants) {
+    return proposeVariants(context);
   }
   return [];
 }

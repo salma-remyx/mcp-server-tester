@@ -283,6 +283,12 @@ export {
 
 // AI-driven variant optimization experiments
 export { runVariantExperiment } from './evals/variantExperiment.js';
+export {
+  proposeToolPlayVariants,
+  createToolPlayProposer,
+  type ToolPlayProposerOptions,
+  type ToolPlayStrategy,
+} from './evals/toolPlayVariants.js';
 
 // MCP Host Simulation
 export {
