@@ -13,6 +13,7 @@ observed_landing_zones:
   last_observed: '2026-07-16T04:44:52Z'
 - path: src/evals/
   shape_tags:
+  - callback
   - library-shape-public-api
   confirmed_by:
   - arxiv: 2607.08665v1
@@ -22,7 +23,14 @@ observed_landing_zones:
       module's planJudgeBudget is invoked there t
     branch: resample-or-reroute-budget-aware-test-time-model-selection-f
     timestamp: '2026-07-16T15:42:00Z'
-  last_observed: '2026-07-16T15:42:00Z'
+  - arxiv: 2503.14432v2
+    mode: Mode 2 (adapted port)
+    call_site_specifics: runVariantExperiment (pre-existing public export) via the
+      new toolPlay:true option on VariantExperimentOptions, plus the directly-exported
+      public API proposeToolPlayVariants / createToolPlayProposer
+    branch: play2prompt-zero-shot-tool-instruction-optimization-for-llm-
+    timestamp: '2026-07-17T16:22:28Z'
+  last_observed: '2026-07-17T16:22:28Z'
 rejected_shapes:
 - shape_tag: null
   reason_code: null
@@ -33,4 +41,4 @@ rejected_shapes:
   - arxiv: 2607.05391v1
     timestamp: '2026-07-15T17:39:34Z'
 coordination_signals: []
-last_updated: '2026-07-16T15:42:00Z'
+last_updated: '2026-07-17T16:22:28Z'
