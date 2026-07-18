@@ -199,6 +199,14 @@ export type {
   LLMToolCall,
   MCPHostSimulationResult,
   MCPHostSimulator,
+  JudgeVote,
+  JudgeReliabilityCaseInput,
+  JudgeReliabilityReport,
+  PerJudgeSlice,
+  EvaluatorReplacementDrift,
+  JudgeBiasProbes,
+  JudgeErrorDependenceEstimate,
+  JudgeAuditTrailEntry,
 } from './evals.js';
 
 export type {

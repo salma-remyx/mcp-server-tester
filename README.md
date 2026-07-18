@@ -121,6 +121,30 @@ In LLM host mode, a real LLM receives your server's tool list and a natural lang
 
 LLM host mode makes real API calls and produces non-deterministic results. Use `iterations` to run a case multiple times and measure pass rate rather than expecting 100% on a single run. See the [LLM Host Guide](docs/mcp-host.md) for configuration and cost management.
 
+## Judge Reliability Audit
+
+An LLM-as-judge score can move even when the candidate responses stay fixed, simply because the evaluator changed. When you run a case with multiple judges (`passesJudge` as an array of two or more), `runEvalDataset()` attaches a `judgeReliability` report that audits this evaluator-replacement drift — adapted from _When the Judge Changes, So Does the Measurement: Auditing LLM-as-Judge Reliability_ (arXiv:2607.08535v1).
+
+```typescript
+import { loadEvalDataset, runEvalDataset } from '@gleanwork/mcp-server-tester';
+
+const result = await runEvalDataset({ dataset }, { mcp, testInfo });
+
+const audit = result.judgeReliability;
+if (audit) {
+  console.log(audit.summary);
+  // "2 judges audited across 10 multi-judge cases. Decisions disagreed on 40%
+  //  of cases (mean |score delta| 0.31) — evaluator-replacement drift. ..."
+  audit.perJudgeSlices; // per-judge pass rates and mean scores (dataset slices)
+  audit.evaluatorReplacementDrift; // decision disagreement + score delta
+  audit.biasProbes; // leniency spread + verbosity correlation
+  audit.errorDependence; // jury agreement — are judge errors correlated?
+  audit.auditTrail; // providers/models observed, with sample counts
+}
+```
+
+High `decisionDisagreementRate` means swapping a judge flips verdicts; a `meanPairwiseAgreement` near 1.0 means judge errors are correlated, so a multi-judge jury adds limited signal. You can also call `auditJudgeReliability()` directly on any list of per-judge votes.
+
 ## Installation
 
 Requires Node.js 22+.

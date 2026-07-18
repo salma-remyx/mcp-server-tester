@@ -508,6 +508,11 @@ await saveEvalRunComparison({ store, comparison, id: 'candidate-comparison' });
 
 ```typescript snippet=src/evals/evalRunner.ts#L106-L184
   /**
+   * Optional human-readable explanation of what this variant is testing.
+   */
+  description?: string;
+
+  /**
    * Per-tool metadata overrides keyed by canonical tool name.
    */
   tools: Record<string, ToolMetadataOverride>;
@@ -580,11 +585,6 @@ export interface EvalRunnerResult {
    * Only present when at least one case contributes precision/recall data.
    */
   datasetToolF1?: number;
-
-  /**
-   * Experiment tracking metadata captured at run time.
-   */
-  metadata?: EvalRunMetadata;
 ```
 
 ### `runVariantExperiment(options, context)`

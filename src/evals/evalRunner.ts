@@ -34,6 +34,11 @@ import {
   validateToolCallCount,
   validateJudge,
 } from '../assertions/validators/index.js';
+import {
+  auditJudgeReliability,
+  judgeReliabilityCaseFromResult,
+  type JudgeReliabilityReport,
+} from './judgeReliabilityAudit.js';
 import { execFileNoThrow } from '../utils/execFileNoThrow.js';
 import { debugEval } from '../debug.js';
 import { sumUsage } from '../utils/usageUtils.js';
@@ -176,6 +181,17 @@ export interface EvalRunnerResult {
    * Only present when at least one case contributes precision/recall data.
    */
   datasetToolF1?: number;
+
+  /**
+   * Judge reliability audit across cases that ran with multiple judges
+   * (`passesJudge` as an array of 2+). Surfaces evaluator-replacement drift,
+   * per-judge dataset slices, bias probes, error-dependence estimates, and a
+   * protocol audit trail. Only present when at least one multi-judge case ran.
+   *
+   * Adapted from "When the Judge Changes, So Does the Measurement: Auditing
+   * LLM-as-Judge Reliability" (arXiv:2607.08535v1).
+   */
+  judgeReliability?: JudgeReliabilityReport;
 
   /**
    * Experiment tracking metadata captured at run time.
@@ -1300,6 +1316,16 @@ export async function runEvalDataset(
       avgPrec + avgRecall > 0
         ? (2 * avgPrec * avgRecall) / (avgPrec + avgRecall)
         : 0;
+  }
+
+  // Audit judge reliability across cases that ran with multiple judges.
+  // Detects evaluator-replacement drift, bias probes, and error dependence —
+  // the measurement-validity concerns raised by arXiv:2607.08535v1.
+  const multiJudgeAuditInputs = caseResults
+    .map((cr) => judgeReliabilityCaseFromResult(cr))
+    .filter((input): input is NonNullable<typeof input> => input !== null);
+  if (multiJudgeAuditInputs.length > 0) {
+    result.judgeReliability = auditJudgeReliability(multiJudgeAuditInputs);
   }
 
   // Save results to file if requested

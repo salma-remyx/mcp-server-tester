@@ -115,6 +115,14 @@ export type {
   LLMToolCall,
   MCPHostSimulationResult,
   MCPHostSimulator,
+  JudgeVote,
+  JudgeReliabilityCaseInput,
+  JudgeReliabilityReport,
+  PerJudgeSlice,
+  EvaluatorReplacementDrift,
+  JudgeBiasProbes,
+  JudgeErrorDependenceEstimate,
+  JudgeAuditTrailEntry,
 
   // Judge
   JudgeConfig,
@@ -280,6 +288,12 @@ export {
   loadStoredEvalRunnerResult,
   saveEvalRunComparison,
 } from './evals/evalRunComparison.js';
+
+// Judge reliability audit (evaluator-replacement measurement)
+export {
+  auditJudgeReliability,
+  judgeReliabilityCaseFromResult,
+} from './evals/judgeReliabilityAudit.js';
 
 // AI-driven variant optimization experiments
 export { runVariantExperiment } from './evals/variantExperiment.js';

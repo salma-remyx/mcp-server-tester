@@ -54,6 +54,17 @@ export type {
 export type { SaveBaselineOptions } from '../evals/baseline.js';
 
 export type {
+  JudgeVote,
+  JudgeReliabilityCaseInput,
+  JudgeReliabilityReport,
+  PerJudgeSlice,
+  EvaluatorReplacementDrift,
+  JudgeBiasProbes,
+  JudgeErrorDependenceEstimate,
+  JudgeAuditTrailEntry,
+} from '../evals/judgeReliabilityAudit.js';
+
+export type {
   HostType,
   CLIOutputFormat,
   CLIConfig,
