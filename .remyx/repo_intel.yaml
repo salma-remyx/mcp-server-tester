@@ -30,7 +30,14 @@ observed_landing_zones:
       public API proposeToolPlayVariants / createToolPlayProposer
     branch: play2prompt-zero-shot-tool-instruction-optimization-for-llm-
     timestamp: '2026-07-17T16:22:28Z'
-  last_observed: '2026-07-17T16:22:28Z'
+  - arxiv: 2607.08535v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: Wired into `runEvalDataset()` in src/evals/evalRunner.ts,
+      which auto-attaches `result.judgeReliability` when any case contributed multi-judge
+      votes; the standalone `auditJudgeReliability()` / `judgeRe
+    branch: when-the-judge-changes-so-does-the-measurement-auditing-llm-
+    timestamp: '2026-07-18T11:18:34Z'
+  last_observed: '2026-07-18T11:18:34Z'
 rejected_shapes:
 - shape_tag: null
   reason_code: null
@@ -41,4 +48,4 @@ rejected_shapes:
   - arxiv: 2607.05391v1
     timestamp: '2026-07-15T17:39:34Z'
 coordination_signals: []
-last_updated: '2026-07-17T16:22:28Z'
+last_updated: '2026-07-18T11:18:34Z'
