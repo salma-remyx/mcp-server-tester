@@ -15,6 +15,7 @@ observed_landing_zones:
   shape_tags:
   - callback
   - library-shape-public-api
+  - registry-add
   confirmed_by:
   - arxiv: 2607.08665v1
     mode: Mode 2 (adapted port)
@@ -37,7 +38,12 @@ observed_landing_zones:
       votes; the standalone `auditJudgeReliability()` / `judgeRe
     branch: when-the-judge-changes-so-does-the-measurement-auditing-llm-
     timestamp: '2026-07-18T11:18:34Z'
-  last_observed: '2026-07-18T11:18:34Z'
+  - arxiv: 2607.14673v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: (none)
+    branch: project-kaleidoscope-contextual-human-aligned-evaluation-for
+    timestamp: '2026-07-19T05:25:08Z'
+  last_observed: '2026-07-19T05:25:08Z'
 rejected_shapes:
 - shape_tag: null
   reason_code: null
@@ -48,4 +54,4 @@ rejected_shapes:
   - arxiv: 2607.05391v1
     timestamp: '2026-07-15T17:39:34Z'
 coordination_signals: []
-last_updated: '2026-07-18T11:18:34Z'
+last_updated: '2026-07-19T05:25:08Z'
