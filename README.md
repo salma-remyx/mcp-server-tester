@@ -181,6 +181,7 @@ For HTTP servers, set `transport: 'http'` and `serverUrl`. For servers that requ
 - [UI Reporter](./docs/ui-reporter.md) — interactive web UI for test results
 - [Development](./docs/development.md) — contributing and building
 - [Migration Guide (v0.12 → v1.0)](./docs/migrations/migration-1.0.md) — upgrading from pre-1.0 releases
+- [Reliability-Gated Scoring](./docs/reliability-gated-scoring.md) — gate automated judge scoring behind human-label calibration
 
 ## AI Skills
 
