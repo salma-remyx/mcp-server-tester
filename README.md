@@ -223,3 +223,25 @@ If any of these affect your use case, please open an issue.
 ## License
 
 MIT
+
+## MCP Safety-Boundary Judges
+
+Label a tool response by **which safety boundary failed** (a named gate) and **how severely** (1–5) instead of a flat pass/fail. The judges register through the custom judge registry and are consumed like any other named judge — useful for optimizing tool variants against specific failure modes and for richer eval-run comparisons.
+
+Named boundaries: `evidence-fabrication`, `source-support-gap`, `unsafe-protocol-execution`, `malformed-output`, `misinterpreted-command`. Each judge maps severity onto the normalized 0–1 score (severity 5 → `0.0`, severity 1 → `1.0`) and embeds the gate and severity in the reasoning.
+
+```typescript
+import { registerSafetyBoundaryJudges } from './src/judge/safetyBoundaryJudges';
+
+// Register every boundary (default classifier is a parameter-free heuristic)
+registerSafetyBoundaryJudges();
+
+// Then consume through the existing judge contract:
+expect(result).toPassToolJudge({ judge: 'mcp-evidence-fabrication' });
+```
+
+Inject an LLM-backed classifier for higher fidelity: `registerSafetyBoundaryJudges({ classify })` or `createSafetyBoundaryExecutor(boundary, classify)`.
+
+> Public package re-export under `@gleanwork/mcp-server-tester` is pending a follow-up that wires `src/index.ts` and `package.json` `exports`; until then the module is importable via its source path as shown above.
+
+Methodology adapted from the MedFailBench failure-atlas approach of labeling AI errors by severity and named safety-gate type.
