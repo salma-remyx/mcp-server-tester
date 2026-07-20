@@ -49,6 +49,18 @@ observed_landing_zones:
     branch: project-kaleidoscope-contextual-human-aligned-evaluation-for
     timestamp: '2026-07-19T05:25:08Z'
   last_observed: '2026-07-19T05:25:08Z'
+- path: src/assertions/validators/
+  shape_tags:
+  - unclassified
+  confirmed_by:
+  - arxiv: 2502.18018v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: 'validateJudge (src/assertions/validators/judge.ts), reached
+      via the pre-existing toPassToolJudge matcher (src/assertions/matchers/toPassToolJudge.ts:38)
+      and the eval runner runEvalCase/runEvalDataset '
+    branch: verdict-a-library-for-scaling-judge-time-compute
+    timestamp: '2026-07-20T17:17:24Z'
+  last_observed: '2026-07-20T17:17:24Z'
 rejected_shapes:
 - shape_tag: null
   reason_code: null
@@ -59,4 +71,4 @@ rejected_shapes:
   - arxiv: 2607.05391v1
     timestamp: '2026-07-15T17:39:34Z'
 coordination_signals: []
-last_updated: '2026-07-19T23:29:34Z'
+last_updated: '2026-07-20T17:17:24Z'
