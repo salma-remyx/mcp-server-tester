@@ -306,5 +306,18 @@ export {
   clearJudgeRegistry,
 } from './judge/judgeRegistry.js';
 
+// Composed Judge (Verdict-style permutation → reflection → vote)
+export {
+  createComposedJudge,
+  COMPOSE_PRESETS,
+  type JudgeUnit,
+  type JudgeComposeConfig,
+  type ComposeAggregator,
+  type ComposePreset,
+  type ComposedJudgeResult,
+  type ComposeUnitResult,
+  type ComposedJudgeExecutor,
+} from './judge/judgeCompose.js';
+
 // Conformance
 export { runConformanceChecks } from './spec/conformanceChecks.js';

@@ -10,6 +10,10 @@ import type { RubricSpec } from '../../judge/rubrics.js';
 import { createJudge } from '../../judge/judgeClient.js';
 import { resolveRubric } from '../../judge/rubrics.js';
 import { getRegisteredJudge } from '../../judge/judgeRegistry.js';
+import {
+  createComposedJudge,
+  type JudgeComposeConfig,
+} from '../../judge/judgeCompose.js';
 
 /**
  * Configuration for the judge validator
@@ -47,6 +51,14 @@ export interface JudgeValidatorConfig {
    * Register judges with `registerJudge()` before tests run.
    */
   judge?: string;
+  /**
+   * Composed (Verdict-style) judge: run multiple distinct reasoning units
+   * (permutation → reflection → vote) and aggregate their verdicts, instead
+   * of a single rubric eval. The aggregated score (vote share for `majority`,
+   * mean for `mean`) is compared against `threshold`. Use `threshold: 0.5`
+   * for strict-majority voting. Adapted from Verdict (arXiv:2502.18018).
+   */
+  compose?: JudgeComposeConfig;
 }
 
 /**
@@ -94,6 +106,7 @@ export async function validateJudge(
 ): Promise<ValidationResult> {
   const {
     judge: judgeName,
+    compose,
     rubric,
     reference,
     threshold = 0.7,
@@ -126,6 +139,37 @@ export async function validateJudge(
       return {
         pass: false,
         message: `Custom judge "${judgeName}" error: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
+  }
+
+  // Composed (Verdict-style) judge — permutation → reflection → vote.
+  // Each unit runs as a judge eval; verdicts are aggregated into a score
+  // that is compared against the caller's threshold.
+  if (compose !== undefined) {
+    try {
+      const executor = createComposedJudge(compose);
+      const composed = await executor(response, reference ?? undefined);
+
+      const passed = composed.score >= threshold;
+      return {
+        pass: passed,
+        message: passed
+          ? `Composed judge passed with score ${composed.score.toFixed(2)} (${composed.aggregator}, ${composed.unitResults.length} units)`
+          : `Composed judge failed with score ${composed.score.toFixed(2)} (threshold: ${threshold}, ${composed.aggregator}, ${composed.unitResults.length} units). ${composed.reasoning}`,
+        details: {
+          score: composed.score,
+          reasoning: composed.reasoning,
+          aggregator: composed.aggregator,
+          unitResults: composed.unitResults,
+          judgeProvider: provider ?? 'anthropic',
+          judgeModel: model,
+        },
+      };
+    } catch (err) {
+      return {
+        pass: false,
+        message: `Composed judge error: ${err instanceof Error ? err.message : String(err)}`,
       };
     }
   }

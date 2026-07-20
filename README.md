@@ -223,3 +223,36 @@ If any of these affect your use case, please open an issue.
 ## License
 
 MIT
+
+## Composed Judges (judge-time compute scaling)
+
+A composed judge runs several distinct evaluation units (permutation), each as
+a full judge eval (reflection), and aggregates their verdicts (vote) — scaling
+judge-time compute for more reliable, interpretable verdicts than a single
+rubric call. Adapted from _Verdict: A Library for Scaling Judge-Time Compute_
+(arXiv:2502.18018).
+
+```typescript
+import {
+  validateJudge,
+  createComposedJudge,
+  registerJudge,
+} from '@gleanwork/mcp-server-tester';
+
+// Programmatic: returns a per-unit breakdown for interpretability
+const result = await validateJudge(response, {
+  compose: { preset: 'quality', aggregator: 'majority' },
+  threshold: 0.5, // strict-majority voting
+});
+// result.details.unitResults -> [{ unit: 'correctness', pass, score }, ...]
+
+// Or register a composed judge by name and reference it in eval fixtures
+registerJudge('verify-strict', createComposedJudge({ preset: 'verify' }));
+```
+
+Two aggregation strategies: `majority` (score = fraction of units that pass;
+use `threshold: 0.5` for strict-majority voting) and `mean` (score = mean of
+per-unit scores). Built-in presets: `verify` (correctness + groundedness) and
+`quality` (correctness + completeness + instruction-following). Each unit
+reuses the existing `Judge` infrastructure — no extra provider packages
+required.
