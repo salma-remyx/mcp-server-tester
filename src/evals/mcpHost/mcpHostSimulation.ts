@@ -26,6 +26,7 @@ import type {
 } from './mcpHostTypes.js';
 import { createVercelOrchestrator } from './adapters/vercel.js';
 import { runCLIHost } from './adapters/cli/index.js';
+import { runInteractionScaling } from './interactionScaling.js';
 
 // Single orchestrator instance shared across all providers.
 // Each provider is dynamically imported inside the orchestrator on first use.
@@ -86,6 +87,21 @@ export async function simulateMCPHost(
   scenario: string,
   config: MCPHostConfig
 ): Promise<MCPHostSimulationResult> {
+  // Interaction scaling (arXiv:2607.11598): when a grounded revision loop is
+  // configured, wrap the forward path in a proposer/reviewer loop — each
+  // attempt's observed flaw is fed back as the next scenario — and return the
+  // final attempt's result. The forward path is otherwise unchanged.
+  if (config.revision) {
+    const { revision, ...forwardConfig } = config;
+    const outcome = await runInteractionScaling(
+      mcp,
+      scenario,
+      forwardConfig,
+      revision
+    );
+    return outcome.result;
+  }
+
   const hostType = config.hostType ?? 'sdk';
 
   if (hostType === 'cli') {

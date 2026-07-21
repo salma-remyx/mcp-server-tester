@@ -289,6 +289,14 @@ export {
   simulateMCPHost,
   isProviderAvailable,
   getMissingDependencyMessage,
+  runInteractionScaling,
+} from './evals/mcpHost/index.js';
+export type {
+  InteractionScalingConfig,
+  InteractionScalingResult,
+  InteractionScalingAttempt,
+  InteractionObservation,
+  InteractionObserver,
 } from './evals/mcpHost/index.js';
 
 // Judge

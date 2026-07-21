@@ -7,6 +7,7 @@
 
 import type { MCPFixtureApi } from '../../mcp/fixtures/mcpFixture.js';
 import type { UsageMetrics } from '../../types/index.js';
+import type { InteractionScalingConfig } from './interactionScaling.js';
 
 /**
  * Host type for MCP host simulation.
@@ -225,6 +226,20 @@ export interface MCPHostConfig {
    * Browser host configuration (required for 'browser' host type).
    */
   browser?: BrowserConfig;
+
+  /**
+   * Optional proposer/reviewer revision loop ("interaction scaling").
+   *
+   * When set, the forward simulation is wrapped in a revision loop: after
+   * each proposal the grounded `observe`r inspects the actual behavior and,
+   * unless it reports the flaw resolved, its feedback is appended to the
+   * scenario for the next attempt. When absent (default) the forward path
+   * (scenario → single simulation result) is unchanged.
+   *
+   * Holds a callback, so it is programmatic-only — it is not part of the
+   * serializable dataset schema and is never populated from JSON.
+   */
+  revision?: InteractionScalingConfig;
 }
 
 /**

@@ -7,3 +7,4 @@
 
 export * from './mcpHostTypes.js';
 export * from './mcpHostSimulation.js';
+export * from './interactionScaling.js';
