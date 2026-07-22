@@ -98,6 +98,29 @@ Supported assertion types:
 | `judge`          | LLM evaluates response quality against a rubric |
 | `toolsTriggered` | LLM called the expected tools (LLM host mode)   |
 
+### Multi-judge voting
+
+When a case uses a panel of judges (`passesJudge` as an array), `judgeVoteStrategy` controls how their verdicts combine into one pass/fail result:
+
+- `unanimous` (default) — every judge must pass.
+- `majority` — a strict majority of judges must pass, resolving disagreement by an ensemble vote for more stable verdicts.
+
+```json
+{
+  "id": "answer-quality",
+  "judgeVoteStrategy": "majority",
+  "expect": {
+    "passesJudge": [
+      { "rubric": "correctness" },
+      { "rubric": "completeness" },
+      { "rubric": "groundedness" }
+    ]
+  }
+}
+```
+
+The majority-vote strategy is adapted from [A Simple Ensemble Strategy for LLM Inference: Towards More Stable Text Classification](https://arxiv.org/abs/2504.18884), applying its ensemble-of-judges insight to reduce per-trial variability.
+
 ### LLM host mode
 
 In LLM host mode, a real LLM receives your server's tool list and a natural language prompt, then decides which tools to call. This tests whether your tool names, descriptions, and input schemas are clear enough for autonomous use — a different question from whether the tools return correct output.

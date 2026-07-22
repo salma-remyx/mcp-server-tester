@@ -282,6 +282,32 @@ Use iterations for:
 - Setting realistic accuracy thresholds (start with 0.6, tighten over time)
 - Comparing tool description variants (A/B testing)
 
+### Multi-judge voting
+
+When a case scores answer quality with a _panel_ of judges (`passesJudge` as an array), the case-level `judgeVoteStrategy` field controls how the individual verdicts combine:
+
+- `unanimous` (default) — every judge must pass (strict AND).
+- `majority` — a strict majority of judges must pass (more than half the panel). An even split on an even-sized panel fails.
+
+```json
+{
+  "id": "answer-quality",
+  "mode": "mcp_host",
+  "scenario": "Find recent internal documents about the Q4 planning process",
+  "mcpHostConfig": { "provider": "anthropic" },
+  "judgeVoteStrategy": "majority",
+  "expect": {
+    "passesJudge": [
+      { "rubric": "correctness" },
+      { "rubric": "completeness" },
+      { "rubric": "groundedness" }
+    ]
+  }
+}
+```
+
+Majority voting resolves disagreement across the panel by an ensemble vote, giving more stable pass/fail verdicts than requiring every judge to agree. `judgeVoteStrategy` is ignored for single-judge assertions.
+
 ## Step 5 — Write the Test Runner
 
 ```typescript

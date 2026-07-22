@@ -34,6 +34,8 @@ import {
   validateToolCallCount,
   validateJudge,
 } from '../assertions/validators/index.js';
+import { aggregateJudgePanel } from './judgePanelVote.js';
+import type { JudgeVoteStrategy } from './judgePanelVote.js';
 import { execFileNoThrow } from '../utils/execFileNoThrow.js';
 import { debugEval } from '../debug.js';
 import { sumUsage } from '../utils/usageUtils.js';
@@ -501,6 +503,7 @@ interface ExpectBlockConfig {
   playwrightExpect?: Expect;
   judgeReps?: number;
   canonicalAnswer?: string;
+  judgeVoteStrategy?: JudgeVoteStrategy;
 }
 
 /**
@@ -655,13 +658,16 @@ async function runExpectBlockValidations(
       // Single judge — flat result, same as before
       results.judge = judgeResultEntries[0]!;
     } else {
-      // Multi-judge — aggregate with AND semantics
-      const allPassed = judgeResultEntries.every((r) => r.pass);
-      const passCount = judgeResultEntries.filter((r) => r.pass).length;
+      // Multi-judge — resolve disagreement by the configured voting strategy
+      // (unanimous by default; majority-vote ensemble for more stable verdicts).
+      const vote = aggregateJudgePanel(
+        judgeResultEntries,
+        config.judgeVoteStrategy
+      );
 
       results.judge = {
-        pass: allPassed,
-        details: `${passCount}/${judgeResultEntries.length} judges passed`,
+        pass: vote.pass,
+        details: vote.details,
         judgeResults: judgeResultEntries,
       };
     }
@@ -775,6 +781,7 @@ async function runSingleIteration(
       playwrightExpect: context.expect,
       judgeReps: evalCase.judgeReps,
       canonicalAnswer: evalCase.canonicalAnswer,
+      judgeVoteStrategy: evalCase.judgeVoteStrategy,
     });
     expectationResults = expectations;
     toolPrecision = tp;
