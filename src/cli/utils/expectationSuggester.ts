@@ -4,10 +4,18 @@
 
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { extractText } from '../../mcp/response.js';
+import { extractToolRules, type ToolRule } from './toolRuleExtractor.js';
 
 export interface ExpectationSuggestions {
   textContains: string[];
   regex: string[];
+  /**
+   * Description-grounded contract rules mined from the tool's description
+   * and input schema (PromptPex-style rule extraction). These capture
+   * guarantees and constraints a single observed response cannot reveal —
+   * enums, required fields, named output formats, and error conditions.
+   */
+  rules?: ToolRule[];
 }
 
 /**
@@ -34,6 +42,9 @@ export function suggestExpectations(
 
   // Suggest regex patterns
   suggestions.regex = suggestRegexPatterns(text, tool);
+
+  // Attach description-grounded contract rules (PromptPex-style extraction).
+  suggestions.rules = extractToolRules(tool);
 
   return suggestions;
 }

@@ -21,6 +21,7 @@ import type {
   SerializedEvalDataset,
 } from '../../../evals/datasetTypes.js';
 import { suggestExpectations } from '../../utils/expectationSuggester.js';
+import { suggestRuleExpectations } from '../../utils/toolRuleExtractor.js';
 import { writeFile, readFile, stat, mkdir } from 'fs/promises';
 import { resolve, dirname } from 'path';
 
@@ -260,6 +261,14 @@ export function GenerateApp({ options }: GenerateAppProps) {
 
       // Get suggestions
       const sugg = suggestExpectations(responseData, selectedTool);
+      // Merge description-grounded contract rules (PromptPex-style) so the
+      // existing toggle steps surface enums/formats/fields the response alone
+      // cannot reveal.
+      const ruleSugg = suggestRuleExpectations(selectedTool);
+      sugg.textContains = [
+        ...new Set([...sugg.textContains, ...ruleSugg.textContains]),
+      ];
+      sugg.regex = [...new Set([...sugg.regex, ...ruleSugg.regex])];
       setSuggestions(sugg);
 
       // Initialize current case
