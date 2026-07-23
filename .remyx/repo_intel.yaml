@@ -74,6 +74,18 @@ observed_landing_zones:
     branch: interaction-scaling-grounding-the-third-axis-of-test-time-co
     timestamp: '2026-07-21T14:39:28Z'
   last_observed: '2026-07-21T14:39:28Z'
+- path: src/cli/utils/
+  shape_tags:
+  - library-shape-public-api
+  confirmed_by:
+  - arxiv: 2503.05070v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: 'src/cli/commands/generate/GenerateApp.tsx (the interactive
+      `mcp-server-tester generate` CLI command, bin: ./dist/cli/index.js). suggestExpectations
+      and suggestRuleExpectations are invoked at the post-'
+    branch: promptpex-automatic-test-generation-for-language-model-promp
+    timestamp: '2026-07-23T04:42:03Z'
+  last_observed: '2026-07-23T04:42:03Z'
 rejected_shapes:
 - shape_tag: null
   reason_code: null
@@ -84,4 +96,4 @@ rejected_shapes:
   - arxiv: 2607.05391v1
     timestamp: '2026-07-15T17:39:34Z'
 coordination_signals: []
-last_updated: '2026-07-21T14:39:28Z'
+last_updated: '2026-07-23T04:42:03Z'
