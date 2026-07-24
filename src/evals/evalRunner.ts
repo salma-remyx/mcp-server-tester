@@ -1,5 +1,9 @@
 import type { MCPFixtureApi } from '../mcp/fixtures/mcpFixture.js';
 import type { EvalDataset, EvalCase, EvalExpectBlock } from './datasetTypes.js';
+import {
+  classifyTaskDifficulty,
+  type TaskDifficultyTier,
+} from './taskDifficulty.js';
 import type { TestInfo, Expect } from '@playwright/test';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { ZodType } from 'zod';
@@ -277,6 +281,16 @@ export interface EvalRunnerOptions {
    * When undefined or empty, all cases run (default behavior).
    */
   filterTags?: string[];
+
+  /**
+   * When set, further restricts the run to cases whose computed difficulty
+   * tier (see `classifyTaskDifficulty`) is in this list. Applied after
+   * `filterTags`, so the two compose. Lets a single difficulty-tiered
+   * benchmark be sliced by tier — e.g. run only `['single-tool']` cases in
+   * CI and reserve the long-horizon tiers for release gates. When undefined
+   * or empty, difficulty does not filter (default behavior).
+   */
+  difficultyFilter?: TaskDifficultyTier[];
 
   /**
    * If set, saves the run results to this file path after completion.
@@ -1095,6 +1109,7 @@ export async function runEvalDataset(
     defaultJudgeReps,
     onCaseComplete,
     filterTags,
+    difficultyFilter,
     saveResultsTo,
     omitResponsesFromBaseline = true,
     redactStoredResponses,
@@ -1117,10 +1132,19 @@ export async function runEvalDataset(
   };
 
   // Filter cases by tag if filterTags is set (non-empty array)
-  const casesToRun =
+  const taggedCases =
     filterTags && filterTags.length > 0
       ? dataset.cases.filter((c) => c.tags?.some((t) => filterTags.includes(t)))
       : dataset.cases;
+
+  // Further narrow by computed difficulty tier if difficultyFilter is set.
+  // Applied after the tag filter so the two compose on a single dataset.
+  const casesToRun =
+    difficultyFilter && difficultyFilter.length > 0
+      ? taggedCases.filter((c) =>
+          difficultyFilter.includes(classifyTaskDifficulty(c))
+        )
+      : taggedCases;
 
   // Preflight cost warning: estimate the number of LLM judge API calls this run will make
   const estimatedJudgeCalls = casesToRun.reduce((sum, c) => {

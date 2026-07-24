@@ -284,6 +284,26 @@ export {
 // AI-driven variant optimization experiments
 export { runVariantExperiment } from './evals/variantExperiment.js';
 
+// Task-difficulty taxonomy (adapted from MCP-Universe, arXiv:2508.14704)
+export {
+  classifyTaskDifficulty,
+  difficultyTierTag,
+  sliceByDifficulty,
+  groupCasesByDifficulty,
+  isTaskDifficultyTier,
+  DIFFICULTY_TIERS,
+  DIFFICULTY_TAG_PREFIX,
+} from './evals/taskDifficulty.js';
+export type { TaskDifficultyTier } from './evals/taskDifficulty.js';
+
+// Long-horizon MCP tool-use benchmark (adapted from MCP-Universe)
+export {
+  benchmarkDataset,
+  buildBenchmarkDataset,
+  loadBenchmarkDataset,
+} from './evals/benchmarkTasks.js';
+export type { BenchmarkDatasetOptions } from './evals/benchmarkTasks.js';
+
 // MCP Host Simulation
 export {
   simulateMCPHost,

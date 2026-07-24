@@ -121,6 +121,37 @@ In LLM host mode, a real LLM receives your server's tool list and a natural lang
 
 LLM host mode makes real API calls and produces non-deterministic results. Use `iterations` to run a case multiple times and measure pass rate rather than expecting 100% on a single run. See the [LLM Host Guide](docs/mcp-host.md) for configuration and cost management.
 
+### Difficulty-tiered benchmarks
+
+Real-world MCP tool use gets harder along two axes — the size of the available tool/server space, and the reasoning horizon. `classifyTaskDifficulty()` scores each `EvalCase` into one of three tiers (adapted from [MCP-Universe](https://arxiv.org/abs/2508.14704)):
+
+| Tier           | Meaning                                          |
+| -------------- | ------------------------------------------------ |
+| `single-tool`  | Solvable with one tool call (single hop)         |
+| `multi-tool`   | Requires several tools / steps within a server   |
+| `multi-server` | Long-horizon reasoning spanning multiple servers |
+
+The tier is computed from a case's `expect` block (tool span / call budget), with a `metadata.difficultyTier` override for cross-server scenarios a single case can't structurally express. Slice a dataset by tier directly from `runEvalDataset`:
+
+```typescript
+import {
+  runEvalDataset,
+  buildBenchmarkDataset,
+} from '@gleanwork/mcp-server-tester';
+
+// Cheap CI smoke run: single-tool tier only
+const dataset = buildBenchmarkDataset({
+  iterations: 5,
+  tiers: ['single-tool'],
+});
+await runEvalDataset(
+  { dataset, difficultyFilter: ['single-tool'] },
+  { mcp, testInfo }
+);
+```
+
+`buildBenchmarkDataset()` ships a representative tiered benchmark dataset (see `benchmarkTasks`); edit those cases or pass overrides to point them at your own servers. Slice by tier to keep CI cheap and reserve the long-horizon tiers for release gates.
+
 ## Installation
 
 Requires Node.js 22+.
