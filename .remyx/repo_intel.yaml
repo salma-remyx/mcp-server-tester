@@ -48,7 +48,14 @@ observed_landing_zones:
     call_site_specifics: (none)
     branch: project-kaleidoscope-contextual-human-aligned-evaluation-for
     timestamp: '2026-07-19T05:25:08Z'
-  last_observed: '2026-07-19T05:25:08Z'
+  - arxiv: 2508.14704v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: 'runEvalDataset (pre-existing eval runner) now calls classifyTaskDifficulty
+      when `difficultyFilter` is set; benchmarkDataset / buildBenchmarkDataset / loadBenchmarkDataset
+      and the taxonomy helpers are '
+    branch: mcp-universe-benchmarking-large-language-models-with-real-wo
+    timestamp: '2026-07-24T17:10:30Z'
+  last_observed: '2026-07-24T17:10:30Z'
 - path: src/assertions/validators/
   shape_tags:
   - unclassified
@@ -98,4 +105,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-07-23T22:45:38Z'
+last_updated: '2026-07-24T17:10:30Z'
