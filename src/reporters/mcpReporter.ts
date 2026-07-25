@@ -25,6 +25,7 @@ import {
   createStoredEvalArtifact,
   resolveEvalResultStore,
 } from '../evals/resultStore.js';
+import { computeReadiness } from '../evals/readinessScore.js';
 
 type ResolvedReporterConfig = Required<
   Omit<
@@ -338,6 +339,15 @@ export default class MCPReporter implements Reporter {
     this.log(
       `[MCP Reporter] Results: ${runData.metrics.passed}/${runData.metrics.total} passed (${(runData.metrics.passRate * 100).toFixed(1)}%)`
     );
+    if (runData.readiness) {
+      const verdict = runData.readiness.gate.ready ? 'READY' : 'NOT READY';
+      this.log(
+        `[MCP Reporter] Readiness: ${verdict} (score ${(runData.readiness.score * 100).toFixed(1)}%)` +
+          (runData.readiness.gate.blockers.length > 0
+            ? ` — ${runData.readiness.gate.blockers.join('; ')}`
+            : '')
+      );
+    }
 
     // Auto-open browser if configured and not in CI
     if (this.config.autoOpen && !process.env.CI) {
@@ -432,6 +442,10 @@ export default class MCPReporter implements Reporter {
         expectationBreakdown,
         totalHostUsage,
       },
+      readiness: computeReadiness({
+        results: this.allResults,
+        totalHostUsage,
+      }),
       results: this.allResults,
       conformanceChecks:
         this.conformanceChecks.length > 0 ? this.conformanceChecks : undefined,

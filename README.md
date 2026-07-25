@@ -223,3 +223,31 @@ If any of these affect your use case, please open an issue.
 ## License
 
 MIT
+
+## Readiness Scoring
+
+Readiness scoring turns a completed eval run into a **deployment decision** — adapted from _LLM Readiness Harness: Evaluation, Observability, and CI Gates for LLM/RAG Applications_ (arXiv:2603.27355). It aggregates the signals the reporter already collects per case (pass rate, pass-rate confidence interval, p95 latency, cost, judge groundedness / tool recall) into:
+
+- a **scenario-weighted readiness score** in `[0, 1]`, blended from success, latency, cost, and quality sub-scores (weights and gate thresholds are configurable);
+- an **efficiency (Pareto) frontier** over the passing cases on the latency-vs-cost tradeoff, so you can see which scenarios sit on the frontier;
+- a **CI-style quality gate** that reports `READY` / `NOT READY` with concrete blockers. The gate uses the conservative Wilson lower bound of the pass-rate CI for multi-iteration cases, so a flaky workflow cannot sneak through.
+
+Every generated report and externally stored run carries a `readiness` assessment, and the reporter logs the gate verdict (e.g. `[MCP Reporter] Readiness: NOT READY (score 72.0%) — pass rate 70.0% below threshold 100.0% (using CI lower bound)`). You can also compute it programmatically:
+
+```javascript
+import { computeReadiness } from '@gleanwork/mcp-server-tester';
+
+const assessment = computeReadiness({
+  results: evalRun.caseResults,
+  scenarioWeights: { prod: 10, experimental: 1 },
+  thresholds: {
+    minPassRate: 0.95,
+    maxP95LatencyMs: 3000,
+    maxCostUsd: 0.5,
+    minQuality: 0.8,
+  },
+});
+if (!assessment.gate.ready) {
+  console.log(assessment.gate.blockers);
+}
+```
