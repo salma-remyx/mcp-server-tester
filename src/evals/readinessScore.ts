@@ -10,6 +10,18 @@
  * tool-recall quality), without the paper's separate OpenTelemetry backend or
  * benchmark suite.
  *
+ * Paper-fidelity details implemented here:
+ * - Missing-metric renormalization: the score blends only the dimensions that
+ *   were actually measured, renormalizing weights over the present set
+ *   (R = sum(w_i * m_i) / sum(w_i) for i in present), and reports which
+ *   components were missing instead of silently substituting a default.
+ * - Scenario weight presets (`cost-first` / `risk-first` / `sla-first`) from
+ *   the paper's Table 1, mapped onto this repo's four components.
+ * - A hard/soft gate distinction: the pass-rate (workflow/policy) check is the
+ *   hard gate; latency, cost, and quality budget breaches are soft blockers.
+ * - A Pareto frontier that maximizes per-case quality while minimizing latency
+ *   and cost, per the paper's cost-utility dominance definition.
+ *
  * The function is pure: it reads an array of `EvalCaseResult` and returns a
  * `ReadinessAssessment`. It is wired into `MCPReporter.buildRunData()` so every
  * generated report and externally stored run carries a readiness verdict, and it
@@ -43,6 +55,27 @@ export const DEFAULT_READINESS_WEIGHTS: ReadinessWeights = {
   latency: 0.2,
   cost: 0.15,
   quality: 0.15,
+};
+
+/** Readiness score components that can be individually present or missing. */
+export type ReadinessComponent = 'success' | 'latency' | 'cost' | 'quality';
+
+/** Named scenario weight presets from the paper's Table 1. */
+export type ReadinessScenarioPreset = 'cost-first' | 'risk-first' | 'sla-first';
+
+/**
+ * Scenario weight presets from the paper's Table 1, mapped onto this repo's
+ * four components: the paper's `workflow + policy` weights combine into
+ * `success`, `faithfulness + retrieval hit@k` into `quality`, `cost` into
+ * `cost`, and `SLA` (p95 latency) into `latency`. Each preset sums to 1.
+ */
+export const READINESS_WEIGHT_PRESETS: Record<
+  ReadinessScenarioPreset,
+  ReadinessWeights
+> = {
+  'cost-first': { success: 0.4, latency: 0.1, cost: 0.2, quality: 0.3 },
+  'risk-first': { success: 0.4, latency: 0.15, cost: 0.1, quality: 0.35 },
+  'sla-first': { success: 0.35, latency: 0.3, cost: 0.1, quality: 0.25 },
 };
 
 /**
@@ -82,6 +115,11 @@ export interface ParetoFrontierMember {
   durationMs: number;
   /** Per-case cost in USD (0 when no host usage was recorded). */
   costUsd: number;
+  /**
+   * Per-case quality in [0, 1]: the judge outcome when one ran, else the
+   * recorded tool recall, else null when no quality signal was measured.
+   */
+  quality: number | null;
 }
 
 /** Result of the CI-style deployment gate. */
@@ -92,6 +130,18 @@ export interface ReadinessGateResult {
   blockers: string[];
   /** Human-readable thresholds that were met (empty when nothing ran). */
   passed: string[];
+  /**
+   * Hard blockers: workflow/policy failures (pass rate below threshold).
+   * Per the paper, policy compliance is a hard gate — a run cannot be ready
+   * with a hard blocker no matter how high the scalar score is.
+   */
+  hardBlockers: string[];
+  /**
+   * Soft blockers: latency / cost / quality budget breaches. These degrade
+   * the readiness score and block the default-strict gate, but are
+   * classified separately so callers can choose to enforce only hard gates.
+   */
+  softBlockers: string[];
 }
 
 /** Raw aggregate signals the score is derived from, exposed for transparency. */
@@ -122,20 +172,29 @@ export interface ReadinessSignals {
 
 /** A complete deployment-decision assessment for one eval run. */
 export interface ReadinessAssessment {
-  /** Overall scenario-weighted readiness score in [0, 1]. */
+  /**
+   * Overall scenario-weighted readiness score in [0, 1], blended over the
+   * measured components only (missing-metric renormalization).
+   */
   score: number;
-  /** Per-component sub-scores in [0, 1]. */
+  /**
+   * Per-component sub-scores in [0, 1]. A component is null when it was not
+   * measured (e.g. no judge / tool-recall data for `quality`, no host usage
+   * recorded for `cost`) and is excluded from the blended score.
+   */
   components: {
-    success: number;
-    latency: number;
-    cost: number;
-    quality: number;
+    success: number | null;
+    latency: number | null;
+    cost: number | null;
+    quality: number | null;
   };
+  /** Components that had no measured signal and were excluded from `score`. */
+  missingComponents: ReadinessComponent[];
   /** Weights used to blend `components` into `score`. */
   weights: ReadinessWeights;
   /** Raw aggregate signals. */
   signals: ReadinessSignals;
-  /** Non-dominated cases on the (pass, latency, cost) tradeoff. */
+  /** Non-dominated cases on the (quality, latency, cost) tradeoff. */
   paretoFrontier: ParetoFrontierMember[];
   /** CI-style deployment gate. */
   gate: ReadinessGateResult;
@@ -149,6 +208,12 @@ export interface ReadinessInput {
   totalHostUsage?: UsageMetrics;
   /** Component weights. Defaults to {@link DEFAULT_READINESS_WEIGHTS}. */
   weights?: Partial<ReadinessWeights>;
+  /**
+   * Named scenario weight preset from the paper's Table 1
+   * ({@link READINESS_WEIGHT_PRESETS}). Applied over the defaults; explicit
+   * `weights` entries override the preset.
+   */
+  preset?: ReadinessScenarioPreset;
   /**
    * Scenario weights keyed by case tag (falling back to dataset name).
    * Higher-weighted scenarios count more toward the success score and gate.
@@ -171,6 +236,7 @@ const Z_95 = 1.96;
 export function computeReadiness(input: ReadinessInput): ReadinessAssessment {
   const weights: ReadinessWeights = {
     ...DEFAULT_READINESS_WEIGHTS,
+    ...(input.preset != null ? READINESS_WEIGHT_PRESETS[input.preset] : {}),
     ...(input.weights ?? {}),
   };
   const thresholds: ReadinessThresholds = {
@@ -191,47 +257,68 @@ export function computeReadiness(input: ReadinessInput): ReadinessAssessment {
   if (signals.caseCount === 0) {
     return {
       score: 0,
-      components: { success: 0, latency: 0, cost: 0, quality: 0 },
+      components: { success: null, latency: null, cost: null, quality: null },
+      missingComponents: ['success', 'latency', 'cost', 'quality'],
       weights,
       signals,
       paretoFrontier: [],
-      gate: { ready: false, blockers: ['no eval cases ran'], passed: [] },
+      gate: {
+        ready: false,
+        blockers: ['no eval cases ran'],
+        passed: [],
+        hardBlockers: ['no eval cases ran'],
+        softBlockers: [],
+      },
     };
   }
 
-  const successScore = signals.scenarioWeightedPassRate;
-  const latencyScore = budgetScore(
-    signals.p95LatencyMs,
-    thresholds.maxP95LatencyMs
+  // Missing-metric renormalization (the paper's core formula): a component is
+  // blended into the score only when it was actually measured, and the weights
+  // are renormalized over the present set. Unmeasured components are reported
+  // via `missingComponents` instead of silently substituting a default score.
+  const successScore: number | null = clamp01(signals.scenarioWeightedPassRate);
+  const latencyScore: number | null = clamp01(
+    budgetScore(signals.p95LatencyMs, thresholds.maxP95LatencyMs)
   );
-  const costScore = budgetScore(signals.costUsd, thresholds.maxCostUsd);
-  const qualityScore = clamp01(
-    signals.groundednessRate ?? signals.toolRecall ?? 1.0
-  );
+  const costMeasured =
+    input.totalHostUsage != null || results.some((r) => r.hostUsage != null);
+  const costScore: number | null = costMeasured
+    ? clamp01(budgetScore(signals.costUsd, thresholds.maxCostUsd))
+    : null;
+  const measuredQuality = signals.groundednessRate ?? signals.toolRecall;
+  const qualityScore: number | null =
+    measuredQuality != null ? clamp01(measuredQuality) : null;
 
-  const totalWeight =
-    weights.success + weights.latency + weights.cost + weights.quality;
-  const score =
-    totalWeight > 0
-      ? clamp01(
-          (successScore * weights.success +
-            latencyScore * weights.latency +
-            costScore * weights.cost +
-            qualityScore * weights.quality) /
-            totalWeight
-        )
-      : 0;
+  const components = {
+    success: successScore,
+    latency: latencyScore,
+    cost: costScore,
+    quality: qualityScore,
+  };
+  const componentKeys: ReadinessComponent[] = [
+    'success',
+    'latency',
+    'cost',
+    'quality',
+  ];
+  const missingComponents = componentKeys.filter((k) => components[k] == null);
 
-  const gate = evaluateGate(signals, thresholds, qualityScore);
+  let weightedSum = 0;
+  let presentWeight = 0;
+  for (const key of componentKeys) {
+    const componentScore = components[key];
+    if (componentScore == null) continue;
+    weightedSum += componentScore * weights[key];
+    presentWeight += weights[key];
+  }
+  const score = presentWeight > 0 ? clamp01(weightedSum / presentWeight) : 0;
+
+  const gate = evaluateGate(signals, thresholds, qualityScore, costMeasured);
 
   return {
     score,
-    components: {
-      success: clamp01(successScore),
-      latency: clamp01(latencyScore),
-      cost: clamp01(costScore),
-      quality: qualityScore,
-    },
+    components,
+    missingComponents,
     weights,
     signals,
     paretoFrontier: paretoFrontier(results),
@@ -346,21 +433,30 @@ function budgetScore(value: number, budget: number): number {
 function evaluateGate(
   signals: ReadinessSignals,
   thresholds: ReadinessThresholds,
-  qualityScore: number
+  qualityScore: number | null,
+  costMeasured: boolean
 ): ReadinessGateResult {
   if (signals.caseCount === 0) {
-    return { ready: false, blockers: ['no eval cases ran'], passed: [] };
+    return {
+      ready: false,
+      blockers: ['no eval cases ran'],
+      passed: [],
+      hardBlockers: ['no eval cases ran'],
+      softBlockers: [],
+    };
   }
 
-  const blockers: string[] = [];
+  const hardBlockers: string[] = [];
+  const softBlockers: string[] = [];
   const passed: string[] = [];
 
-  // Pass-rate gate uses the conservative CI lower bound when available, so a
-  // shaky multi-iteration result cannot sneak a flaky workflow through.
+  // Hard gate (the paper's policy-compliance rule): workflow success uses the
+  // conservative CI lower bound when available, so a shaky multi-iteration
+  // result cannot sneak a flaky workflow through.
   const effectivePass =
     signals.ciLowerBound ?? signals.scenarioWeightedPassRate;
   if (effectivePass + Number.EPSILON < thresholds.minPassRate) {
-    blockers.push(
+    hardBlockers.push(
       `pass rate ${(effectivePass * 100).toFixed(1)}% below threshold ${(thresholds.minPassRate * 100).toFixed(1)}%` +
         (signals.ciLowerBound != null ? ' (using CI lower bound)' : '')
     );
@@ -368,38 +464,56 @@ function evaluateGate(
     passed.push(`pass rate >= ${(thresholds.minPassRate * 100).toFixed(1)}%`);
   }
 
+  // Soft gates: budget breaches degrade the score and block the default-strict
+  // gate, but are classified separately from the hard workflow/policy gate.
+  // Thresholds for unmeasured components are skipped rather than evaluated
+  // against a substituted default.
   if (signals.p95LatencyMs > thresholds.maxP95LatencyMs) {
-    blockers.push(
+    softBlockers.push(
       `p95 latency ${Math.round(signals.p95LatencyMs)}ms exceeds ${thresholds.maxP95LatencyMs}ms`
     );
   } else {
     passed.push(`p95 latency <= ${thresholds.maxP95LatencyMs}ms`);
   }
 
-  if (signals.costUsd > thresholds.maxCostUsd) {
-    blockers.push(
-      `cost $${signals.costUsd.toFixed(4)} exceeds $${thresholds.maxCostUsd}`
-    );
-  } else {
-    passed.push(`cost <= $${thresholds.maxCostUsd}`);
+  if (costMeasured) {
+    if (signals.costUsd > thresholds.maxCostUsd) {
+      softBlockers.push(
+        `cost $${signals.costUsd.toFixed(4)} exceeds $${thresholds.maxCostUsd}`
+      );
+    } else {
+      passed.push(`cost <= $${thresholds.maxCostUsd}`);
+    }
   }
 
-  if (qualityScore + Number.EPSILON < thresholds.minQuality) {
-    blockers.push(
-      `quality ${(qualityScore * 100).toFixed(1)}% below ${(thresholds.minQuality * 100).toFixed(1)}%`
-    );
-  } else {
-    passed.push(`quality >= ${(thresholds.minQuality * 100).toFixed(1)}%`);
+  if (qualityScore != null) {
+    if (qualityScore + Number.EPSILON < thresholds.minQuality) {
+      softBlockers.push(
+        `quality ${(qualityScore * 100).toFixed(1)}% below ${(thresholds.minQuality * 100).toFixed(1)}%`
+      );
+    } else {
+      passed.push(`quality >= ${(thresholds.minQuality * 100).toFixed(1)}%`);
+    }
   }
 
-  return { ready: blockers.length === 0, blockers, passed };
+  const blockers = [...hardBlockers, ...softBlockers];
+  return {
+    ready: blockers.length === 0,
+    blockers,
+    passed,
+    hardBlockers,
+    softBlockers,
+  };
 }
 
 /**
- * Efficiency (Pareto) frontier over the PASSING cases on the (minimize latency,
- * minimize cost) tradeoff. Failed cases are not deployable candidates and are
- * excluded. A passing case is on the frontier when no other passing case is at
- * least as cheap and at least as fast, and strictly better on at least one axis.
+ * Cost-utility (Pareto) frontier over the PASSING cases, maximizing per-case
+ * quality while minimizing latency and cost — the paper's dominance
+ * definition. Failed cases are not deployable candidates and are excluded. A
+ * passing case is on the frontier when no other passing case is at least as
+ * good on every axis and strictly better on at least one. Cases with no
+ * measured quality are treated as quality 0 for dominance (conservative:
+ * unmeasured quality cannot dominate), but keep `quality: null` in the output.
  */
 export function paretoFrontier(
   results: EvalCaseResult[]
@@ -411,6 +525,7 @@ export function paretoFrontier(
       pass: r.pass,
       durationMs: r.durationMs,
       costUsd: r.hostUsage?.totalCostUsd ?? 0,
+      quality: caseQuality(r),
     }));
 
   return points
@@ -423,11 +538,30 @@ export function paretoFrontier(
     });
 }
 
+function caseQuality(result: EvalCaseResult): number | null {
+  const judge = result.expectations.judge;
+  if (judge != null) return judge.pass ? 1 : 0;
+  return result.toolRecall ?? null;
+}
+
 function dominates(a: ParetoFrontierMember, b: ParetoFrontierMember): boolean {
-  // All frontier members pass, so domination is purely (latency, cost).
-  if (!(a.durationMs <= b.durationMs && a.costUsd <= b.costUsd)) return false;
+  // All frontier members pass, so domination is (max quality, min latency,
+  // min cost). Unmeasured quality counts as 0 so it cannot dominate.
+  const qualityA = a.quality ?? 0;
+  const qualityB = b.quality ?? 0;
+  if (
+    !(
+      qualityA >= qualityB &&
+      a.durationMs <= b.durationMs &&
+      a.costUsd <= b.costUsd
+    )
+  ) {
+    return false;
+  }
   // At least one axis strictly better (otherwise they are tied, not dominating).
-  return a.durationMs < b.durationMs || a.costUsd < b.costUsd;
+  return (
+    qualityA > qualityB || a.durationMs < b.durationMs || a.costUsd < b.costUsd
+  );
 }
 
 /** Nearest-rank percentile over a pre-sorted ascending array. */

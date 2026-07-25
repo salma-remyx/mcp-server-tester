@@ -251,3 +251,9 @@ if (!assessment.gate.ready) {
   console.log(assessment.gate.blockers);
 }
 ```
+
+### Scenario presets and missing-metric handling
+
+The score blends only the dimensions that were actually measured: if no judge or tool-recall data ran, `quality` is excluded and the remaining weights are renormalized (likewise for `cost` when no host usage was recorded), with the excluded dimensions listed in `assessment.missingComponents`. Gate thresholds for unmeasured dimensions are skipped rather than evaluated against a substituted default.
+
+Named weight presets from the paper's scenario table are available via `preset: 'cost-first' | 'risk-first' | 'sla-first'` (or the exported `READINESS_WEIGHT_PRESETS`), and the gate classifies blockers into `hardBlockers` (workflow/policy pass-rate failures) and `softBlockers` (latency / cost / quality budget breaches). The Pareto frontier maximizes per-case quality while minimizing latency and cost.

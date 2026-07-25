@@ -3,6 +3,7 @@ import {
   computeReadiness,
   paretoFrontier,
   wilsonLowerBound,
+  READINESS_WEIGHT_PRESETS,
 } from './readinessScore.js';
 import type { EvalCaseResult } from '../types/reporter.js';
 
@@ -40,7 +41,40 @@ describe('computeReadiness', () => {
     expect(r.score).toBeGreaterThan(0.95);
     expect(r.gate.ready).toBe(true);
     expect(r.components.success).toBe(1);
-    expect(r.components.cost).toBe(1);
+    // No host usage was recorded, so cost is unmeasured and excluded.
+    expect(r.components.cost).toBeNull();
+    expect(r.missingComponents).toEqual(['cost', 'quality']);
+  });
+
+  it('renormalizes weights over measured components only', () => {
+    // One passing case at half the latency budget, no cost or quality data.
+    // Present: success (weight 0.5, score 1) + latency (weight 0.2, score 0.5).
+    // Score = (0.5*1 + 0.2*0.5) / (0.5 + 0.2) = 0.6/0.7, not diluted by
+    // substituted defaults for the missing cost/quality dimensions.
+    const r = computeReadiness({
+      results: [makeResult({ id: 'a', pass: true, durationMs: 2_500 })],
+    });
+    expect(r.score).toBeCloseTo(0.6 / 0.7, 5);
+    expect(r.missingComponents).toEqual(['cost', 'quality']);
+  });
+
+  it('includes quality in the blend when a judge ran', () => {
+    // Same shape as above, but the judge failed: quality is measured (0) and
+    // pulls the renormalized score down instead of being ignored.
+    const r = computeReadiness({
+      results: [
+        makeResult({
+          id: 'a',
+          pass: true,
+          durationMs: 2_500,
+          expectations: { judge: { pass: false } },
+        }),
+      ],
+    });
+    // (0.5*1 + 0.2*0.5 + 0.15*0) / (0.5 + 0.2 + 0.15) = 0.6/0.85.
+    expect(r.score).toBeCloseTo(0.6 / 0.85, 5);
+    expect(r.missingComponents).toEqual(['cost']);
+    expect(r.components.quality).toBe(0);
   });
 
   it('scenario-weights cases by tag, then by dataset', () => {
@@ -124,6 +158,59 @@ describe('computeReadiness', () => {
     });
     expect(r.signals.costUsd).toBe(0.25);
   });
+
+  it('applies named scenario weight presets from the paper', () => {
+    const r = computeReadiness({
+      results: [makeResult({ id: 'a', pass: true })],
+      preset: 'sla-first',
+    });
+    expect(r.weights).toEqual(READINESS_WEIGHT_PRESETS['sla-first']);
+    // SLA-first puts the largest single paper weight (0.30) on latency.
+    expect(r.weights.latency).toBe(0.3);
+    expect(r.weights.latency).toBeGreaterThan(r.weights.cost);
+    expect(r.weights.latency).toBeGreaterThan(r.weights.quality);
+  });
+
+  it('lets explicit weights override the preset', () => {
+    const r = computeReadiness({
+      results: [makeResult({ id: 'a', pass: true })],
+      preset: 'cost-first',
+      weights: { cost: 0.9 },
+    });
+    expect(r.weights.cost).toBe(0.9);
+    expect(r.weights.success).toBe(
+      READINESS_WEIGHT_PRESETS['cost-first'].success
+    );
+  });
+
+  it('classifies pass-rate failures as hard blockers and budget breaches as soft', () => {
+    const hard = computeReadiness({
+      results: [makeResult({ id: 'a', pass: false })],
+    });
+    expect(hard.gate.ready).toBe(false);
+    expect(hard.gate.hardBlockers[0]).toContain('pass rate');
+    expect(hard.gate.softBlockers).toEqual([]);
+    expect(hard.gate.blockers).toEqual(hard.gate.hardBlockers);
+
+    const soft = computeReadiness({
+      results: [makeResult({ id: 'a', pass: true, durationMs: 9_000 })],
+    });
+    expect(soft.gate.ready).toBe(false);
+    expect(soft.gate.hardBlockers).toEqual([]);
+    expect(soft.gate.softBlockers[0]).toContain('p95 latency');
+  });
+
+  it('skips gate checks for unmeasured components instead of substituting defaults', () => {
+    // minQuality 0.9 with no judge data: quality is unmeasured, so the gate
+    // neither passes nor blocks on it — it is reported missing instead.
+    const r = computeReadiness({
+      results: [makeResult({ id: 'a', pass: true, durationMs: 10 })],
+      thresholds: { minQuality: 0.9 },
+    });
+    expect(r.gate.ready).toBe(true);
+    expect(r.gate.passed.some((p) => p.includes('quality'))).toBe(false);
+    expect(r.missingComponents).toContain('quality');
+  });
 });
 
 describe('paretoFrontier', () => {
@@ -166,6 +253,47 @@ describe('paretoFrontier', () => {
     // One is faster but costlier; the other cheaper but slower -> neither dominates.
     const frontier = paretoFrontier(results).map((p) => p.id);
     expect(frontier.sort()).toEqual(['fast-pricy', 'slow-cheap'].sort());
+  });
+
+  it('does not let a faster, cheaper case dominate a higher-quality one', () => {
+    const results = [
+      makeResult({
+        id: 'fast-low-quality',
+        pass: true,
+        durationMs: 100,
+        expectations: { judge: { pass: false } },
+      }),
+      makeResult({
+        id: 'slow-high-quality',
+        pass: true,
+        durationMs: 5_000,
+        expectations: { judge: { pass: true } },
+      }),
+    ];
+    // Maximizing quality is part of the tradeoff, so both stay on the frontier.
+    const frontier = paretoFrontier(results);
+    expect(frontier.map((p) => p.id).sort()).toEqual(
+      ['fast-low-quality', 'slow-high-quality'].sort()
+    );
+    expect(frontier.find((p) => p.id === 'slow-high-quality')?.quality).toBe(1);
+  });
+
+  it('lets equal-cost, equal-latency cases be dominated on quality alone', () => {
+    const results = [
+      makeResult({
+        id: 'judged-pass',
+        pass: true,
+        durationMs: 100,
+        expectations: { judge: { pass: true } },
+      }),
+      makeResult({
+        id: 'judged-fail',
+        pass: true,
+        durationMs: 100,
+        expectations: { judge: { pass: false } },
+      }),
+    ];
+    expect(paretoFrontier(results).map((p) => p.id)).toEqual(['judged-pass']);
   });
 });
 
