@@ -55,7 +55,14 @@ observed_landing_zones:
       and the taxonomy helpers are '
     branch: mcp-universe-benchmarking-large-language-models-with-real-wo
     timestamp: '2026-07-24T17:10:30Z'
-  last_observed: '2026-07-24T17:10:30Z'
+  - arxiv: 2603.27355v2
+    mode: Mode 2 (adapted port)
+    call_site_specifics: MCPReporter.onEnd() -> buildRunData() (the pre-existing Playwright
+      end-of-run reporter hook), plus the public computeReadiness export in src/index.ts
+      for programmatic use.
+    branch: llm-readiness-harness-evaluation-observability-and-ci-gates-
+    timestamp: '2026-07-25T09:22:43Z'
+  last_observed: '2026-07-25T09:22:43Z'
 - path: src/assertions/validators/
   shape_tags:
   - unclassified
@@ -105,4 +112,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-07-24T17:10:30Z'
+last_updated: '2026-07-25T09:22:43Z'
