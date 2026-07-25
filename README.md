@@ -175,6 +175,7 @@ For HTTP servers, set `transport: 'http'` and `serverUrl`. For servers that requ
 - [Quick Start](./docs/quickstart.md) — detailed setup and configuration
 - [Expectations](./docs/expectations.md) — all assertion types including snapshot sanitizers
 - [LLM Host Simulation](docs/mcp-host.md) — tool discoverability testing
+- [Readiness Scoring](./docs/readiness.md) — deployment-decision scores and CI quality gates
 - [API Reference](./docs/api-reference.md)
 - [Transports](./docs/transports.md) — stdio and HTTP configuration, OAuth
 - [CLI Commands](./docs/cli.md) — init, generate, login, token
@@ -234,22 +235,43 @@ Readiness scoring turns a completed eval run into a **deployment decision** — 
 
 Every generated report and externally stored run carries a `readiness` assessment, and the reporter logs the gate verdict (e.g. `[MCP Reporter] Readiness: NOT READY (score 72.0%) — pass rate 70.0% below threshold 100.0% (using CI lower bound)`). You can also compute it programmatically:
 
-```javascript
-import { computeReadiness } from '@gleanwork/mcp-server-tester';
+```typescript snippet=snippets/readiness-score.ts
+import { test, expect } from '@gleanwork/mcp-server-tester/fixtures/mcp';
+import {
+  loadEvalDataset,
+  runEvalDataset,
+  computeReadiness,
+} from '@gleanwork/mcp-server-tester';
 
-const assessment = computeReadiness({
-  results: evalRun.caseResults,
-  scenarioWeights: { prod: 10, experimental: 1 },
-  thresholds: {
-    minPassRate: 0.95,
-    maxP95LatencyMs: 3000,
-    maxCostUsd: 0.5,
-    minQuality: 0.8,
-  },
+// Turn a completed eval run into a deployment decision.
+test('readiness gate', async ({ mcp }, testInfo) => {
+  const dataset = await loadEvalDataset('./data/my-evals.json');
+  const result = await runEvalDataset({ dataset }, { mcp, testInfo });
+
+  const assessment = computeReadiness({
+    results: result.caseResults,
+    // Optional: weight scenarios by case tag (higher counts more).
+    scenarioWeights: { prod: 10, experimental: 1 },
+    // Optional: a named weight preset ('cost-first' | 'risk-first' | 'sla-first').
+    preset: 'risk-first',
+    // Optional: CI gate thresholds.
+    thresholds: {
+      minPassRate: 0.95,
+      maxP95LatencyMs: 3000,
+      maxCostUsd: 0.5,
+      minQuality: 0.8,
+    },
+  });
+
+  if (!assessment.gate.ready) {
+    console.log(assessment.gate.blockers);
+  }
+
+  // Hard blockers are workflow/policy failures; soft blockers are
+  // latency / cost / quality budget breaches. Enforce only the hard
+  // gate when budgets are advisory.
+  expect(assessment.gate.hardBlockers).toHaveLength(0);
 });
-if (!assessment.gate.ready) {
-  console.log(assessment.gate.blockers);
-}
 ```
 
 ### Scenario presets and missing-metric handling
@@ -257,3 +279,5 @@ if (!assessment.gate.ready) {
 The score blends only the dimensions that were actually measured: if no judge or tool-recall data ran, `quality` is excluded and the remaining weights are renormalized (likewise for `cost` when no host usage was recorded), with the excluded dimensions listed in `assessment.missingComponents`. Gate thresholds for unmeasured dimensions are skipped rather than evaluated against a substituted default.
 
 Named weight presets from the paper's scenario table are available via `preset: 'cost-first' | 'risk-first' | 'sla-first'` (or the exported `READINESS_WEIGHT_PRESETS`), and the gate classifies blockers into `hardBlockers` (workflow/policy pass-rate failures) and `softBlockers` (latency / cost / quality budget breaches). The Pareto frontier maximizes per-case quality while minimizing latency and cost.
+
+See the [Readiness Guide](./docs/readiness.md) for scenario presets, missing-metric handling, and hard/soft CI gating in detail.

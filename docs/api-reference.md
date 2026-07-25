@@ -433,6 +433,70 @@ The result includes pass-rate deltas, optional tool precision/recall/F1 deltas, 
 - `missingFromBaseline` - case exists only in candidate
 - `missingFromCandidate` - case exists only in baseline
 
+### `computeReadiness(input)`
+
+Turn a completed eval run into a deployment decision: a scenario-weighted readiness score in `[0, 1]`, an efficiency (Pareto) frontier over the passing cases, and a CI-style quality gate with hard/soft blockers. This is a pure utility: it does not run evals, call LLMs, or touch the filesystem. See the [Readiness Guide](./readiness.md) for concepts and CI usage.
+
+**Parameters:**
+
+- `input: ReadinessInput`
+  - `results: EvalCaseResult[]` - Per-case eval results for the run
+  - `totalHostUsage?: UsageMetrics` - Aggregate host usage for the run, when available
+  - `weights?: Partial<ReadinessWeights>` - Component weights (`success` / `latency` / `cost` / `quality`); defaults to `DEFAULT_READINESS_WEIGHTS`
+  - `preset?: 'cost-first' | 'risk-first' | 'sla-first'` - Named scenario weight preset, applied over the defaults; explicit `weights` entries override it
+  - `scenarioWeights?: Record<string, number>` - Scenario weights keyed by case tag (falling back to dataset name)
+  - `thresholds?: Partial<ReadinessThresholds>` - Gate thresholds (`minPassRate`, `maxP95LatencyMs`, `maxCostUsd`, `minQuality`); defaults to `DEFAULT_READINESS_THRESHOLDS`
+
+**Returns:** `ReadinessAssessment`
+
+```typescript
+const assessment = computeReadiness({
+  results: result.caseResults,
+  preset: 'risk-first',
+  thresholds: { minPassRate: 0.95, maxP95LatencyMs: 3000 },
+});
+
+if (!assessment.gate.ready) {
+  console.log(assessment.gate.blockers);
+}
+```
+
+The assessment includes:
+
+- `score` - overall readiness in `[0, 1]`, blended over the measured components only (missing-metric renormalization)
+- `components` - per-component sub-scores; `null` when a component was not measured
+- `missingComponents` - components excluded from the blend
+- `signals` - raw aggregates (pass rate, p95/p50 latency, cost, groundedness, tool recall, CI lower bound)
+- `paretoFrontier` - non-dominated passing cases on the (quality, latency, cost) tradeoff
+- `gate` - `ready`, `blockers`, `passed`, plus the `hardBlockers` (pass-rate failures) / `softBlockers` (latency, cost, quality budget breaches) split
+
+### `paretoFrontier(results)`
+
+Compute the cost-utility (Pareto) frontier over the **passing** cases of a run, maximizing per-case quality while minimizing latency and cost. A passing case is on the frontier when no other passing case is at least as good on every axis and strictly better on at least one. Cases with no measured quality are treated as quality `0` for dominance but keep `quality: null` in the output.
+
+**Parameters:**
+
+- `results: EvalCaseResult[]` - Per-case eval results
+
+**Returns:** `ParetoFrontierMember[]` sorted passed-first, then cheaper, then faster
+
+### `wilsonLowerBound(passes, total)`
+
+95% Wilson score interval lower bound for a proportion. Returns `null` when `total < 2`. Useful for conservative pass-rate estimates on multi-iteration cases — the readiness gate uses it so a flaky workflow cannot sneak through.
+
+**Parameters:**
+
+- `passes: number` - Number of passing iterations
+- `total: number` - Total iterations
+
+**Returns:** `number | null`
+
+### Readiness Constants
+
+- `DEFAULT_READINESS_WEIGHTS: ReadinessWeights` - success-dominant defaults (`0.5 / 0.2 / 0.15 / 0.15`)
+- `READINESS_WEIGHT_PRESETS: Record<ReadinessScenarioPreset, ReadinessWeights>` - the `cost-first` / `risk-first` / `sla-first` scenario presets
+- `DEFAULT_READINESS_THRESHOLDS: ReadinessThresholds` - default gate thresholds (`minPassRate: 1.0`, `maxP95LatencyMs: 5000`, `maxCostUsd: 1.0`, `minQuality: 0.0`)
+
 ### External Result Storage
 
 External result storage persists eval runs, reporter runs, and comparison artifacts
@@ -1381,6 +1445,70 @@ interface EvalDataset {
   cases: EvalCase[];
   metadata?: Record<string, unknown>;
   schemas?: Record<string, ZodSchema>; // Zod schemas for toMatchToolSchema assertions
+}
+```
+
+### `ReadinessAssessment`
+
+```typescript
+interface ReadinessAssessment {
+  score: number; // overall readiness in [0, 1], blended over measured components
+  components: {
+    success: number | null; // null when the component was not measured
+    latency: number | null;
+    cost: number | null;
+    quality: number | null;
+  };
+  missingComponents: ReadinessComponent[]; // components excluded from the blend
+  weights: ReadinessWeights; // weights used for the blend
+  signals: ReadinessSignals; // raw aggregates the score derives from
+  paretoFrontier: ParetoFrontierMember[]; // non-dominated passing cases
+  gate: ReadinessGateResult; // CI-style deployment gate
+}
+
+interface ReadinessGateResult {
+  ready: boolean;
+  blockers: string[]; // hard + soft blockers (empty when ready)
+  passed: string[]; // thresholds that were met
+  hardBlockers: string[]; // pass-rate (workflow/policy) failures
+  softBlockers: string[]; // latency / cost / quality budget breaches
+}
+
+interface ReadinessSignals {
+  passRate: number;
+  scenarioWeightedPassRate: number;
+  p95LatencyMs: number;
+  p50LatencyMs: number;
+  costUsd: number;
+  groundednessRate: number | null;
+  toolRecall: number | null;
+  ciLowerBound: number | null; // Wilson lower bound across multi-iteration cases
+  caseCount: number;
+}
+
+type ReadinessComponent = 'success' | 'latency' | 'cost' | 'quality';
+type ReadinessScenarioPreset = 'cost-first' | 'risk-first' | 'sla-first';
+
+interface ReadinessWeights {
+  success: number;
+  latency: number;
+  cost: number;
+  quality: number;
+}
+
+interface ReadinessThresholds {
+  minPassRate: number;
+  maxP95LatencyMs: number;
+  maxCostUsd: number;
+  minQuality: number;
+}
+
+interface ParetoFrontierMember {
+  id: string;
+  pass: boolean;
+  durationMs: number;
+  costUsd: number;
+  quality: number | null;
 }
 ```
 
