@@ -211,6 +211,9 @@ export type {
   RubricSpec,
   CustomJudgeExecutor,
   CustomJudgeResult,
+  FailoverBackoffConfig,
+  FailoverConfig,
+  FailoverMetrics,
 } from './judge.js';
 
 export type {

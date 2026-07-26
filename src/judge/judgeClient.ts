@@ -1,4 +1,5 @@
 import type { Judge, JudgeConfig, ProviderKind } from './judgeTypes.js';
+import { createFailoverJudge } from './failoverJudge.js';
 import { createAnthropicJudge } from './anthropicJudge.js';
 import { createVertexAnthropicJudge } from './vertexAnthropicJudge.js';
 import { createClaudeAgentJudge } from './claudeAgentJudge.js';
@@ -38,6 +39,22 @@ import { createGoogleJudge } from './googleJudge.js';
  * console.log('Tokens:', result.usage?.inputTokens, result.usage?.outputTokens);
  */
 export function createJudge(config: JudgeConfig = {}): Judge {
+  // Stateful failover: when a failover chain is configured, the primary
+  // provider is wrapped with ordered fallbacks that forward the continuity
+  // unit (candidate + reference + rubric) on outage/rate-limit. Adapted from
+  // ContinuityBench (arXiv:2607.15899v1).
+  if (config.failover !== undefined) {
+    return createFailoverJudge(
+      {
+        primary: config,
+        fallbacks: config.failover.fallbacks,
+        maxAttempts: config.failover.maxAttempts,
+        backoff: config.failover.backoff,
+      },
+      { createJudge: (cfg) => createJudge(cfg) }
+    );
+  }
+
   const provider: ProviderKind = config.provider ?? 'anthropic';
 
   switch (provider) {

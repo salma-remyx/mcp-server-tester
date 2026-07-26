@@ -7,6 +7,9 @@ export type {
   BuiltInRubric,
   RubricSpec,
   Judge,
+  FailoverBackoffConfig,
+  FailoverConfig,
+  FailoverMetrics,
 } from '../judge/judgeTypes.js';
 
 export type {

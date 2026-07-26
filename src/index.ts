@@ -126,6 +126,9 @@ export type {
   RubricSpec,
   CustomJudgeExecutor,
   CustomJudgeResult,
+  FailoverBackoffConfig,
+  FailoverConfig,
+  FailoverMetrics,
 
   // Conformance
   MCPConformanceOptions,

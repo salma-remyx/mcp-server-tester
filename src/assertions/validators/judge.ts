@@ -5,7 +5,11 @@
  */
 
 import type { ValidationResult } from './types.js';
-import type { ProviderKind } from '../../judge/judgeTypes.js';
+import type {
+  FailoverConfig,
+  FailoverMetrics,
+  ProviderKind,
+} from '../../judge/judgeTypes.js';
 import type { RubricSpec } from '../../judge/rubrics.js';
 import { createJudge } from '../../judge/judgeClient.js';
 import { resolveRubric } from '../../judge/rubrics.js';
@@ -40,6 +44,12 @@ export interface JudgeValidatorConfig {
   maxBudgetUsd?: number;
   /** Fail if response exceeds this size in bytes before judging */
   maxToolOutputSize?: number;
+  /**
+   * Stateful failover chain. The validator's own `provider` is the primary;
+   * fallbacks are tried in order on outage/rate-limit, forwarding the full
+   * candidate + reference + rubric request. Adapted from ContinuityBench.
+   */
+  failover?: FailoverConfig;
   /**
    * Name of a registered custom judge executor.
    * When set, the named judge handles the entire evaluation pipeline
@@ -105,6 +115,7 @@ export async function validateJudge(
     temperature,
     maxBudgetUsd,
     maxToolOutputSize,
+    failover,
   } = config;
 
   // Named custom judge — executor returns a score, threshold determines pass/fail
@@ -149,6 +160,7 @@ export async function validateJudge(
     ...(temperature !== undefined && { temperature }),
     ...(maxBudgetUsd !== undefined && { maxBudgetUsd }),
     ...(maxToolOutputSize !== undefined && { maxToolOutputSize }),
+    ...(failover !== undefined && { failover }),
   };
 
   try {
@@ -156,6 +168,7 @@ export async function validateJudge(
 
     const scores: number[] = [];
     let lastReasoning: string | undefined;
+    let lastFailover: FailoverMetrics | undefined;
 
     for (let i = 0; i < reps; i++) {
       const judgeResult = await judge.evaluate(
@@ -165,6 +178,7 @@ export async function validateJudge(
       );
       scores.push(judgeResult.score ?? (judgeResult.pass ? 1.0 : 0.0));
       lastReasoning = judgeResult.reasoning;
+      lastFailover = judgeResult.failover;
     }
 
     if (scores.length === 0) {
@@ -205,13 +219,16 @@ export async function validateJudge(
       details: {
         score: meanScore,
         reasoning: lastReasoning,
-        judgeProvider: provider ?? 'anthropic',
-        judgeModel: model,
+        // When failover occurred, report the provider/model that actually
+        // served the request (provenance) rather than the configured primary.
+        judgeProvider: lastFailover?.servingProvider ?? provider ?? 'anthropic',
+        judgeModel: lastFailover?.servingModel ?? model,
         ...(reps > 1 && {
           scores,
           scoreStdDev: stdDev,
           highVariance,
         }),
+        ...(lastFailover !== undefined && { failover: lastFailover }),
       },
     };
   } catch (err) {

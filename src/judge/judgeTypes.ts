@@ -108,6 +108,43 @@ export interface JudgeConfig {
    * When set, the judge will fail if the candidate response exceeds this size
    */
   maxToolOutputSize?: number;
+
+  /**
+   * Stateful failover chain. When set, this config's own `provider`/`model`
+   * is the primary and `fallbacks` are tried in order on outage/rate-limit,
+   * forwarding the full continuity unit (candidate + reference + rubric) to
+   * each fallback. Adapted from ContinuityBench (arXiv:2607.15899v1).
+   */
+  failover?: FailoverConfig;
+}
+
+/**
+ * Exponential backoff schedule (applied with full jitter) between failover
+ * attempts. Jitter de-correlates concurrent retries to avoid cascading retry
+ * storms against strict-limit fallback APIs.
+ */
+export interface FailoverBackoffConfig {
+  /** Base delay in ms. @default 100 */
+  baseMs?: number;
+  /** Maximum delay cap in ms. @default 2000 */
+  maxMs?: number;
+  /** Backoff multiplier. @default 2 */
+  factor?: number;
+}
+
+/**
+ * Stateful failover configuration. The judge's own provider acts as the
+ * primary; fallbacks are tried in sequence — forwarding the continuity unit —
+ * until one succeeds. Each result carries Continuity Preservation Rate (CPR)
+ * and Continuity Latency Overhead (CLO) via {@link FailoverMetrics}.
+ */
+export interface FailoverConfig {
+  /** Ordered fallback providers tried after the primary errors. */
+  fallbacks: JudgeConfig[];
+  /** Max providers to try. @default primary + all fallbacks */
+  maxAttempts?: number;
+  /** Backoff schedule between attempts. */
+  backoff?: FailoverBackoffConfig;
 }
 
 /**
@@ -162,6 +199,38 @@ export interface JudgeResult {
    * Only populated when the judge was run with reps > 1.
    */
   scores?: number[];
+
+  /**
+   * Stateful failover metrics (CPR + CLO) when the judge ran with a
+   * `failover` chain. Carries which provider actually served the request.
+   */
+  failover?: FailoverMetrics;
+}
+
+/**
+ * Continuity / failover metrics adapted from ContinuityBench.
+ *
+ * - CPR (Continuity Preservation Rate): 1 when the continuity unit was
+ *   preserved across a failover and yielded a valid result; 0 when every
+ *   provider errored (continuity lost). Aggregate over `failoverOccurred`
+ *   events for the benchmark CPR.
+ * - CLO (Continuity Latency Overhead): extra ms spent on retries/backoff
+ *   relative to the successful call itself — the latency cost of preserving
+ *   continuity.
+ */
+export interface FailoverMetrics {
+  /** True if the primary errored and a fallback served the request. */
+  failoverOccurred: boolean;
+  /** Provider that actually produced the result (failover provenance). */
+  servingProvider?: ProviderKind;
+  /** Model that actually produced the result (failover provenance). */
+  servingModel?: string;
+  /** Number of providers tried. */
+  attempts: number;
+  /** Continuity Preservation Rate for this request (0 or 1). */
+  cpr: number;
+  /** Continuity Latency Overhead in ms. */
+  cloMs: number;
 }
 
 export type { BuiltInRubric, RubricSpec } from './rubrics.js';

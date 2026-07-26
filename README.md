@@ -98,6 +98,26 @@ Supported assertion types:
 | `judge`          | LLM evaluates response quality against a rubric |
 | `toolsTriggered` | LLM called the expected tools (LLM host mode)   |
 
+### Stateful judge failover
+
+Judge evaluations can be made resilient to provider outages and rate-limiting with a stateful failover chain. When the primary provider errors, the full evaluation context (candidate + reference + rubric) is forwarded to each fallback in order — after a jittered exponential backoff — so a single transient provider failure no longer fails the case. Each result reports Continuity Preservation Rate (CPR) and Continuity Latency Overhead (CLO), plus the provider that actually served the request (provenance). Adapted from _ContinuityBench_ (arXiv:2607.15899v1).
+
+```json
+{
+  "id": "resilient-judge",
+  "expect": {
+    "passesJudge": {
+      "rubric": { "text": "Is the answer correct and complete?" },
+      "provider": "anthropic",
+      "failover": {
+        "fallbacks": [{ "provider": "openai", "model": "gpt-4" }],
+        "backoff": { "baseMs": 100, "maxMs": 2000, "factor": 2 }
+      }
+    }
+  }
+}
+```
+
 ### LLM host mode
 
 In LLM host mode, a real LLM receives your server's tool list and a natural language prompt, then decides which tools to call. This tests whether your tool names, descriptions, and input schemas are clear enough for autonomous use — a different question from whether the tools return correct output.

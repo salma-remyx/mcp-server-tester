@@ -357,6 +357,49 @@ const SnapshotSanitizerSchema = z.union([
 ]);
 
 /**
+ * Zod schema for failover backoff (exponential, applied with full jitter).
+ */
+const JudgeFailoverBackoffSchema = z.object({
+  baseMs: z.number().nonnegative().optional(),
+  maxMs: z.number().nonnegative().optional(),
+  factor: z.number().positive().optional(),
+});
+
+/**
+ * Zod schema for a fallback provider routing entry. Only routing-relevant
+ * fields (provider/model/etc.) — the rubric flows from the parent judge.
+ */
+const JudgeFailoverRoutingSchema = z.object({
+  provider: z
+    .enum([
+      'anthropic',
+      'vertex-anthropic',
+      'anthropic-agent-sdk',
+      'openai',
+      'google',
+    ])
+    .optional(),
+  model: z.string().optional(),
+  apiKeyEnvVar: z.string().optional(),
+  maxTokens: z.number().int().positive().optional(),
+  temperature: z.number().min(0).max(1).optional(),
+  maxBudgetUsd: z.number().positive().optional(),
+  maxToolOutputSize: z.number().int().positive().optional(),
+});
+
+/**
+ * Zod schema for stateful failover configuration. The judge's own provider
+ * acts as primary; on outage/rate-limit the full candidate + reference +
+ * rubric request is forwarded to each fallback in order. Adapted from
+ * ContinuityBench (arXiv:2607.15899v1).
+ */
+const JudgeFailoverConfigSchema = z.object({
+  fallbacks: z.array(JudgeFailoverRoutingSchema).min(1),
+  maxAttempts: z.number().int().positive().optional(),
+  backoff: JudgeFailoverBackoffSchema.optional(),
+});
+
+/**
  * Zod schema for a single judge configuration
  */
 const JudgeExpectConfigSchema = z
@@ -392,6 +435,7 @@ const JudgeExpectConfigSchema = z
     temperature: z.number().min(0).max(1).optional(),
     maxBudgetUsd: z.number().positive().optional(),
     maxToolOutputSize: z.number().int().positive().optional(),
+    failover: JudgeFailoverConfigSchema.optional(),
   })
   .refine((data) => data.judge !== undefined || data.rubric !== undefined, {
     message: 'Either "judge" or "rubric" must be provided in passesJudge',
