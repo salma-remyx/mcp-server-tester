@@ -15,7 +15,12 @@ observed_landing_zones:
     call_site_specifics: (none)
     branch: medfailbench-a-clinician-built-open-source-benchmark-for-med
     timestamp: '2026-07-19T23:29:34Z'
-  last_observed: '2026-07-19T23:29:34Z'
+  - arxiv: 2607.15899v1
+    mode: ''
+    call_site_specifics: ''
+    branch: continuitybench-a-benchmark-and-systems-study-of-stateful-fa
+    timestamp: '2026-07-26T19:47:27Z'
+  last_observed: '2026-07-26T19:47:27Z'
 - path: src/evals/
   shape_tags:
   - callback
@@ -112,4 +117,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-07-25T09:22:43Z'
+last_updated: '2026-07-26T19:47:27Z'
