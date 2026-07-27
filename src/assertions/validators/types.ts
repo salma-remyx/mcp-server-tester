@@ -19,11 +19,13 @@ export interface ValidationResult {
   details?: Record<string, unknown>;
   /**
    * Optional quantitative metrics from the validation.
-   * Populated by validateToolCalls for precision/recall.
+   * Populated by validateToolCalls for precision/recall/specificity.
    */
   metrics?: {
     precision?: number;
     recall?: number;
+    /** When-not-to-call accuracy (fraction of forbidden tools left uncalled). */
+    specificity?: number;
   };
 }
 

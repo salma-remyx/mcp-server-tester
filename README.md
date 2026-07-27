@@ -121,6 +121,21 @@ In LLM host mode, a real LLM receives your server's tool list and a natural lang
 
 LLM host mode makes real API calls and produces non-deterministic results. Use `iterations` to run a case multiple times and measure pass rate rather than expecting 100% on a single run. See the [LLM Host Guide](docs/mcp-host.md) for configuration and cost management.
 
+`toolsTriggered` also captures the complementary decision — when a tool should **not** be called. Mark a call `"forbidden": true` to assert the model abstains from it (the "when not to call" dimension); the result exposes a `specificity` metric (0–1) measuring how often forbidden tools were correctly left uncalled:
+
+```json
+{
+  "expect": {
+    "toolsTriggered": {
+      "calls": [
+        { "name": "read_file", "required": true },
+        { "name": "delete_file", "forbidden": true }
+      ]
+    }
+  }
+}
+```
+
 ## Installation
 
 Requires Node.js 22+.

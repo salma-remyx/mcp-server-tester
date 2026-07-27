@@ -9,12 +9,27 @@ import type {
   MCPHostSimulationResult,
   LLMToolCall,
 } from '../../evals/mcpHost/mcpHostTypes.js';
+import {
+  hasAbstentionExpectation,
+  extractAbstentionSpec,
+  evaluateToolAbstention,
+} from './toolAbstention.js';
 
 export interface ToolCallExpectation {
   calls: Array<{
     name: string;
     arguments?: Record<string, unknown>;
+    /**
+     * Whether this call MUST have been made (default: true). The positive
+     * "when to call" dimension.
+     */
     required?: boolean;
+    /**
+     * Whether this call MUST NOT have been made. The complementary "when NOT
+     * to call" dimension (When2Call). A `forbidden: true` entry is enforced
+     * independently of `required`/`exclusive`.
+     */
+    forbidden?: boolean;
   }>;
   order?: 'strict' | 'any';
   exclusive?: boolean;
@@ -121,8 +136,13 @@ export function validateToolCalls(
 
   const actual = response.toolCalls;
 
+  // Forbidden calls (the "when NOT to call" dimension) are enforced separately
+  // by evaluateToolAbstention below; exclude them from positive matching so a
+  // forbidden-only expectation does not also read as "required".
+  const positiveCalls = expectation.calls.filter((c) => c.forbidden !== true);
+
   // Compute recall: fraction of required calls that were made
-  const requiredCalls = expectation.calls.filter((c) => c.required !== false);
+  const requiredCalls = positiveCalls.filter((c) => c.required !== false);
   const calledRequiredCount = requiredCalls.filter(
     (expected) => findMatchingCall(actual, expected) !== -1
   ).length;
@@ -132,20 +152,40 @@ export function validateToolCalls(
   // Compute precision: fraction of actual calls that were expected.
   // Always computed so the metric reflects actual tool call efficiency.
   // Whether unexpected calls cause a FAILURE is controlled separately by exclusive=true (lines below).
-  const allowedNames = new Set(expectation.calls.map((c) => c.name));
+  const allowedNames = new Set(positiveCalls.map((c) => c.name));
   const precision =
     actual.length > 0
       ? actual.filter((c) => allowedNames.has(c.name)).length / actual.length
       : 1.0;
 
-  const metrics = { precision, recall };
+  const metrics: {
+    precision?: number;
+    recall?: number;
+    specificity?: number;
+  } = { precision, recall };
+
+  // When2Call "when NOT to call" dimension — evaluate abstention up front so
+  // the specificity metric is available on every return path, then enforce it
+  // (forbidden calls must not appear in the trace) after the positive checks.
+  // findMatchingCall is passed in so abstention reuses the positive matcher's
+  // partial-argument / $pattern semantics without a runtime cycle.
+  const abstention = hasAbstentionExpectation(expectation)
+    ? evaluateToolAbstention(
+        actual,
+        extractAbstentionSpec(expectation),
+        findMatchingCall
+      )
+    : null;
+  if (abstention) {
+    metrics.specificity = abstention.specificity;
+  }
 
   const order = expectation.order ?? 'any';
 
   if (order === 'strict') {
     // All calls must appear in the specified sequence
     let searchFrom = 0;
-    for (const expected of expectation.calls) {
+    for (const expected of positiveCalls) {
       const idx = findMatchingCall(actual, expected, searchFrom);
       if (idx === -1) {
         if (expected.required !== false) {
@@ -165,7 +205,7 @@ export function validateToolCalls(
     }
   } else {
     // Any order: each required call must appear somewhere
-    const required = expectation.calls.filter((c) => c.required !== false);
+    const required = positiveCalls.filter((c) => c.required !== false);
     for (const expected of required) {
       const idx = findMatchingCall(actual, expected);
       if (idx === -1) {
@@ -200,6 +240,18 @@ export function validateToolCalls(
         metrics,
       };
     }
+  }
+
+  if (abstention && !abstention.pass) {
+    return {
+      pass: false,
+      message: abstention.message,
+      details: {
+        actual: actual.map((c) => c.name),
+        forbidden: abstention.violations.map((v) => v.name),
+      },
+      metrics,
+    };
   }
 
   return { pass: true, message: 'All tool call expectations met', metrics };

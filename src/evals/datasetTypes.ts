@@ -253,6 +253,13 @@ export interface EvalExpectBlock {
       arguments?: Record<string, unknown>;
       /** Whether this call MUST have been made (default: true) */
       required?: boolean;
+      /**
+       * Whether this call MUST NOT have been made — the "when NOT to call"
+       * dimension (When2Call). Use to assert the model abstains from a tool
+       * in a scenario where calling it would be wrong. Enforced independently
+       * of `required`/`exclusive`.
+       */
+      forbidden?: boolean;
     }>;
     /**
      * 'strict': calls must appear in the exact order listed
@@ -424,6 +431,7 @@ const EvalExpectBlockSchema = z.object({
           name: z.string(),
           arguments: z.record(z.string(), z.unknown()).optional(),
           required: z.boolean().optional(),
+          forbidden: z.boolean().optional(),
         })
       ),
       order: z.enum(['strict', 'any']).optional(),

@@ -186,6 +186,139 @@ describe('validateToolCalls', () => {
   });
 });
 
+describe('validateToolCalls forbidden (When2Call "when not to call")', () => {
+  it('passes when a forbidden tool was not called', () => {
+    const result = makeResult([{ name: 'search' }]);
+    const v = validateToolCalls(result, {
+      calls: [{ name: 'delete_file', forbidden: true }],
+    });
+    expect(v.pass).toBe(true);
+  });
+
+  it('fails when a forbidden tool was called', () => {
+    const result = makeResult([{ name: 'search' }, { name: 'delete_file' }]);
+    const v = validateToolCalls(result, {
+      calls: [{ name: 'delete_file', forbidden: true }],
+    });
+    expect(v.pass).toBe(false);
+    expect(v.message).toContain('delete_file');
+    expect(v.details).toEqual({
+      actual: ['search', 'delete_file'],
+      forbidden: ['delete_file'],
+    });
+  });
+
+  it('combines a required call with a forbidden call', () => {
+    // positive dimension: search must be called; negative: delete must not
+    const ok = makeResult([{ name: 'search' }]);
+    expect(
+      validateToolCalls(ok, {
+        calls: [
+          { name: 'search', required: true },
+          { name: 'delete_file', forbidden: true },
+        ],
+      }).pass
+    ).toBe(true);
+
+    const bad = makeResult([{ name: 'search' }, { name: 'delete_file' }]);
+    expect(
+      validateToolCalls(bad, {
+        calls: [
+          { name: 'search', required: true },
+          { name: 'delete_file', forbidden: true },
+        ],
+      }).pass
+    ).toBe(false);
+  });
+
+  it('forbids a tool only when arguments match', () => {
+    // forbid delete_file with force=true; a force=false call is allowed
+    const allowed = makeResult([
+      { name: 'delete_file', arguments: { force: false } },
+    ]);
+    expect(
+      validateToolCalls(allowed, {
+        calls: [
+          {
+            name: 'delete_file',
+            arguments: { force: true },
+            forbidden: true,
+          },
+        ],
+      }).pass
+    ).toBe(true);
+
+    const violating = makeResult([
+      { name: 'delete_file', arguments: { force: true } },
+    ]);
+    expect(
+      validateToolCalls(violating, {
+        calls: [
+          {
+            name: 'delete_file',
+            arguments: { force: true },
+            forbidden: true,
+          },
+        ],
+      }).pass
+    ).toBe(false);
+  });
+
+  it('forbidden: false is treated like the default (not forbidden)', () => {
+    const result = makeResult([{ name: 'search' }]);
+    const v = validateToolCalls(result, {
+      calls: [{ name: 'search', forbidden: false }],
+    });
+    expect(v.pass).toBe(true);
+    expect(v.metrics?.specificity).toBeUndefined();
+  });
+});
+
+describe('validateToolCalls specificity metric', () => {
+  const makeResult = (toolNames: string[]) => ({
+    success: true,
+    toolCalls: toolNames.map((name) => ({ name, arguments: {} })),
+  });
+
+  it('specificity is 1.0 when every forbidden tool was abstained from', () => {
+    const result = validateToolCalls(makeResult(['search']), {
+      calls: [
+        { name: 'delete_file', forbidden: true },
+        { name: 'format_disk', forbidden: true },
+      ],
+    });
+    expect(result.pass).toBe(true);
+    expect(result.metrics?.specificity).toBe(1.0);
+  });
+
+  it('specificity is 0.5 when one of two forbidden tools was called', () => {
+    const result = validateToolCalls(makeResult(['search', 'delete_file']), {
+      calls: [
+        { name: 'delete_file', forbidden: true },
+        { name: 'format_disk', forbidden: true },
+      ],
+    });
+    expect(result.pass).toBe(false);
+    expect(result.metrics?.specificity).toBe(0.5);
+  });
+
+  it('specificity is 0.0 when all forbidden tools were called', () => {
+    const result = validateToolCalls(makeResult(['delete_file']), {
+      calls: [{ name: 'delete_file', forbidden: true }],
+    });
+    expect(result.pass).toBe(false);
+    expect(result.metrics?.specificity).toBe(0.0);
+  });
+
+  it('specificity is undefined when there is no forbidden expectation', () => {
+    const result = validateToolCalls(makeResult(['search']), {
+      calls: [{ name: 'search', required: true }],
+    });
+    expect(result.metrics?.precision).toBe(1.0);
+    expect(result.metrics?.specificity).toBeUndefined();
+  });
+});
+
 describe('validateToolCalls precision and recall metrics', () => {
   const makeResult = (toolNames: string[]) => ({
     success: true,
