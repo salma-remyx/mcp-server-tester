@@ -79,7 +79,14 @@ observed_landing_zones:
       and the eval runner runEvalCase/runEvalDataset '
     branch: verdict-a-library-for-scaling-judge-time-compute
     timestamp: '2026-07-20T17:17:24Z'
-  last_observed: '2026-07-20T17:17:24Z'
+  - arxiv: 2504.18851v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: "validateToolCalls \u2014 reached from src/evals/evalRunner.ts:594\
+      \ (toolsTriggered handling in the eval runner) and the toHaveToolCalls matcher\
+      \ in src/assertions/matchers/toHaveToolCalls.ts; both pre-existi"
+    branch: when2call-when-not-to-call-tools
+    timestamp: '2026-07-27T15:35:45Z'
+  last_observed: '2026-07-27T15:35:45Z'
 - path: src/evals/mcpHost/
   shape_tags:
   - callback
@@ -117,4 +124,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-07-26T19:47:27Z'
+last_updated: '2026-07-27T15:35:45Z'
