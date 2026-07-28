@@ -67,7 +67,12 @@ observed_landing_zones:
       for programmatic use.
     branch: llm-readiness-harness-evaluation-observability-and-ci-gates-
     timestamp: '2026-07-25T09:22:43Z'
-  last_observed: '2026-07-25T09:22:43Z'
+  - arxiv: 2508.18992v1
+    mode: ''
+    call_site_specifics: ''
+    branch: automatic-prompt-optimization-with-prompt-distillation
+    timestamp: '2026-07-28T09:31:22Z'
+  last_observed: '2026-07-28T09:31:22Z'
 - path: src/assertions/validators/
   shape_tags:
   - unclassified
@@ -124,4 +129,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-07-27T15:35:45Z'
+last_updated: '2026-07-28T09:31:22Z'
