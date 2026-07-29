@@ -37,6 +37,11 @@ import {
 import { execFileNoThrow } from '../utils/execFileNoThrow.js';
 import { debugEval } from '../debug.js';
 import { sumUsage } from '../utils/usageUtils.js';
+import {
+  computeJudgeReliability,
+  auditJudgeBias,
+  type DatasetJudgeBias,
+} from './judgeBias.js';
 import packageJson from '../../package.json' with { type: 'json' };
 
 /**
@@ -186,6 +191,15 @@ export interface EvalRunnerResult {
    * Aggregate token usage from all mcp_host LLM simulations across all cases.
    */
   totalHostUsage?: UsageMetrics;
+
+  /**
+   * Dataset-level judge-bias audit aggregated across multi-judge cases:
+   * inter-judge agreement (Fleiss' kappa) and the leniency-adjusted same-provider
+   * association (with a permutation p-value). Adapted from
+   * arxiv:2607.18828v1. Only present when at least one case contributed
+   * multi-judge votes.
+   */
+  datasetJudgeBias?: DatasetJudgeBias;
 }
 
 export type StoredEvalResultRef = 'latest' | { id: string };
@@ -501,6 +515,9 @@ interface ExpectBlockConfig {
   playwrightExpect?: Expect;
   judgeReps?: number;
   canonicalAnswer?: string;
+  /** Provider of the candidate host under test, used to flag same-provider
+   *  judge leniency in multi-judge aggregation. */
+  hostProvider?: string;
 }
 
 /**
@@ -659,10 +676,18 @@ async function runExpectBlockValidations(
       const allPassed = judgeResultEntries.every((r) => r.pass);
       const passCount = judgeResultEntries.filter((r) => r.pass).length;
 
+      // Audit the aggregate rather than trusting naive AND semantics:
+      // inter-judge agreement + same-provider leniency flag (arxiv:2607.18828v1).
+      const reliability = computeJudgeReliability(
+        judgeResultEntries,
+        config.hostProvider
+      );
+
       results.judge = {
         pass: allPassed,
         details: `${passCount}/${judgeResultEntries.length} judges passed`,
         judgeResults: judgeResultEntries,
+        judgeReliability: reliability ?? undefined,
       };
     }
   }
@@ -775,6 +800,7 @@ async function runSingleIteration(
       playwrightExpect: context.expect,
       judgeReps: evalCase.judgeReps,
       canonicalAnswer: evalCase.canonicalAnswer,
+      hostProvider: evalCase.mcpHostConfig?.provider,
     });
     expectationResults = expectations;
     toolPrecision = tp;
@@ -1300,6 +1326,15 @@ export async function runEvalDataset(
       avgPrec + avgRecall > 0
         ? (2 * avgPrec * avgRecall) / (avgPrec + avgRecall)
         : 0;
+  }
+
+  // Audit judge reliability across the whole run: inter-judge agreement
+  // (Fleiss' kappa) and the leniency-adjusted same-provider association with a
+  // permutation p-value (arxiv:2607.18828v1). Only attached when at least one
+  // multi-judge case contributed votes.
+  const datasetJudgeBias = auditJudgeBias(caseResults);
+  if (datasetJudgeBias) {
+    result.datasetJudgeBias = datasetJudgeBias;
   }
 
   // Save results to file if requested
