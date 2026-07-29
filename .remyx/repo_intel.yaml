@@ -72,7 +72,14 @@ observed_landing_zones:
     call_site_specifics: ''
     branch: automatic-prompt-optimization-with-prompt-distillation
     timestamp: '2026-07-28T09:31:22Z'
-  last_observed: '2026-07-28T09:31:22Z'
+  - arxiv: 2607.18828v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: runEvalDataset and runEvalCase in src/evals/evalRunner.ts
+      (pre-existing public API; auditJudgeBias fires at the end of runEvalDataset,
+      computeJudgeReliability inside the pre-existing runExpectBlockVal
+    branch: evaluating-medical-ai-under-missing-information-same-provide
+    timestamp: '2026-07-29T01:24:12Z'
+  last_observed: '2026-07-29T01:24:12Z'
 - path: src/assertions/validators/
   shape_tags:
   - unclassified
@@ -129,4 +136,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-07-28T09:31:22Z'
+last_updated: '2026-07-29T01:24:12Z'
