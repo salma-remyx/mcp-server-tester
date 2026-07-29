@@ -739,6 +739,9 @@ function buildRequest(
   if (toolOverrideVariantId !== undefined) {
     request.toolOverrideVariantId = toolOverrideVariantId;
   }
+  if (evalCase.candidateProvider) {
+    request.candidateProvider = evalCase.candidateProvider;
+  }
 
   if (evalCase.mode === 'mcp_host') {
     if (evalCase.scenario) request.scenario = evalCase.scenario;
@@ -800,7 +803,8 @@ async function runSingleIteration(
       playwrightExpect: context.expect,
       judgeReps: evalCase.judgeReps,
       canonicalAnswer: evalCase.canonicalAnswer,
-      hostProvider: evalCase.mcpHostConfig?.provider,
+      hostProvider:
+        evalCase.candidateProvider ?? evalCase.mcpHostConfig?.provider,
     });
     expectationResults = expectations;
     toolPrecision = tp;

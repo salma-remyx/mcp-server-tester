@@ -228,7 +228,9 @@ function mulberry32(seed: number): () => number {
  *     holds per-judge leniency fixed and tests only the same-provider label.
  *
  * Returns `null` when no case contributed multi-judge votes with a known
- * candidate provider.
+ * candidate provider. The candidate provider is read from
+ * `request.candidateProvider` (explicit declaration on the eval case), falling
+ * back to `request.mcpHostConfig.provider` for mcp_host cases.
  *
  * @param caseResults results from {@link runEvalDataset}
  * @param options.iterations permutation iterations (default 999)
@@ -249,7 +251,9 @@ export function auditJudgeBias(
     const passes = judgeResults.filter((result) => result.pass).length;
     kappaRows.push([passes, judgeResults.length - passes]);
 
-    const candidateProvider = caseResult.request?.mcpHostConfig?.provider;
+    const candidateProvider =
+      caseResult.request?.candidateProvider ??
+      caseResult.request?.mcpHostConfig?.provider;
     if (!candidateProvider) continue; // cannot label same-provider without it
     for (const result of judgeResults) {
       const provider = result.judgeProvider;

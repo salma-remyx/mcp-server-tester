@@ -33,6 +33,25 @@ function caseResult(
   };
 }
 
+/** Direct-mode-shaped result: candidate provider declared explicitly. */
+function directCaseResult(
+  id: string,
+  candidateProvider: string,
+  results: EvalExpectationResult[]
+): EvalCaseResult {
+  const allPassed = results.every((r) => r.pass);
+  return {
+    id,
+    datasetName: 'judge-bias-test',
+    toolName: 'get_answer',
+    source: 'eval',
+    pass: allPassed,
+    durationMs: 0,
+    expectations: { judge: { pass: allPassed, judgeResults: results } },
+    request: { candidateProvider },
+  };
+}
+
 describe('fleissKappa', () => {
   it('returns null for an empty or all-zero matrix', () => {
     expect(fleissKappa([])).toBeNull();
@@ -176,5 +195,39 @@ describe('auditJudgeBias', () => {
     expect(audit.sameProviderGap).toBeNull();
     expect(audit.informativeJudges).toBe(0);
     expect(audit.permutationPValue).toBeNull();
+  });
+
+  it('labels same-provider votes from an explicit candidateProvider', () => {
+    // Direct-mode cases carry no mcpHostConfig, but a declared
+    // candidateProvider still enables the same-provider analysis.
+    const cases = [
+      directCaseResult('c1', 'anthropic', [
+        judge('anthropic', true),
+        judge('openai', false),
+      ]),
+    ];
+    const audit = auditJudgeBias(cases)!;
+
+    expect(audit.cases).toBe(1);
+    expect(audit.totalVotes).toBe(2);
+    expect(audit.sameProviderGap).toBe(1);
+    // One vote per judge: residualizing by judge leniency zeroes the gap.
+    expect(audit.sameProviderGapAdjusted).toBe(0);
+  });
+
+  it('prefers an explicit candidateProvider over mcpHostConfig.provider', () => {
+    // The case ran under an anthropic host but declares openai as the model
+    // under test, so the openai judge is the same-provider one.
+    const declared = caseResult('c1', 'anthropic', [
+      judge('anthropic', true),
+      judge('openai', false),
+    ]);
+    declared.request = {
+      candidateProvider: 'openai',
+      mcpHostConfig: { provider: 'anthropic' },
+    };
+    const audit = auditJudgeBias([declared])!;
+
+    expect(audit.sameProviderGap).toBe(-1);
   });
 });

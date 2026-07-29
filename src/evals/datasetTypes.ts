@@ -69,6 +69,16 @@ export interface EvalCase {
   mcpHostConfig?: MCPHostConfig;
 
   /**
+   * Provider of the model under test (e.g. 'anthropic', 'openai').
+   *
+   * Used by the multi-judge reliability audit to label same-provider judges
+   * (arxiv:2607.18828v1). Defaults to `mcpHostConfig.provider` in mcp_host
+   * mode; set it explicitly for direct-mode cases where the MCP server is
+   * backed by an LLM, or to override the host provider.
+   */
+  candidateProvider?: string;
+
+  /**
    * Additional metadata for this test case
    *
    * For 'mcp_host' mode, can include 'expectedToolCalls' for validation
@@ -452,6 +462,7 @@ export const EvalCaseSchema = z.object({
   args: z.record(z.string(), z.unknown()).optional(),
   scenario: z.string().optional(),
   mcpHostConfig: MCPHostConfigSchema.optional(),
+  candidateProvider: z.string().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
   iterations: z.number().int().min(1).optional(),
   accuracyThreshold: z.number().min(0).max(1).optional(),
