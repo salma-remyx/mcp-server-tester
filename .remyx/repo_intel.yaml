@@ -20,7 +20,12 @@ observed_landing_zones:
     call_site_specifics: ''
     branch: continuitybench-a-benchmark-and-systems-study-of-stateful-fa
     timestamp: '2026-07-26T19:47:27Z'
-  last_observed: '2026-07-26T19:47:27Z'
+  - arxiv: 2505.03030v1
+    mode: ''
+    call_site_specifics: ''
+    branch: ucsc-at-semeval-2025-task-3-context-models-and-prompt-optimi
+    timestamp: '2026-07-30T08:19:46Z'
+  last_observed: '2026-07-30T08:19:46Z'
 - path: src/evals/
   shape_tags:
   - callback
@@ -136,4 +141,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-07-29T01:24:12Z'
+last_updated: '2026-07-30T08:19:46Z'
