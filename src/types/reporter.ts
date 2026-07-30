@@ -15,6 +15,7 @@ import type {
   UsageMetrics,
 } from './index.js';
 import type { EvalResultStoreLike } from '../evals/resultStore.js';
+import type { ReadinessAssessment } from '../evals/readinessScore.js';
 
 /**
  * Configuration options for MCP Eval Reporter
@@ -470,6 +471,14 @@ export interface MCPEvalRunData {
    * All eval results from this run
    */
   results: EvalCaseResult[];
+
+  /**
+   * Deployment-decision readiness assessment for this run: a scenario-weighted
+   * readiness score, an efficiency (Pareto) frontier over cases, and a CI-style
+   * quality gate computed from the results. Computed by the reporter; absent on
+   * runs serialized before this field existed.
+   */
+  readiness?: ReadinessAssessment;
 
   /**
    * Conformance check results (optional)

@@ -281,6 +281,27 @@ export {
   saveEvalRunComparison,
 } from './evals/evalRunComparison.js';
 
+// Readiness scoring — deployment-decision layer over a completed eval run
+export {
+  computeReadiness,
+  paretoFrontier,
+  wilsonLowerBound,
+  DEFAULT_READINESS_WEIGHTS,
+  DEFAULT_READINESS_THRESHOLDS,
+  READINESS_WEIGHT_PRESETS,
+} from './evals/readinessScore.js';
+export type {
+  ReadinessAssessment,
+  ReadinessInput,
+  ReadinessWeights,
+  ReadinessThresholds,
+  ReadinessGateResult,
+  ReadinessSignals,
+  ReadinessComponent,
+  ReadinessScenarioPreset,
+  ParetoFrontierMember,
+} from './evals/readinessScore.js';
+
 // AI-driven variant optimization experiments
 export { runVariantExperiment } from './evals/variantExperiment.js';
 
