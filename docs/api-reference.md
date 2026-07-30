@@ -506,7 +506,7 @@ await saveEvalRunComparison({ store, comparison, id: 'candidate-comparison' });
 
 **Result Structure:**
 
-```typescript snippet=src/evals/evalRunner.ts#L106-L184
+```typescript snippet=src/evals/evalRunner.ts#L108-L186
   /**
    * Per-tool metadata overrides keyed by canonical tool name.
    */
@@ -1159,7 +1159,7 @@ interface MCPConformanceResult {
 
 ### `EvalExpectBlock`
 
-```typescript snippet=src/evals/datasetTypes.ts#L186-L277
+```typescript snippet=src/evals/datasetTypes.ts#L196-L287
 export interface EvalExpectBlock {
   /**
    * Exact response match (toMatchToolResponse)
@@ -1256,7 +1256,7 @@ export interface EvalExpectBlock {
 
 ### `EvalCase`
 
-````typescript snippet=src/evals/datasetTypes.ts#L27-L139
+````typescript snippet=src/evals/datasetTypes.ts#L28-L149
 export interface EvalCase {
   /**
    * Unique identifier for this test case
@@ -1340,6 +1340,15 @@ export interface EvalCase {
   canonicalAnswer?: string;
 
   /**
+   * How a multi-judge `passesJudge` panel resolves disagreement.
+   * - `unanimous`: every judge must pass (default, strict AND).
+   * - `majority`: a strict majority of judges must pass (ensemble vote).
+   * Ignored for single-judge assertions.
+   * @default 'unanimous'
+   */
+  judgeVoteStrategy?: JudgeVoteStrategy;
+
+  /**
    * Arbitrary string labels for this case.
    * Use for filtering eval runs with `EvalRunnerOptions.filterTags`
    * and for slicing results by category.
@@ -1371,18 +1380,6 @@ export interface EvalCase {
   expect?: EvalExpectBlock;
 }
 ````
-
-### `EvalDataset`
-
-```typescript
-interface EvalDataset {
-  name: string;
-  description?: string;
-  cases: EvalCase[];
-  metadata?: Record<string, unknown>;
-  schemas?: Record<string, ZodSchema>; // Zod schemas for toMatchToolSchema assertions
-}
-```
 
 ## Next Steps
 

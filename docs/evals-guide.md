@@ -282,6 +282,49 @@ Did an LLM evaluator (judge) say the response was good? This is for quality, not
 
 This is the most expensive assertion (requires a second LLM call) and the most powerful. Use it when you care not just that the right tool was called, but that the final answer was actually useful.
 
+#### Multi-judge voting
+
+When `passesJudge` is an array, the case runs a _panel_ of judges. The case-level `judgeVoteStrategy` field controls how their individual verdicts combine into one pass/fail result:
+
+- `unanimous` (default) — every judge must pass (strict AND).
+- `majority` — a strict majority of judges must pass (more than half the panel). An even split on an even-sized panel fails, because there is no majority to break the tie.
+
+Majority voting resolves disagreement across the panel by an ensemble vote, yielding more stable verdicts than requiring every judge to agree. The strategy is adapted from [A Simple Ensemble Strategy for LLM Inference: Towards More Stable Text Classification](https://arxiv.org/abs/2504.18884), applying its ensemble-of-judges insight to reduce per-trial variability.
+
+```typescript snippet=snippets/judge-vote-strategy.ts
+import { test, expect } from '@gleanwork/mcp-server-tester/fixtures/mcp';
+import { runEvalDataset, type EvalDataset } from '@gleanwork/mcp-server-tester';
+
+// A panel of three judges combined by majority vote: the case passes when a
+// strict majority (2 of 3) agree, instead of requiring unanimous agreement.
+const dataset: EvalDataset = {
+  name: 'answer-quality',
+  cases: [
+    {
+      id: 'search-answer-quality',
+      mode: 'mcp_host',
+      scenario: 'Find recent internal documents about the Q4 planning process',
+      mcpHostConfig: { provider: 'anthropic' },
+      judgeVoteStrategy: 'majority',
+      expect: {
+        passesJudge: [
+          { rubric: 'correctness' },
+          { rubric: 'completeness' },
+          { rubric: 'groundedness' },
+        ],
+      },
+    },
+  ],
+};
+
+test('answer quality passes by majority vote', async ({ mcp }, testInfo) => {
+  const result = await runEvalDataset({ dataset }, { mcp, testInfo });
+  expect(result.passed).toBe(result.total);
+});
+```
+
+`judgeVoteStrategy` is ignored for single-judge assertions.
+
 ---
 
 ## Stacking Assertions
