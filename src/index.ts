@@ -64,6 +64,8 @@ export type {
   EvalExpectationResult,
   ExpectationBreakdown,
   ExpectationResultMap,
+  JudgeReliability,
+  SameProviderBias,
 
   // Evals
   EvalCase,
@@ -241,6 +243,14 @@ export {
 
 // Eval Runner
 export { runEvalDataset, runEvalCase } from './evals/evalRunner.js';
+
+// Judge-bias audit (inter-judge agreement + same-provider leniency)
+export {
+  computeJudgeReliability,
+  auditJudgeBias,
+  fleissKappa,
+} from './evals/judgeBias.js';
+export type { DatasetJudgeBias } from './evals/judgeBias.js';
 
 export type {
   EvalResultStore,

@@ -229,6 +229,8 @@ export interface EvalCaseRequest {
   description?: string;
   /** Runtime tool override variant identifier, when one was used */
   toolOverrideVariantId?: string;
+  /** Provider of the model under test, when declared on the case */
+  candidateProvider?: string;
 
   // Direct mode fields
   /** Tool arguments (direct mode) */

@@ -506,7 +506,7 @@ await saveEvalRunComparison({ store, comparison, id: 'candidate-comparison' });
 
 **Result Structure:**
 
-```typescript snippet=src/evals/evalRunner.ts#L106-L184
+```typescript snippet=src/evals/evalRunner.ts#L111-L188
   /**
    * Per-tool metadata overrides keyed by canonical tool name.
    */
@@ -1159,7 +1159,7 @@ interface MCPConformanceResult {
 
 ### `EvalExpectBlock`
 
-```typescript snippet=src/evals/datasetTypes.ts#L186-L277
+```typescript snippet=src/evals/datasetTypes.ts#L196-L287
 export interface EvalExpectBlock {
   /**
    * Exact response match (toMatchToolResponse)
@@ -1256,7 +1256,7 @@ export interface EvalExpectBlock {
 
 ### `EvalCase`
 
-````typescript snippet=src/evals/datasetTypes.ts#L27-L139
+````typescript snippet=src/evals/datasetTypes.ts#L27-L149
 export interface EvalCase {
   /**
    * Unique identifier for this test case
@@ -1300,6 +1300,16 @@ export interface EvalCase {
    * If not specified, uses default configuration from test environment
    */
   mcpHostConfig?: MCPHostConfig;
+
+  /**
+   * Provider of the model under test (e.g. 'anthropic', 'openai').
+   *
+   * Used by the multi-judge reliability audit to label same-provider judges
+   * (arxiv:2607.18828v1). Defaults to `mcpHostConfig.provider` in mcp_host
+   * mode; set it explicitly for direct-mode cases where the MCP server is
+   * backed by an LLM, or to override the host provider.
+   */
+  candidateProvider?: string;
 
   /**
    * Additional metadata for this test case

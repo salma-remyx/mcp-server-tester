@@ -85,6 +85,64 @@ export interface EvalExpectationResult {
    * Only populated when passesJudge is an array with 2+ entries.
    */
   judgeResults?: EvalExpectationResult[];
+
+  /**
+   * Inter-judge agreement and same-provider bias signal for a multi-judge
+   * expectation. Only populated when 2+ judges voted (i.e. `judgeResults` is
+   * present), so naive AND aggregation can be audited rather than trusted
+   * blindly.
+   */
+  judgeReliability?: JudgeReliability;
+}
+
+/**
+ * Same-provider leniency signal within a single multi-judge case.
+ *
+ * Partitions the voting judges by whether their provider matches the
+ * candidate host under test, then compares pass rates. Adapted from
+ * "Evaluating medical AI under missing information" (arxiv:2607.18828v1),
+ * which shows that same-provider judges are systematically more lenient.
+ */
+export interface SameProviderBias {
+  /** Provider of the candidate host under test. */
+  candidateProvider: string;
+  /** Judges whose provider matches the candidate host. */
+  sameProviderJudges: number;
+  /** Judges whose provider differs from the candidate host. */
+  crossProviderJudges: number;
+  /** Fraction of same-provider judges that passed (0-1). */
+  sameProviderPassRate: number;
+  /** Fraction of cross-provider judges that passed (0-1). */
+  crossProviderPassRate: number;
+  /** `sameProviderPassRate - crossProviderPassRate` (positive = same-provider
+   *  judges more lenient). */
+  gap: number;
+  /** True when same-provider judges pass strictly more often. */
+  biasFlag: boolean;
+}
+
+/**
+ * Inter-judge agreement and same-provider leniency for one multi-judge case.
+ *
+ * Populated by the eval runner when a `passesJudge` expectation uses 2+
+ * judges; lets callers see how much the judges agreed and whether the
+ * same-provider judges were the lenient ones, instead of trusting the naive
+ * AND aggregate.
+ */
+export interface JudgeReliability {
+  /** Number of judges that voted. */
+  judgeCount: number;
+  /** Judges voting pass. */
+  passCount: number;
+  /** Judges voting fail. */
+  failCount: number;
+  /** Fraction of judges agreeing with the majority verdict (0-1). */
+  agreement: number;
+  /** Coarse agreement bucket. */
+  category: 'unanimous' | 'majority' | 'split';
+  /** Same-provider vs cross-provider leniency signal. `null` when the
+   *  candidate host provider is unknown or no cross-provider judge voted. */
+  sameProvider: SameProviderBias | null;
 }
 
 /**

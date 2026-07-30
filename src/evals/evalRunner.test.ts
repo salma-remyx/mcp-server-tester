@@ -1789,6 +1789,269 @@ describe('multi-judge passesJudge', () => {
 
     vi.restoreAllMocks();
   });
+
+  it('flags same-provider judge leniency in multi-judge reliability', async () => {
+    // Candidate host is Anthropic; its two same-provider judges both pass while
+    // the two cross-provider judges both fail -> biasFlag should be set.
+    const { runEvalCase: runEvalCaseMocked } = await import('./evalRunner.js');
+    const judgeModule = await import('../assertions/validators/judge.js');
+    let callCount = 0;
+    vi.spyOn(judgeModule, 'validateJudge').mockImplementation(async () => {
+      callCount++;
+      // calls 1-2: anthropic (same-provider), pass; calls 3-4: openai, fail
+      const isAnthropic = callCount <= 2;
+      return {
+        pass: isAnthropic,
+        message: isAnthropic ? 'pass' : 'fail',
+        details: {
+          score: isAnthropic ? 0.9 : 0.4,
+          judgeProvider: isAnthropic ? 'anthropic' : 'openai',
+          judgeModel: isAnthropic ? 'claude-sonnet' : 'gpt-4',
+        },
+      };
+    });
+
+    const mcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const evalCase = createEvalCase({
+      mcpHostConfig: { provider: 'anthropic' },
+      expect: {
+        passesJudge: [
+          { rubric: 'correctness', threshold: 0.7 },
+          { rubric: 'completeness', threshold: 0.7 },
+          { judge: 'safety', threshold: 0.7 },
+          { judge: 'clarity', threshold: 0.7 },
+        ],
+      },
+    });
+
+    const result = await runEvalCaseMocked(evalCase, createContext(mcp));
+    const reliability = result.expectations.judge!.judgeReliability!;
+
+    expect(reliability.judgeCount).toBe(4);
+    expect(reliability.passCount).toBe(2);
+    expect(reliability.agreement).toBe(0.5);
+    expect(reliability.category).toBe('split');
+    expect(reliability.sameProvider).not.toBeNull();
+    expect(reliability.sameProvider!.candidateProvider).toBe('anthropic');
+    expect(reliability.sameProvider!.sameProviderJudges).toBe(2);
+    expect(reliability.sameProvider!.crossProviderJudges).toBe(2);
+    expect(reliability.sameProvider!.sameProviderPassRate).toBe(1);
+    expect(reliability.sameProvider!.crossProviderPassRate).toBe(0);
+    expect(reliability.sameProvider!.gap).toBe(1);
+    expect(reliability.sameProvider!.biasFlag).toBe(true);
+
+    vi.restoreAllMocks();
+  });
+
+  it('omits same-provider signal when candidate host provider is unknown', async () => {
+    const { runEvalCase: runEvalCaseMocked } = await import('./evalRunner.js');
+    const judgeModule = await import('../assertions/validators/judge.js');
+    let callCount = 0;
+    vi.spyOn(judgeModule, 'validateJudge').mockImplementation(async () => {
+      callCount++;
+      const isFirst = callCount === 1;
+      return {
+        pass: isFirst,
+        message: isFirst ? 'pass' : 'fail',
+        details: {
+          score: 0.5,
+          judgeProvider: isFirst ? 'anthropic' : 'openai',
+        },
+      };
+    });
+
+    const mcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    // Direct-mode case without mcpHostConfig -> no candidate provider.
+    const evalCase = createEvalCase({
+      expect: {
+        passesJudge: [
+          { rubric: 'correctness', threshold: 0.7 },
+          { judge: 'safety', threshold: 0.7 },
+          { judge: 'clarity', threshold: 0.7 },
+        ],
+      },
+    });
+
+    const result = await runEvalCaseMocked(evalCase, createContext(mcp));
+    const reliability = result.expectations.judge!.judgeReliability!;
+
+    expect(reliability.judgeCount).toBe(3);
+    expect(reliability.passCount).toBe(1);
+    expect(reliability.agreement).toBeCloseTo(2 / 3, 5);
+    expect(reliability.category).toBe('majority');
+    expect(reliability.sameProvider).toBeNull();
+
+    vi.restoreAllMocks();
+  });
+
+  it('uses explicit candidateProvider for the same-provider signal in direct mode', async () => {
+    // Direct-mode case against an LLM-backed MCP server: no mcpHostConfig, but
+    // the declared candidateProvider labels same-provider judges anyway.
+    const { runEvalCase: runEvalCaseMocked } = await import('./evalRunner.js');
+    const judgeModule = await import('../assertions/validators/judge.js');
+    let callCount = 0;
+    vi.spyOn(judgeModule, 'validateJudge').mockImplementation(async () => {
+      callCount++;
+      const isAnthropic = callCount <= 2;
+      return {
+        pass: isAnthropic,
+        message: isAnthropic ? 'pass' : 'fail',
+        details: {
+          score: isAnthropic ? 0.9 : 0.4,
+          judgeProvider: isAnthropic ? 'anthropic' : 'openai',
+          judgeModel: isAnthropic ? 'claude-sonnet' : 'gpt-4',
+        },
+      };
+    });
+
+    const mcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const evalCase = createEvalCase({
+      candidateProvider: 'anthropic',
+      expect: {
+        passesJudge: [
+          { rubric: 'correctness', threshold: 0.7 },
+          { rubric: 'completeness', threshold: 0.7 },
+          { judge: 'safety', threshold: 0.7 },
+          { judge: 'clarity', threshold: 0.7 },
+        ],
+      },
+    });
+
+    const result = await runEvalCaseMocked(evalCase, createContext(mcp));
+    const reliability = result.expectations.judge!.judgeReliability!;
+
+    expect(reliability.sameProvider).not.toBeNull();
+    expect(reliability.sameProvider!.candidateProvider).toBe('anthropic');
+    expect(reliability.sameProvider!.sameProviderJudges).toBe(2);
+    expect(reliability.sameProvider!.crossProviderJudges).toBe(2);
+    expect(reliability.sameProvider!.biasFlag).toBe(true);
+    // The declared provider is preserved on the result for the dataset audit.
+    expect(result.request?.candidateProvider).toBe('anthropic');
+
+    vi.restoreAllMocks();
+  });
+});
+
+describe('dataset-level judge-bias audit', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  function createDataset(cases: EvalCase[]): EvalDataset {
+    return { name: 'judge-bias', cases };
+  }
+
+  it('attaches datasetJudgeBias with inter-judge agreement (Fleiss kappa)', async () => {
+    const { runEvalDataset: runEvalDatasetMocked } =
+      await import('./evalRunner.js');
+    const judgeModule = await import('../assertions/validators/judge.js');
+    let callCount = 0;
+    vi.spyOn(judgeModule, 'validateJudge').mockImplementation(async () => {
+      callCount++;
+      // Alternate pass/fail so the panel disagrees on every case.
+      const pass = callCount % 2 === 1;
+      return {
+        pass,
+        message: pass ? 'pass' : 'fail',
+        details: { score: 0.5, judgeProvider: 'anthropic' },
+      };
+    });
+
+    const mcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const dataset = createDataset([
+      createEvalCase({
+        id: 'c1',
+        mcpHostConfig: { provider: 'anthropic' },
+        expect: {
+          passesJudge: [
+            { rubric: 'correctness', threshold: 0.7 },
+            { rubric: 'completeness', threshold: 0.7 },
+          ],
+        },
+      }),
+      createEvalCase({
+        id: 'c2',
+        mcpHostConfig: { provider: 'anthropic' },
+        expect: {
+          passesJudge: [
+            { rubric: 'correctness', threshold: 0.7 },
+            { rubric: 'completeness', threshold: 0.7 },
+          ],
+        },
+      }),
+    ]);
+
+    const result = await runEvalDatasetMocked({ dataset }, createContext(mcp));
+
+    expect(result.datasetJudgeBias).toBeDefined();
+    const audit = result.datasetJudgeBias!;
+    expect(audit.cases).toBe(2);
+    // Direct-mode cases carry no candidate host provider, so they contribute to
+    // inter-judge agreement (kappa) but not to same-provider vote analysis.
+    expect(audit.totalVotes).toBe(0);
+    // Two cases each split 1 pass / 1 fail -> kappa = -1 (less than chance).
+    expect(audit.fleissKappa).toBeCloseTo(-1, 5);
+    expect(audit.sameProviderGap).toBeNull();
+    expect(audit.informativeJudges).toBe(0);
+
+    vi.restoreAllMocks();
+  });
+
+  it('includes direct-mode cases with a declared candidateProvider in the audit', async () => {
+    const { runEvalDataset: runEvalDatasetMocked } =
+      await import('./evalRunner.js');
+    const judgeModule = await import('../assertions/validators/judge.js');
+    let callCount = 0;
+    vi.spyOn(judgeModule, 'validateJudge').mockImplementation(async () => {
+      callCount++;
+      // Alternate pass/fail so the panel disagrees on every case.
+      const pass = callCount % 2 === 1;
+      return {
+        pass,
+        message: pass ? 'pass' : 'fail',
+        details: { score: 0.5, judgeProvider: 'anthropic' },
+      };
+    });
+
+    const mcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const dataset = createDataset([
+      createEvalCase({
+        id: 'c1',
+        candidateProvider: 'openai',
+        expect: {
+          passesJudge: [
+            { rubric: 'correctness', threshold: 0.7 },
+            { rubric: 'completeness', threshold: 0.7 },
+          ],
+        },
+      }),
+    ]);
+
+    const result = await runEvalDatasetMocked({ dataset }, createContext(mcp));
+
+    const audit = result.datasetJudgeBias!;
+    expect(audit.cases).toBe(1);
+    // The declared candidateProvider labels votes even without mcpHostConfig:
+    // both anthropic judges are cross-provider for an openai candidate.
+    expect(audit.totalVotes).toBe(2);
+    expect(audit.sameProviderGap).toBeNull();
+
+    vi.restoreAllMocks();
+  });
+
+  it('does not attach datasetJudgeBias when no case is multi-judge', async () => {
+    const { runEvalDataset: runEvalDatasetMocked } =
+      await import('./evalRunner.js');
+    const mcp = createMockMCP({ content: [{ type: 'text', text: 'hello' }] });
+    const dataset = createDataset([createEvalCase({ id: 'c1' })]);
+
+    const result = await runEvalDatasetMocked({ dataset }, createContext(mcp));
+
+    expect(result.datasetJudgeBias).toBeUndefined();
+
+    // sanity: run still completes normally
+    expect(result.total).toBe(1);
+  });
 });
 
 describe('experiment metadata in EvalRunnerResult', () => {
