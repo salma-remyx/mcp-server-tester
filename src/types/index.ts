@@ -37,7 +37,8 @@ export type ExpectationType =
   | 'error'
   | 'size'
   | 'toolsTriggered'
-  | 'toolCallCount';
+  | 'toolCallCount'
+  | 'argumentFormat';
 
 /**
  * Result of an expectation check
@@ -115,6 +116,10 @@ export {
   type TextValidatorOptions,
   type ToolCallCountOptions,
   type ToolCallExpectation,
+  type ArgumentFormatRule,
+  type ArgumentFormatCall,
+  type ArgumentFormatExpectation,
+  type ArgumentFormatKind,
   type ToolPredicate,
   type ValidationResult,
 } from './assertions.js';

@@ -1159,7 +1159,7 @@ interface MCPConformanceResult {
 
 ### `EvalExpectBlock`
 
-```typescript snippet=src/evals/datasetTypes.ts#L186-L277
+```typescript snippet=src/evals/datasetTypes.ts#L187-L285
 export interface EvalExpectBlock {
   /**
    * Exact response match (toMatchToolResponse)
@@ -1251,12 +1251,19 @@ export interface EvalExpectBlock {
     /** Exact number of tool calls */
     exact?: number;
   };
+
+  /**
+   * Asserts that tool-call arguments adhere to declared format instructions
+   * (quote-wrapping, ISO dates, enums, comma-separated lists, primitive types).
+   * Only meaningful for mcp_host mode. Adapted from IFEval-FC (arXiv:2509.18420).
+   */
+  argumentFormat?: ArgumentFormatExpectation;
 }
 ```
 
 ### `EvalCase`
 
-````typescript snippet=src/evals/datasetTypes.ts#L27-L139
+````typescript snippet=src/evals/datasetTypes.ts#L28-L140
 export interface EvalCase {
   /**
    * Unique identifier for this test case
@@ -1371,18 +1378,6 @@ export interface EvalCase {
   expect?: EvalExpectBlock;
 }
 ````
-
-### `EvalDataset`
-
-```typescript
-interface EvalDataset {
-  name: string;
-  description?: string;
-  cases: EvalCase[];
-  metadata?: Record<string, unknown>;
-  schemas?: Record<string, ZodSchema>; // Zod schemas for toMatchToolSchema assertions
-}
-```
 
 ## Next Steps
 

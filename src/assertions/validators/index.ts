@@ -28,6 +28,13 @@ export { validateError } from './error.js';
 export { validateSize } from './size.js';
 export { validateToolCalls, validateToolCallCount } from './toolCalls.js';
 export type { ToolCallExpectation, ToolCallCountOptions } from './toolCalls.js';
+export { validateArgumentFormat } from './argumentFormat.js';
+export type {
+  ArgumentFormatRule,
+  ArgumentFormatCall,
+  ArgumentFormatExpectation,
+  ArgumentFormatKind,
+} from './argumentFormat.js';
 export { validateJudge } from './judge.js';
 export type { JudgeValidatorConfig } from './judge.js';
 

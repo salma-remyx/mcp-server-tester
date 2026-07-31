@@ -17,6 +17,13 @@ export type {
   ToolCallCountOptions,
 } from '../assertions/validators/toolCalls.js';
 
+export type {
+  ArgumentFormatRule,
+  ArgumentFormatCall,
+  ArgumentFormatExpectation,
+  ArgumentFormatKind,
+} from '../assertions/validators/argumentFormat.js';
+
 export type { JudgeValidatorConfig } from '../assertions/validators/judge.js';
 
 export type {

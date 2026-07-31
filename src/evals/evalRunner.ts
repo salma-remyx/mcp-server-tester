@@ -32,6 +32,7 @@ import {
   validateSize,
   validateToolCalls,
   validateToolCallCount,
+  validateArgumentFormat,
   validateJudge,
 } from '../assertions/validators/index.js';
 import { execFileNoThrow } from '../utils/execFileNoThrow.js';
@@ -607,6 +608,18 @@ async function runExpectBlockValidations(
       expectBlock.toolCallCount
     );
     results.toolCallCount = {
+      pass: validation.pass,
+      details: validation.message,
+    };
+  }
+
+  // argumentFormat (toMatchToolArgumentFormat)
+  if (expectBlock.argumentFormat !== undefined) {
+    const validation = validateArgumentFormat(
+      response,
+      expectBlock.argumentFormat
+    );
+    results.argumentFormat = {
       pass: validation.pass,
       details: validation.message,
     };

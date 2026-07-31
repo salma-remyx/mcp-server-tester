@@ -18,6 +18,7 @@ import type {
   ToolCallExpectation,
   ToolCallCountOptions,
 } from '../validators/toolCalls.js';
+import type { ArgumentFormatExpectation } from '../validators/argumentFormat.js';
 
 /**
  * Options for the LLM judge matcher
@@ -247,6 +248,30 @@ declare global {
        * ```
        */
       toHaveToolCallCount(options: ToolCallCountOptions): R;
+
+      /**
+       * Validates that tool-call arguments adhere to declared format
+       * instructions (quote-wrapping, ISO dates, enums, comma-separated
+       * lists, primitive types). Operates on mcp_host simulation results.
+       *
+       * @example
+       * ```typescript
+       * expect(simulationResult).toMatchToolArgumentFormat({
+       *   calls: [
+       *     {
+       *       name: 'search',
+       *       arguments: {
+       *         query: { kind: 'quoted' },
+       *         date: { kind: 'iso-date' },
+       *         sort: { kind: 'enum', values: ['asc', 'desc'] },
+       *         tags: { kind: 'comma-list' },
+       *       },
+       *     },
+       *   ],
+       * });
+       * ```
+       */
+      toMatchToolArgumentFormat(expectation: ArgumentFormatExpectation): R;
     }
   }
 }

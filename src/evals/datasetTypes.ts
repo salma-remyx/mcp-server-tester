@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { MCPHostConfig } from './mcpHost/mcpHostTypes.js';
 import type { SnapshotSanitizer } from '../assertions/validators/types.js';
+import type { ArgumentFormatExpectation } from '../assertions/validators/argumentFormat.js';
 import type { BuiltInRubric } from '../judge/judgeTypes.js';
 
 // Re-export sanitizer types from canonical source (validators/types.ts)
@@ -274,6 +275,13 @@ export interface EvalExpectBlock {
     /** Exact number of tool calls */
     exact?: number;
   };
+
+  /**
+   * Asserts that tool-call arguments adhere to declared format instructions
+   * (quote-wrapping, ISO dates, enums, comma-separated lists, primitive types).
+   * Only meaningful for mcp_host mode. Adapted from IFEval-FC (arXiv:2509.18420).
+   */
+  argumentFormat?: ArgumentFormatExpectation;
 }
 
 /**
@@ -398,6 +406,29 @@ const JudgeExpectConfigSchema = z
   });
 
 /**
+ * Zod schema for a single argument format rule (IFEval-FC verifiable categories).
+ */
+const ArgumentFormatRuleSchema = z.object({
+  kind: z.enum([
+    'quoted',
+    'integer',
+    'number',
+    'boolean',
+    'iso-date',
+    'iso-datetime',
+    'uuid',
+    'enum',
+    'comma-list',
+    'regex',
+  ]),
+  values: z.array(z.union([z.string(), z.number()])).optional(),
+  pattern: z.string().optional(),
+  flags: z.string().optional(),
+  minLength: z.number().int().min(0).optional(),
+  maxLength: z.number().int().min(0).optional(),
+});
+
+/**
  * Zod schema for EvalExpectBlock
  */
 const EvalExpectBlockSchema = z.object({
@@ -435,6 +466,25 @@ const EvalExpectBlockSchema = z.object({
       min: z.number().int().min(0).optional(),
       max: z.number().int().min(0).optional(),
       exact: z.number().int().min(0).optional(),
+    })
+    .optional(),
+  argumentFormat: z
+    .object({
+      calls: z.array(
+        z.object({
+          name: z.string(),
+          arguments: z
+            .record(
+              z.string(),
+              z.union([
+                ArgumentFormatRuleSchema,
+                z.array(ArgumentFormatRuleSchema),
+              ])
+            )
+            .optional(),
+          required: z.boolean().optional(),
+        })
+      ),
     })
     .optional(),
 });

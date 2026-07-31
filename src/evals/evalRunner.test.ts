@@ -685,6 +685,83 @@ describe('toolsTriggered and toolCallCount expectations in eval runner', () => {
   });
 });
 
+describe('argumentFormat expectations in eval runner', () => {
+  it('passes when simulation arguments satisfy declared formats', async () => {
+    const mcp = createMockMCP();
+    vi.mocked(mcp.callTool).mockResolvedValue({
+      success: true,
+      toolCalls: [
+        {
+          name: 'search',
+          arguments: { query: 'hello', date: '2026-07-31', tags: 'a,b' },
+        },
+      ],
+      response: 'Done',
+    } as unknown as Awaited<ReturnType<typeof mcp.callTool>>);
+
+    const evalCase = createEvalCase({
+      expect: {
+        argumentFormat: {
+          calls: [
+            {
+              name: 'search',
+              arguments: {
+                query: { kind: 'quoted' },
+                date: { kind: 'iso-date' },
+                tags: { kind: 'comma-list' },
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const result = await runEvalCase(evalCase, createContext(mcp));
+    expect(result.expectations.argumentFormat).toBeDefined();
+    expect(result.expectations.argumentFormat?.pass).toBe(true);
+  });
+
+  it('fails when an argument violates its format', async () => {
+    const mcp = createMockMCP();
+    vi.mocked(mcp.callTool).mockResolvedValue({
+      success: true,
+      toolCalls: [{ name: 'search', arguments: { query: 123 } }],
+      response: 'Done',
+    } as unknown as Awaited<ReturnType<typeof mcp.callTool>>);
+
+    const evalCase = createEvalCase({
+      expect: {
+        argumentFormat: {
+          calls: [{ name: 'search', arguments: { query: { kind: 'quoted' } } }],
+        },
+      },
+    });
+
+    const result = await runEvalCase(evalCase, createContext(mcp));
+    expect(result.expectations.argumentFormat?.pass).toBe(false);
+    expect(result.pass).toBe(false);
+    expect(result.expectations.argumentFormat?.details).toContain('query');
+  });
+
+  it('fails with informative message when response is not a simulation', async () => {
+    const mcp = createMockMCP({
+      content: [{ type: 'text', text: 'plain text' }],
+    });
+
+    const evalCase = createEvalCase({
+      expect: {
+        argumentFormat: {
+          calls: [{ name: 'search', arguments: { q: { kind: 'quoted' } } }],
+        },
+      },
+    });
+
+    const result = await runEvalCase(evalCase, createContext(mcp));
+    expect(result.expectations.argumentFormat?.pass).toBe(false);
+    expect(result.expectations.argumentFormat?.details).toContain('mcp_host');
+  });
+});
+
 describe('runEvalDataset defaultLlmIterations', () => {
   function createDataset(cases: EvalCase[]): EvalDataset {
     return { name: 'test-dataset', cases };

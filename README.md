@@ -223,3 +223,42 @@ If any of these affect your use case, please open an issue.
 ## License
 
 MIT
+
+## Argument format checking
+
+Existing tool-call assertions (`toHaveToolCalls`, `toHaveToolCallCount`) check
+**which** tools an LLM called and **how many** — but not whether the call's
+**arguments** followed the format instructions embedded in parameter
+descriptions (e.g. "enclose the value in double quotes", "use an ISO date",
+"one of `asc|desc`", "a comma-separated list"). `toMatchToolArgumentFormat`
+fills that gap for `mcp_host` simulations.
+
+```typescript
+expect(simulationResult).toMatchToolArgumentFormat({
+  calls: [
+    {
+      name: 'search',
+      arguments: {
+        query: { kind: 'quoted' }, // emitted as a JSON string (quote-wrapped)
+        date: { kind: 'iso-date' }, // YYYY-MM-DD
+        sort: { kind: 'enum', values: ['asc', 'desc'] },
+        tags: { kind: 'comma-list' }, // comma-separated, >= 2 items
+        limit: { kind: 'integer' },
+        ref: { kind: 'uuid' },
+      },
+    },
+  ],
+});
+```
+
+The same rules are available to data-driven eval datasets via the
+`argumentFormat` expectation block, and programmatically via
+`validateArgumentFormat`. Supported format kinds: `quoted`, `integer`,
+`number`, `boolean`, `iso-date`, `iso-datetime`, `uuid`, `enum`,
+`comma-list`, `regex` (with optional `minLength` / `maxLength` bounds).
+
+Adapted from _Instruction-Following Evaluation in Function Calling for Large
+Language Models_ (IFEval-FC, [arXiv:2509.18420](https://arxiv.org/abs/2509.18420)).
+The benchmark dataset is out of scope here; what is ported is the
+format-adherence taxonomy applied to the parsed tool-call arguments the MCP host
+simulation already produces.
