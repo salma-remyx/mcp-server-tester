@@ -34,6 +34,7 @@ import {
   validateToolCallCount,
   validateJudge,
 } from '../assertions/validators/index.js';
+import { aggregateMultiJudgeVerdicts } from '../judge/judgeRanking.js';
 import { execFileNoThrow } from '../utils/execFileNoThrow.js';
 import { debugEval } from '../debug.js';
 import { sumUsage } from '../utils/usageUtils.js';
@@ -655,13 +656,16 @@ async function runExpectBlockValidations(
       // Single judge — flat result, same as before
       results.judge = judgeResultEntries[0]!;
     } else {
-      // Multi-judge — aggregate with AND semantics
-      const allPassed = judgeResultEntries.every((r) => r.pass);
-      const passCount = judgeResultEntries.filter((r) => r.pass).length;
-
+      // Multi-judge — aggregate under the case's judgeConsensus threshold.
+      // Defaults to unanimity (historical AND semantics); 'majority' or a
+      // numeric minPassFraction relaxes it to an adjustable agreement rule.
+      const consensus = aggregateMultiJudgeVerdicts(
+        judgeResultEntries,
+        expectBlock.judgeConsensus
+      );
       results.judge = {
-        pass: allPassed,
-        details: `${passCount}/${judgeResultEntries.length} judges passed`,
+        pass: consensus.pass,
+        details: consensus.details,
         judgeResults: judgeResultEntries,
       };
     }

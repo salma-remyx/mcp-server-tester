@@ -88,6 +88,31 @@ export interface EvalExpectationResult {
 }
 
 /**
+ * Aggregation rule for multi-judge `passesJudge` verdicts.
+ *
+ * The historical default is unanimity (all judges must pass). Setting
+ * `mode: 'majority'` or a numeric `minPassFraction` relaxes this to an
+ * adjustable agreement threshold, so a case can pass when most — but not
+ * all — judges agree. This mirrors the adjustable-agreement-threshold idea
+ * used for scaling reliable LLM-judge consensus.
+ */
+export type JudgeConsensusMode = 'unanimity' | 'majority';
+
+export interface JudgeConsensusOptions {
+  /**
+   * Consensus mode. `'unanimity'` (default) requires every judge to pass;
+   * `'majority'` requires strictly more than half to pass.
+   */
+  mode?: JudgeConsensusMode;
+
+  /**
+   * Minimum fraction of judges (0-1) that must pass. Overrides `mode` when
+   * set, enabling arbitrary thresholds (e.g. `0.6` = at least 60% pass).
+   */
+  minPassFraction?: number;
+}
+
+/**
  * Map of expectation type to result
  */
 export type ExpectationResultMap = Partial<

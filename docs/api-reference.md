@@ -1159,7 +1159,7 @@ interface MCPConformanceResult {
 
 ### `EvalExpectBlock`
 
-```typescript snippet=src/evals/datasetTypes.ts#L186-L277
+```typescript snippet=src/evals/datasetTypes.ts#L187-L287
 export interface EvalExpectBlock {
   /**
    * Exact response match (toMatchToolResponse)
@@ -1206,6 +1206,15 @@ export interface EvalExpectBlock {
    * When an array is provided, all judges must pass (AND semantics).
    */
   passesJudge?: JudgeExpectConfig | JudgeExpectConfig[];
+
+  /**
+   * Aggregation rule for multi-judge `passesJudge` verdicts.
+   *
+   * Defaults to unanimity (all judges must pass). Set `mode: 'majority'` or
+   * a `minPassFraction` to relax the threshold so a case can pass when most
+   * — but not all — judges agree.
+   */
+  judgeConsensus?: JudgeConsensusOptions;
 
   /**
    * Response size validation (toHaveToolResponseSize)
@@ -1256,7 +1265,7 @@ export interface EvalExpectBlock {
 
 ### `EvalCase`
 
-````typescript snippet=src/evals/datasetTypes.ts#L27-L139
+````typescript snippet=src/evals/datasetTypes.ts#L28-L140
 export interface EvalCase {
   /**
    * Unique identifier for this test case

@@ -223,3 +223,55 @@ If any of these affect your use case, please open an issue.
 ## License
 
 MIT
+
+## Multi-Judge Consensus
+
+When an eval case lists multiple judges under `passesJudge`, the default rule is
+**unanimity** — every judge must pass (AND semantics). Set `judgeConsensus` on
+the expect block to relax this into an **adjustable agreement threshold**, so a
+case can pass when most — but not all — judges agree. This is useful when judges
+legitimately disagree and a strict all-must-pass rule is too brittle.
+
+```json
+{
+  "id": "resilient-judgment",
+  "toolName": "search",
+  "args": { "query": "planning docs" },
+  "expect": {
+    "passesJudge": [
+      { "rubric": "correctness", "threshold": 0.7 },
+      { "rubric": "completeness", "threshold": 0.7 },
+      { "rubric": "groundedness", "threshold": 0.7 }
+    ],
+    "judgeConsensus": { "mode": "majority" }
+  }
+}
+```
+
+- `mode: "unanimity"` (default) — all judges must pass.
+- `mode: "majority"` — strictly more than half must pass.
+- `minPassFraction` — an arbitrary threshold (e.g. `0.6` = at least 60% pass);
+  overrides `mode` when set.
+
+For **ranking** several candidate outputs (e.g. tool variants) by multi-judge
+preference, use the programmatic Elo-ranking helpers, which derive a stable,
+interpretable leaderboard from the per-judge scores the runner already collects
+(no extra LLM calls):
+
+```typescript
+import {
+  computeEloRankings,
+  rankCandidatesByJudgeResults,
+} from '@gleanwork/mcp-server-tester';
+
+const board = computeEloRankings([
+  { id: 'variant-a', scores: [0.95, 0.9] },
+  { id: 'variant-b', scores: [0.55, 0.6] },
+]);
+// board[0].id === 'variant-a'
+```
+
+_Adapted from "(Towards) Scalable Reliable Automated Evaluation with Large
+Language Models" (arXiv:2607.28282): adjustable agreement thresholds for
+multi-judge consensus, plus Elo ranking of outputs. Pairwise comparisons are
+derived from existing per-judge scores rather than fresh LLM queries._

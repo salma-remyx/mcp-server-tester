@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { MCPHostConfig } from './mcpHost/mcpHostTypes.js';
 import type { SnapshotSanitizer } from '../assertions/validators/types.js';
 import type { BuiltInRubric } from '../judge/judgeTypes.js';
+import type { JudgeConsensusOptions } from '../types/index.js';
 
 // Re-export sanitizer types from canonical source (validators/types.ts)
 // Note: For JSON datasets, the Zod schema below validates that patterns are strings.
@@ -231,6 +232,15 @@ export interface EvalExpectBlock {
   passesJudge?: JudgeExpectConfig | JudgeExpectConfig[];
 
   /**
+   * Aggregation rule for multi-judge `passesJudge` verdicts.
+   *
+   * Defaults to unanimity (all judges must pass). Set `mode: 'majority'` or
+   * a `minPassFraction` to relax the threshold so a case can pass when most
+   * — but not all — judges agree.
+   */
+  judgeConsensus?: JudgeConsensusOptions;
+
+  /**
    * Response size validation (toHaveToolResponseSize)
    */
   responseSize?: {
@@ -410,6 +420,12 @@ const EvalExpectBlockSchema = z.object({
   isError: z.union([z.boolean(), z.string(), z.array(z.string())]).optional(),
   passesJudge: z
     .union([JudgeExpectConfigSchema, z.array(JudgeExpectConfigSchema).min(1)])
+    .optional(),
+  judgeConsensus: z
+    .object({
+      mode: z.enum(['unanimity', 'majority']).optional(),
+      minPassFraction: z.number().min(0).max(1).optional(),
+    })
     .optional(),
   responseSize: z
     .object({

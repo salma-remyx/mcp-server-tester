@@ -306,5 +306,13 @@ export {
   clearJudgeRegistry,
 } from './judge/judgeRegistry.js';
 
+// Multi-Judge Consensus & Elo Ranking
+export {
+  aggregateMultiJudgeVerdicts,
+  computeEloRankings,
+  rankCandidatesByJudgeResults,
+  scoresFromJudgeResults,
+} from './judge/judgeRanking.js';
+
 // Conformance
 export { runConformanceChecks } from './spec/conformanceChecks.js';
