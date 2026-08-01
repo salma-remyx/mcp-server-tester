@@ -1159,7 +1159,7 @@ interface MCPConformanceResult {
 
 ### `EvalExpectBlock`
 
-```typescript snippet=src/evals/datasetTypes.ts#L186-L277
+```typescript snippet=src/evals/datasetTypes.ts#L187-L293
 export interface EvalExpectBlock {
   /**
    * Exact response match (toMatchToolResponse)
@@ -1206,6 +1206,21 @@ export interface EvalExpectBlock {
    * When an array is provided, all judges must pass (AND semantics).
    */
   passesJudge?: JudgeExpectConfig | JudgeExpectConfig[];
+
+  /**
+   * Consensus policy for aggregating an array of `passesJudge` judges into a
+   * single commit decision.
+   *
+   * Adapted from "Disagree and Commit: Degrees of Argumentation-based
+   * Agreements" (arXiv:2501.01992): an agreement need not be total — a
+   * partial degree of agreement suffices to commit. Defaults to 'unanimous'
+   * (every judge must pass), preserving prior AND semantics. Opt into a
+   * partial-agreement policy (`majority`, `mean`, `median`, `min`) when a
+   * strict consensus is too brittle for noisy judges.
+   *
+   * Only applies when `passesJudge` is an array of two or more judges.
+   */
+  judgeConsensus?: JudgeConsensusOptions;
 
   /**
    * Response size validation (toHaveToolResponseSize)
@@ -1256,7 +1271,7 @@ export interface EvalExpectBlock {
 
 ### `EvalCase`
 
-````typescript snippet=src/evals/datasetTypes.ts#L27-L139
+````typescript snippet=src/evals/datasetTypes.ts#L28-L140
 export interface EvalCase {
   /**
    * Unique identifier for this test case
@@ -1371,18 +1386,6 @@ export interface EvalCase {
   expect?: EvalExpectBlock;
 }
 ````
-
-### `EvalDataset`
-
-```typescript
-interface EvalDataset {
-  name: string;
-  description?: string;
-  cases: EvalCase[];
-  metadata?: Record<string, unknown>;
-  schemas?: Record<string, ZodSchema>; // Zod schemas for toMatchToolSchema assertions
-}
-```
 
 ## Next Steps
 

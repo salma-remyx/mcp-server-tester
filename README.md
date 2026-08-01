@@ -121,6 +121,38 @@ In LLM host mode, a real LLM receives your server's tool list and a natural lang
 
 LLM host mode makes real API calls and produces non-deterministic results. Use `iterations` to run a case multiple times and measure pass rate rather than expecting 100% on a single run. See the [LLM Host Guide](docs/mcp-host.md) for configuration and cost management.
 
+### Multi-Judge Consensus
+
+When `passesJudge` is an array, the default rule is **unanimous**: every judge must pass. That can be brittle for noisy judges — one outlier fails the whole case. `judgeConsensus` lets a case require only a _partial degree of agreement_ before committing to a pass, while defaulting to unanimous so existing behavior is unchanged.
+
+```json
+{
+  "id": "answer-quality",
+  "toolName": "ask",
+  "args": { "q": "summarize the doc" },
+  "expect": {
+    "passesJudge": [
+      { "rubric": "correctness" },
+      { "rubric": "completeness" },
+      { "rubric": "groundedness" }
+    ],
+    "judgeConsensus": { "policy": "majority" }
+  }
+}
+```
+
+Supported policies:
+
+| Policy      | Commits when                                                         |
+| ----------- | -------------------------------------------------------------------- |
+| `unanimous` | Every judge passes (default — preserves prior AND semantics).        |
+| `majority`  | Strictly more than half of the judges pass.                          |
+| `mean`      | Mean of judge scores meets `threshold` (default `0.7`).              |
+| `median`    | Median of judge scores meets `threshold`.                            |
+| `min`       | Lowest judge score meets `threshold` (continuous form of unanimous). |
+
+For programmatic use, `resolveJudgeConsensus(judgeResults, options)` returns `{ pass, agreement, details }`, where `agreement` is the degree-of-agreement scalar in `[0, 1]`.
+
 ## Installation
 
 Requires Node.js 22+.

@@ -242,6 +242,14 @@ export {
 // Eval Runner
 export { runEvalDataset, runEvalCase } from './evals/evalRunner.js';
 
+// Multi-judge consensus (degree-of-agreement aggregation)
+export {
+  resolveJudgeConsensus,
+  type JudgeConsensusPolicy,
+  type JudgeConsensusOptions,
+  type JudgeConsensusResult,
+} from './evals/judgeConsensus.js';
+
 export type {
   EvalResultStore,
   EvalResultStoreConfig,

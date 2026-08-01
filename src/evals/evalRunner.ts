@@ -5,6 +5,7 @@ import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { ZodType } from 'zod';
 import { simulateMCPHost } from './mcpHost/mcpHostSimulation.js';
 import type { MCPHostSimulationResult } from './mcpHost/mcpHostTypes.js';
+import { resolveJudgeConsensus } from './judgeConsensus.js';
 import type { EvalExpectationResult, UsageMetrics } from '../types/index.js';
 import type {
   EvalCaseResult,
@@ -655,13 +656,18 @@ async function runExpectBlockValidations(
       // Single judge — flat result, same as before
       results.judge = judgeResultEntries[0]!;
     } else {
-      // Multi-judge — aggregate with AND semantics
-      const allPassed = judgeResultEntries.every((r) => r.pass);
-      const passCount = judgeResultEntries.filter((r) => r.pass).length;
-
+      // Multi-judge — aggregate via the configured consensus policy.
+      // Defaults to 'unanimous' (every judge must pass) so prior AND behavior
+      // is preserved; a case may opt into a partial-agreement policy
+      // (majority / mean / median / min) via expect.judgeConsensus.
+      const consensus = resolveJudgeConsensus(
+        judgeResultEntries,
+        expectBlock.judgeConsensus
+      );
       results.judge = {
-        pass: allPassed,
-        details: `${passCount}/${judgeResultEntries.length} judges passed`,
+        pass: consensus.pass,
+        details: consensus.details,
+        score: consensus.agreement,
         judgeResults: judgeResultEntries,
       };
     }

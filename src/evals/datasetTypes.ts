@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { MCPHostConfig } from './mcpHost/mcpHostTypes.js';
 import type { SnapshotSanitizer } from '../assertions/validators/types.js';
 import type { BuiltInRubric } from '../judge/judgeTypes.js';
+import type { JudgeConsensusOptions } from './judgeConsensus.js';
 
 // Re-export sanitizer types from canonical source (validators/types.ts)
 // Note: For JSON datasets, the Zod schema below validates that patterns are strings.
@@ -231,6 +232,21 @@ export interface EvalExpectBlock {
   passesJudge?: JudgeExpectConfig | JudgeExpectConfig[];
 
   /**
+   * Consensus policy for aggregating an array of `passesJudge` judges into a
+   * single commit decision.
+   *
+   * Adapted from "Disagree and Commit: Degrees of Argumentation-based
+   * Agreements" (arXiv:2501.01992): an agreement need not be total — a
+   * partial degree of agreement suffices to commit. Defaults to 'unanimous'
+   * (every judge must pass), preserving prior AND semantics. Opt into a
+   * partial-agreement policy (`majority`, `mean`, `median`, `min`) when a
+   * strict consensus is too brittle for noisy judges.
+   *
+   * Only applies when `passesJudge` is an array of two or more judges.
+   */
+  judgeConsensus?: JudgeConsensusOptions;
+
+  /**
    * Response size validation (toHaveToolResponseSize)
    */
   responseSize?: {
@@ -410,6 +426,14 @@ const EvalExpectBlockSchema = z.object({
   isError: z.union([z.boolean(), z.string(), z.array(z.string())]).optional(),
   passesJudge: z
     .union([JudgeExpectConfigSchema, z.array(JudgeExpectConfigSchema).min(1)])
+    .optional(),
+  judgeConsensus: z
+    .object({
+      policy: z
+        .enum(['unanimous', 'majority', 'mean', 'median', 'min'])
+        .optional(),
+      threshold: z.number().min(0).max(1).optional(),
+    })
     .optional(),
   responseSize: z
     .object({
