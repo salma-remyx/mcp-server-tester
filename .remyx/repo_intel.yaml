@@ -84,7 +84,14 @@ observed_landing_zones:
       computeJudgeReliability inside the pre-existing runExpectBlockVal
     branch: evaluating-medical-ai-under-missing-information-same-provide
     timestamp: '2026-07-29T01:24:12Z'
-  last_observed: '2026-07-29T01:24:12Z'
+  - arxiv: 2501.01992v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: "The multi-judge branch of `runExpectBlockValidations` in\
+      \ `src/evals/evalRunner.ts` (\u2248L657), reached via the exported `runEvalDataset`\
+      \ / `runEvalCase`; `resolveJudgeConsensus` and its types are also ex"
+    branch: disagree-and-commit-degrees-of-argumentation-based-agreement
+    timestamp: '2026-08-01T06:52:23Z'
+  last_observed: '2026-08-01T06:52:23Z'
 - path: src/assertions/validators/
   shape_tags:
   - unclassified
@@ -153,4 +160,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-07-31T15:07:58Z'
+last_updated: '2026-08-01T06:52:23Z'
