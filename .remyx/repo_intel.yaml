@@ -91,7 +91,14 @@ observed_landing_zones:
       \ / `runEvalCase`; `resolveJudgeConsensus` and its types are also ex"
     branch: disagree-and-commit-degrees-of-argumentation-based-agreement
     timestamp: '2026-08-01T06:52:23Z'
-  last_observed: '2026-08-01T06:52:23Z'
+  - arxiv: 2607.28282v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: "src/evals/evalRunner.ts \u2014 runExpectBlockValidations()\
+      \ multi-judge branch (reached via runEvalCase/runEvalDataset when a case lists\
+      \ 2+ passesJudge entries) now calls aggregateMultiJudgeVerdicts. The El"
+    branch: towards-scalable-reliable-automated-evaluation-with-large-la
+    timestamp: '2026-08-01T20:15:46Z'
+  last_observed: '2026-08-01T20:15:46Z'
 - path: src/assertions/validators/
   shape_tags:
   - unclassified
@@ -160,4 +167,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-08-01T06:52:23Z'
+last_updated: '2026-08-01T20:15:46Z'
