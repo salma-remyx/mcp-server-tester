@@ -154,7 +154,12 @@ observed_landing_zones:
       \ when an `argumentFormat` block is present on an `Ev"
     branch: instruction-following-evaluation-in-function-calling-for-lar
     timestamp: '2026-07-31T15:07:58Z'
-  last_observed: '2026-07-31T15:07:58Z'
+  - arxiv: 2502.19130v4
+    mode: ''
+    call_site_specifics: ''
+    branch: voting-or-consensus-decision-making-in-multi-agent-debate
+    timestamp: '2026-08-02T10:13:28Z'
+  last_observed: '2026-08-02T10:13:28Z'
 rejected_shapes:
 - shape_tag: null
   reason_code: null
@@ -167,4 +172,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-08-01T20:15:46Z'
+last_updated: '2026-08-02T10:13:28Z'
