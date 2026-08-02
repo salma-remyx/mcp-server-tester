@@ -298,6 +298,16 @@ export {
   resolveRubric,
   isBuiltInRubric,
 } from './judge/judgeTypes.js';
+export {
+  resolveDecision,
+  DEFAULT_DECISION_PROTOCOL,
+} from './judge/decisionProtocols.js';
+export type {
+  DecisionProtocol,
+  DecisionProtocolConfig,
+  DecisionOutcome,
+  JudgeVote,
+} from './judge/decisionProtocols.js';
 
 // Custom Judge Registry
 export {

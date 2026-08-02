@@ -8,10 +8,13 @@
  * Supports three call signatures:
  *   - toPassToolJudge(rubric, options?)        — built-in LLM judge with rubric
  *   - toPassToolJudge({ judge: 'name', ... })  — named custom judge
- *   - toPassToolJudge([...judges])             — multi-judge (all must pass)
+ *   - toPassToolJudge([...judges], decision?)  — multi-judge, aggregated via
+ *     a decision protocol (default 'unanimous' / all must pass; see
+ *     `decisionProtocols` for voting vs consensus alternatives)
  */
 
 import { validateJudge } from '../validators/judge.js';
+import { resolveDecision } from '../../judge/decisionProtocols.js';
 import type { RubricSpec } from '../../judge/rubrics.js';
 import type { JudgeMatcherOptions } from './types.js';
 
@@ -74,24 +77,27 @@ export async function toPassToolJudge(
       })
     );
 
-    const allPassed = results.every((r) => r.pass);
-    const passCount = results.filter((r) => r.pass).length;
-    const summary = `${passCount}/${results.length} judges passed`;
+    // Aggregate per-judge pass/fail under the configured decision protocol.
+    // Defaults to 'unanimous' (all must pass), preserving historical behavior.
+    const decision = resolveDecision(
+      results.map((r) => ({ pass: r.pass, message: r.message })),
+      maybeOptions?.decision
+    );
     const details = results.map((r) => r.message).join('\n');
 
     if (this.isNot) {
       return {
-        pass: !allPassed,
+        pass: !decision.pass,
         message: () =>
-          allPassed
-            ? `Expected all judges to fail, but ${summary}`
-            : `Judges failed as expected: ${summary}`,
+          decision.pass
+            ? `Expected the judges to fail, but ${decision.summary}`
+            : `Judges failed as expected: ${decision.summary}`,
       };
     }
 
     return {
-      pass: allPassed,
-      message: () => `${summary}\n${details}`,
+      pass: decision.pass,
+      message: () => `${decision.summary}\n${details}`,
     };
   }
 

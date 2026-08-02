@@ -510,4 +510,131 @@ describe('toPassToolJudge', () => {
       expect(createJudge).not.toHaveBeenCalled();
     });
   });
+
+  describe('multi-judge decision protocols', () => {
+    it('defaults to unanimous — all judges must pass', async () => {
+      // [pass, pass, fail] under the default (unanimous) => fail
+      vi.mocked(createJudge).mockReturnValue(
+        makeMockJudge([
+          { pass: true, score: 0.9, reasoning: 'ok' },
+          { pass: true, score: 0.8, reasoning: 'ok' },
+          { pass: false, score: 0.4, reasoning: 'bad' },
+        ])
+      );
+
+      const context = { isNot: false };
+      const result = await toPassToolJudge.call(context, 'response', [
+        { rubric: { text: 'r1' } },
+        { rubric: { text: 'r2' } },
+        { rubric: { text: 'r3' } },
+      ]);
+
+      expect(result.pass).toBe(false);
+      expect(result.message()).toContain('unanimous');
+    });
+
+    it('aggregates via majority protocol when configured', async () => {
+      // [pass, pass, fail] under majority => pass (2/3 > half)
+      vi.mocked(createJudge).mockReturnValue(
+        makeMockJudge([
+          { pass: true, score: 0.9, reasoning: 'ok' },
+          { pass: true, score: 0.8, reasoning: 'ok' },
+          { pass: false, score: 0.4, reasoning: 'bad' },
+        ])
+      );
+
+      const context = { isNot: false };
+      const result = await toPassToolJudge.call(
+        context,
+        'response',
+        [
+          { rubric: { text: 'r1' } },
+          { rubric: { text: 'r2' } },
+          { rubric: { text: 'r3' } },
+        ],
+        { decision: { protocol: 'majority' } }
+      );
+
+      expect(result.pass).toBe(true);
+      expect(result.message()).toContain('majority');
+      expect(result.message()).toContain('2/3');
+    });
+
+    it('supermajority fails when only one of three passes', async () => {
+      vi.mocked(createJudge).mockReturnValue(
+        makeMockJudge([
+          { pass: true, score: 0.9, reasoning: 'ok' },
+          { pass: false, score: 0.3, reasoning: 'bad' },
+          { pass: false, score: 0.2, reasoning: 'bad' },
+        ])
+      );
+
+      const context = { isNot: false };
+      const result = await toPassToolJudge.call(
+        context,
+        'response',
+        [
+          { rubric: { text: 'r1' } },
+          { rubric: { text: 'r2' } },
+          { rubric: { text: 'r3' } },
+        ],
+        { decision: { protocol: 'supermajority' } }
+      );
+
+      expect(result.pass).toBe(false);
+    });
+
+    it('respects isNot under a voting protocol', async () => {
+      // majority passes (2/3) — isNot inverts to fail
+      vi.mocked(createJudge).mockReturnValue(
+        makeMockJudge([
+          { pass: true, score: 0.9, reasoning: 'ok' },
+          { pass: true, score: 0.8, reasoning: 'ok' },
+          { pass: false, score: 0.4, reasoning: 'bad' },
+        ])
+      );
+
+      const context = { isNot: true };
+      const result = await toPassToolJudge.call(
+        context,
+        'response',
+        [
+          { rubric: { text: 'r1' } },
+          { rubric: { text: 'r2' } },
+          { rubric: { text: 'r3' } },
+        ],
+        { decision: { protocol: 'majority' } }
+      );
+
+      expect(result.pass).toBe(false);
+    });
+
+    it('honors a custom minAgree override on the array', async () => {
+      // 4 judges: [pass, pass, fail, fail]. Unanimous would fail, but
+      // minAgree: 2 lowers the bar => pass.
+      vi.mocked(createJudge).mockReturnValue(
+        makeMockJudge([
+          { pass: true, score: 0.9, reasoning: 'ok' },
+          { pass: true, score: 0.9, reasoning: 'ok' },
+          { pass: false, score: 0.3, reasoning: 'bad' },
+          { pass: false, score: 0.3, reasoning: 'bad' },
+        ])
+      );
+
+      const context = { isNot: false };
+      const result = await toPassToolJudge.call(
+        context,
+        'response',
+        [
+          { rubric: { text: 'r1' } },
+          { rubric: { text: 'r2' } },
+          { rubric: { text: 'r3' } },
+          { rubric: { text: 'r4' } },
+        ],
+        { decision: { protocol: 'unanimous', minAgree: 2 } }
+      );
+
+      expect(result.pass).toBe(true);
+    });
+  });
 });

@@ -14,6 +14,7 @@ import type {
 } from '../validators/types.js';
 import type { ProviderKind } from '../../judge/judgeTypes.js';
 import type { RubricSpec } from '../../judge/rubrics.js';
+import type { DecisionProtocolConfig } from '../../judge/decisionProtocols.js';
 import type {
   ToolCallExpectation,
   ToolCallCountOptions,
@@ -39,6 +40,19 @@ export interface JudgeMatcherOptions {
    * and its `pass` result is authoritative.
    */
   judge?: string;
+  /**
+   * Decision protocol for aggregating a multi-judge array.
+   *
+   * Only applies when `toPassToolJudge` is called with an array of judges.
+   * Defaults to `'unanimous'` (all judges must pass). Voting protocols
+   * (`'majority'`, `'plurality'`) tend to suit reasoning rubrics; consensus
+   * protocols (`'unanimous'`, `'supermajority'`) tend to suit knowledge
+   * rubrics.
+   *
+   * Adapted from "Voting or Consensus? Decision-Making in Multi-Agent Debate"
+   * (arXiv:2502.19130).
+   */
+  decision?: DecisionProtocolConfig;
 }
 
 /**
@@ -173,6 +187,10 @@ declare global {
       toPassToolJudge(options: JudgeMatcherOptions): Promise<R>;
       toPassToolJudge(
         judges: Array<JudgeMatcherOptions & { rubric?: RubricSpec }>
+      ): Promise<R>;
+      toPassToolJudge(
+        judges: Array<JudgeMatcherOptions & { rubric?: RubricSpec }>,
+        decision: DecisionProtocolConfig
       ): Promise<R>;
 
       /**
