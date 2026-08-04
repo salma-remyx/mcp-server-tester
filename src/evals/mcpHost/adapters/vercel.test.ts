@@ -412,4 +412,138 @@ describe('createVercelOrchestrator', () => {
       expect(result.error).toContain('ANTHROPIC_BASE_URL');
     });
   });
+
+  describe('tool gating (Tool-Attention)', () => {
+    it('is a no-op (enabled:false) when toolGating is not configured', async () => {
+      const mcp = createMockMCP([
+        {
+          name: 'alpha',
+          description: 'Alpha tool',
+          inputSchema: { type: 'object', properties: {} },
+        },
+        {
+          name: 'beta',
+          description: 'Beta tool',
+          inputSchema: { type: 'object', properties: {} },
+        },
+      ]);
+
+      const orchestrator = createVercelOrchestrator();
+      const result = await orchestrator.simulate(mcp, 'scenario', {
+        provider: 'openai',
+        model: 'gpt-4o',
+      });
+
+      expect(result.toolGating).toBeDefined();
+      expect(result.toolGating!.enabled).toBe(false);
+      expect(result.toolGating!.exposedCount).toBe(2);
+
+      const { generateText } = await import('ai');
+      const callArg = vi.mocked(generateText).mock.calls[0]?.[0] as {
+        tools: Record<string, unknown>;
+      };
+      expect(Object.keys(callArg.tools).sort()).toEqual(['alpha', 'beta']);
+    });
+
+    it('exposes only the relevant subset when toolGating.maxTools is set', async () => {
+      const mcp = createMockMCP([
+        {
+          name: 'search_docs',
+          description: 'Search documentation',
+          inputSchema: { type: 'object', properties: {} },
+        },
+        {
+          name: 'send_email',
+          description: 'Send an email message',
+          inputSchema: { type: 'object', properties: {} },
+        },
+        {
+          name: 'create_calendar_event',
+          description: 'Create a calendar event',
+          inputSchema: { type: 'object', properties: {} },
+        },
+      ]);
+
+      const orchestrator = createVercelOrchestrator();
+      const result = await orchestrator.simulate(
+        mcp,
+        'search the documentation',
+        {
+          provider: 'openai',
+          model: 'gpt-4o',
+          toolGating: { maxTools: 1 },
+        }
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.toolGating!.enabled).toBe(true);
+      expect(result.toolGating!.originalCount).toBe(3);
+      expect(result.toolGating!.exposedCount).toBe(1);
+      expect(result.toolGating!.droppedNames.sort()).toEqual([
+        'create_calendar_event',
+        'send_email',
+      ]);
+
+      const { generateText } = await import('ai');
+      const callArg = vi.mocked(generateText).mock.calls[0]?.[0] as {
+        tools: Record<string, unknown>;
+      };
+      expect(Object.keys(callArg.tools)).toEqual(['search_docs']);
+    });
+
+    it('ships trimmed schemas when toolGating.lazySchema is true', async () => {
+      const mcp = createMockMCP([
+        {
+          name: 'search',
+          description: 'Search',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              query: {
+                type: 'string',
+                description: 'a long verbose description of the query',
+                enum: ['a', 'b', 'c'],
+                format: 'email',
+              },
+              limit: { type: 'number' },
+            },
+            required: ['query'],
+          },
+        },
+      ]);
+
+      jsonSchemaMock.mockClear();
+
+      const orchestrator = createVercelOrchestrator();
+      await orchestrator.simulate(mcp, 'search', {
+        provider: 'openai',
+        model: 'gpt-4o',
+        toolGating: { lazySchema: true },
+      });
+
+      // Skeleton keeps type + property names + top-level types + required,
+      // but drops the verbose per-property detail (description/enum/format).
+      expect(jsonSchemaMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'object',
+          properties: expect.objectContaining({
+            query: { type: 'string' },
+            limit: { type: 'number' },
+          }),
+          required: ['query'],
+        })
+      );
+      const calledSchema = jsonSchemaMock.mock.calls[0]?.[0] as Record<
+        string,
+        unknown
+      >;
+      const props = calledSchema.properties as Record<
+        string,
+        Record<string, unknown>
+      >;
+      expect(props.query).not.toHaveProperty('description');
+      expect(props.query).not.toHaveProperty('enum');
+      expect(props.query).not.toHaveProperty('format');
+    });
+  });
 });

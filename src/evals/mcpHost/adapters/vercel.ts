@@ -18,6 +18,7 @@ import type {
 import type { UsageMetrics } from '../../../types/index.js';
 import type { MCPFixtureApi } from '../../../mcp/fixtures/mcpFixture.js';
 import { extractText } from '../../../mcp/response.js';
+import { buildGatedTools } from '../toolGating.js';
 
 /**
  * Classifies a raw error from the Vercel AI SDK agentic loop and returns a
@@ -209,6 +210,12 @@ export function createVercelOrchestrator(): MCPHostSimulator {
         let mcpDurationMs = 0;
         const allToolCalls: LLMToolCall[] = [];
 
+        // Tool-Attention: optionally gate the catalog by scenario relevance and
+        // ship trimmed (lazy) schemas, cutting the per-turn schema-injection
+        // payload (the "tools tax"). No-op without config.toolGating.
+        const { tools: exposedTools, report: toolGatingReport } =
+          buildGatedTools(scenario, mcpTools, config.toolGating);
+
         // Build tool definitions in Vercel AI SDK format.
         // Uses any because the tool() generic requires inferred parameter types
         // which aren't available from MCP's JSON Schema at compile time.
@@ -217,7 +224,7 @@ export function createVercelOrchestrator(): MCPHostSimulator {
         // but prepareToolsAndToolChoice reads .inputSchema — they're inconsistent in v6.
         // Using jsonSchema() from @ai-sdk/provider-utils produces the correct Schema object.
         const tools: Record<string, any> = {};
-        for (const mcpTool of mcpTools) {
+        for (const mcpTool of exposedTools) {
           const toolName = mcpTool.name;
           // Ensure type:'object' is present — Anthropic requires it, some servers omit it.
           const rawSchema = {
@@ -281,6 +288,7 @@ export function createVercelOrchestrator(): MCPHostSimulator {
           mcpDurationMs,
           conversationHistory,
           usage: hostUsage,
+          toolGating: toolGatingReport,
         };
       } catch (err) {
         return {

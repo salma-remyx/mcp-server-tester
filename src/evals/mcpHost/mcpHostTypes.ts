@@ -7,6 +7,7 @@
 
 import type { MCPFixtureApi } from '../../mcp/fixtures/mcpFixture.js';
 import type { UsageMetrics } from '../../types/index.js';
+import type { ToolGatingConfig, ToolGatingReport } from './toolGating.js';
 
 /**
  * Host type for MCP host simulation.
@@ -225,6 +226,16 @@ export interface MCPHostConfig {
    * Browser host configuration (required for 'browser' host type).
    */
   browser?: BrowserConfig;
+
+  /**
+   * Optional tool gating + lazy schema loading for the SDK host injection
+   * layer. When set, only the scenario-relevant subset of MCP tools is
+   * exposed to the LLM (dynamic gating) and, with `lazySchema`, each tool's
+   * verbose schema detail is deferred — cutting the per-turn schema-injection
+   * payload ("tools tax"). Adapted from "Tool Attention Is All You Need"
+   * (arXiv:2604.21816). No-op for non-SDK host types.
+   */
+  toolGating?: ToolGatingConfig;
 }
 
 /**
@@ -281,6 +292,12 @@ export interface MCPHostSimulationResult {
    * Populated by SDK-based hosts from the AI SDK response.
    */
   usage?: UsageMetrics;
+
+  /**
+   * Report on the tool-gating decision applied during this simulation, when
+   * `mcpHostConfig.toolGating` was set (SDK host only). `undefined` otherwise.
+   */
+  toolGating?: ToolGatingReport;
 }
 
 /**

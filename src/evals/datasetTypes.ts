@@ -307,6 +307,16 @@ export interface EvalDataset {
 }
 
 /**
+ * Zod schema for ToolGatingConfig (SDK host injection-layer gating).
+ */
+const ToolGatingConfigSchema = z.object({
+  maxTools: z.number().int().min(0).optional(),
+  minRelevance: z.number().min(0).max(1).optional(),
+  lazySchema: z.boolean().optional(),
+  alwaysInclude: z.array(z.string()).optional(),
+});
+
+/**
  * Zod schema for MCPHostConfig (simplified for serialization)
  */
 const MCPHostConfigSchema = z.object({
@@ -337,6 +347,7 @@ const MCPHostConfigSchema = z.object({
       timeout: z.number().optional(),
     })
     .optional(),
+  toolGating: ToolGatingConfigSchema.optional(),
 });
 
 /**
