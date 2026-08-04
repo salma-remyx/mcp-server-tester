@@ -130,7 +130,14 @@ observed_landing_zones:
       forward path). runInteractionScaling is called from inside simul
     branch: interaction-scaling-grounding-the-third-axis-of-test-time-co
     timestamp: '2026-07-21T14:39:28Z'
-  last_observed: '2026-07-21T14:39:28Z'
+  - arxiv: 2604.21816v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: 'Reached via the pre-existing mcp_host eval path: evalRunner.executeToolCall
+      (src/evals/evalRunner.ts:443) -> simulateMCPHost (src/evals/mcpHost/mcpHostSimulation.ts:123)
+      -> createVercelOrchestrator().'
+    branch: tool-attention-is-all-you-need-dynamic-tool-gating-and-lazy-
+    timestamp: '2026-08-04T08:21:36Z'
+  last_observed: '2026-08-04T08:21:36Z'
 - path: src/cli/utils/
   shape_tags:
   - library-shape-public-api
@@ -172,4 +179,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-08-02T10:13:28Z'
+last_updated: '2026-08-04T08:21:36Z'
