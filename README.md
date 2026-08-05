@@ -220,6 +220,38 @@ These MCP protocol features are not currently supported. These are deliberate sc
 
 If any of these affect your use case, please open an issue.
 
+## Built-in Benchmark Datasets
+
+The framework ships ready-to-run eval datasets that conform to the `EvalDataset` contract, so you can exercise a server without authoring cases from scratch.
+
+### Tool-learning benchmark — adapted from Seal-Tools
+
+A catalog of API-like tools paired with query→tool-call instances, including deliberately hard cases that compose multiple tools. Adapted from [Seal-Tools (arXiv:2405.08355)](https://arxiv.org/abs/2405.08355) — the self-instruct generation pipeline and separate benchmark harness are intentionally not ported; only the dataset artifact (tools + instances + hard multi-tool cases) is reproduced as in-pool eval data.
+
+The dataset lives in `src/evals/toolLearningBenchmark.ts`. Within a repo test you import it relatively (an `exports` entry for external consumers can be added in a follow-up):
+
+```typescript
+import { test, expect } from '@gleanwork/mcp-server-tester/fixtures/mcp';
+import { runEvalDataset } from '@gleanwork/mcp-server-tester';
+import { loadToolLearningBenchmark } from '../src/evals/toolLearningBenchmark';
+
+test('tool-learning benchmark', async ({ mcp }, testInfo) => {
+  const dataset = loadToolLearningBenchmark();
+  const result = await runEvalDataset({ dataset }, { mcp, testInfo });
+  expect(result.passed).toBe(result.total);
+});
+```
+
+Cases span three difficulty bands, filterable via `filterTags`:
+
+| Band     | Mode       | What it checks                                                |
+| -------- | ---------- | ------------------------------------------------------------- |
+| `easy`   | `direct`   | Deterministic tool output (text, pattern, size, errors)       |
+| `medium` | `mcp_host` | A natural-language prompt triggers the right single tool      |
+| `hard`   | `mcp_host` | Multi-tool composition via `toolsTriggered` + `toolCallCount` |
+
+The tool catalog (`sealToolsCatalog`) documents the synthetic tool surface the benchmark assumes. Bring up a server that exposes those tools (or override them at runtime) and run the dataset like any other.
+
 ## License
 
 MIT
