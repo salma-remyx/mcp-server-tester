@@ -98,7 +98,12 @@ observed_landing_zones:
       \ 2+ passesJudge entries) now calls aggregateMultiJudgeVerdicts. The El"
     branch: towards-scalable-reliable-automated-evaluation-with-large-la
     timestamp: '2026-08-01T20:15:46Z'
-  last_observed: '2026-08-01T20:15:46Z'
+  - arxiv: 2405.08355v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: (none)
+    branch: seal-tools-self-instruct-tool-learning-dataset-for-agent-tun
+    timestamp: '2026-08-05T02:46:28Z'
+  last_observed: '2026-08-05T02:46:28Z'
 - path: src/assertions/validators/
   shape_tags:
   - unclassified
@@ -179,4 +184,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-08-04T08:21:36Z'
+last_updated: '2026-08-05T02:46:28Z'
