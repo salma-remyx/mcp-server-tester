@@ -106,7 +106,7 @@ observed_landing_zones:
   last_observed: '2026-08-05T02:46:28Z'
 - path: src/assertions/validators/
   shape_tags:
-  - unclassified
+  - library-shape-public-api
   confirmed_by:
   - arxiv: 2502.18018v1
     mode: Mode 2 (adapted port)
@@ -122,7 +122,14 @@ observed_landing_zones:
       \ in src/assertions/matchers/toHaveToolCalls.ts; both pre-existi"
     branch: when2call-when-not-to-call-tools
     timestamp: '2026-07-27T15:35:45Z'
-  last_observed: '2026-07-27T15:35:45Z'
+  - arxiv: 2607.29252v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: validateJudge in src/assertions/validators/judge.ts:197 (itself
+      reached from the eval pipeline runEvalDataset at src/evals/evalRunner.ts:628
+      and the toPassToolJudge Playwright matcher at src/assertion
+    branch: calibratedrubric-task-adaptive-rubric-banks-for-open-ended-l
+    timestamp: '2026-08-06T11:02:03Z'
+  last_observed: '2026-08-06T11:02:03Z'
 - path: src/evals/mcpHost/
   shape_tags:
   - callback
@@ -184,4 +191,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-08-05T02:46:28Z'
+last_updated: '2026-08-06T11:02:03Z'
