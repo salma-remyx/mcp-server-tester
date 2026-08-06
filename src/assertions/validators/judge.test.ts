@@ -246,6 +246,56 @@ describe('validateJudge', () => {
       consoleSpy.mockRestore();
     });
 
+    it('attaches Beta–Bernoulli measurability to details when reps > 1', async () => {
+      // Two consistent reps ⇒ high agreement ⇒ measurable rubric.
+      const mockJudge = makeMockJudge([
+        { score: 0.8, pass: true },
+        { score: 0.8, pass: true },
+      ]);
+      mockCreateJudge.mockReturnValue(mockJudge);
+
+      const result = await validateJudge('response', {
+        rubric: { text: 'Is it good?' },
+        reps: 2,
+        threshold: 0.7,
+      });
+
+      expect(result.details!.measurability).toBeDefined();
+      const m = result.details!.measurability as {
+        reps: number;
+        agreementRate: number;
+        measurability: number;
+        measurable: boolean;
+      };
+      expect(m.reps).toBe(2);
+      expect(m.agreementRate).toBeCloseTo(1.0, 6);
+      expect(m.measurability).toBeGreaterThanOrEqual(0);
+      expect(m.measurability).toBeLessThanOrEqual(1);
+      expect(m.measurable).toBe(true);
+    });
+
+    it('marks a rubric non-measurable when rep verdicts disagree', async () => {
+      // Split verdicts (0.1 vs 0.9) ⇒ low agreement posterior ⇒ not measurable.
+      const mockJudge = makeMockJudge([
+        { score: 0.1, pass: false },
+        { score: 0.9, pass: true },
+      ]);
+      mockCreateJudge.mockReturnValue(mockJudge);
+
+      const result = await validateJudge('response', {
+        rubric: { text: 'Is it good?' },
+        reps: 2,
+        threshold: 0.7,
+      });
+
+      const m = result.details!.measurability as {
+        agreementRate: number;
+        measurable: boolean;
+      };
+      expect(m.agreementRate).toBeCloseTo(0.5, 6);
+      expect(m.measurable).toBe(false);
+    });
+
     it('includes judge metadata but not rep-specific fields for single rep', async () => {
       const mockJudge = makeMockJudge([
         { score: 0.8, pass: true, reasoning: 'Looks good' },

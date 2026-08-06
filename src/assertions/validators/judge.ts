@@ -10,6 +10,8 @@ import type { RubricSpec } from '../../judge/rubrics.js';
 import { createJudge } from '../../judge/judgeClient.js';
 import { resolveRubric } from '../../judge/rubrics.js';
 import { getRegisteredJudge } from '../../judge/judgeRegistry.js';
+import { computeRubricMeasurability } from '../../judge/rubricCalibration.js';
+import type { RubricMeasurability } from '../../judge/rubricCalibration.js';
 
 /**
  * Configuration for the judge validator
@@ -183,10 +185,18 @@ export async function validateJudge(
 
     let stdDev: number | undefined;
     let highVariance: boolean | undefined;
+    let measurability: RubricMeasurability | undefined;
 
     if (reps > 1) {
       stdDev = computeStdDev(scores, meanScore);
       highVariance = stdDev > 0.2;
+
+      // Per-rubric measurability from the Beta–Bernoulli agreement posterior
+      // over rep scores (CalibratedRubric). Upgrades the crude highVariance
+      // flag into a principled, uncertainty-aware measurement.
+      measurability = computeRubricMeasurability(scores, {
+        agreementThreshold: threshold,
+      });
 
       if (highVariance) {
         console.warn(
@@ -211,6 +221,7 @@ export async function validateJudge(
           scores,
           scoreStdDev: stdDev,
           highVariance,
+          measurability,
         }),
       },
     };

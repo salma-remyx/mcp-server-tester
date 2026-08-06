@@ -299,6 +299,21 @@ export {
   isBuiltInRubric,
 } from './judge/judgeTypes.js';
 
+// Rubric calibration (measurability filtering + bank assembly)
+export {
+  computeRubricMeasurability,
+  assembleRubricBank,
+  betaCdf,
+} from './judge/rubricCalibration.js';
+export type {
+  RubricMeasurability,
+  MeasurabilityOptions,
+  RubricBankCandidate,
+  RubricBankResult,
+  BankAssemblyOptions,
+  BetaPosterior,
+} from './judge/rubricCalibration.js';
+
 // Custom Judge Registry
 export {
   registerJudge,
