@@ -18,6 +18,7 @@ import type {
   ToolCallExpectation,
   ToolCallCountOptions,
 } from '../validators/toolCalls.js';
+import type { TrajectoryAnomalyOptions } from '../validators/trajectoryAnomalies.js';
 
 /**
  * Options for the LLM judge matcher
@@ -247,6 +248,20 @@ declare global {
        * ```
        */
       toHaveToolCallCount(options: ToolCallCountOptions): R;
+
+      /**
+       * Asserts that an mcp_host simulation trajectory is free of deterministic
+       * failure signatures (tool-call loops and consecutive error cascades).
+       *
+       * Negate with `.not` to assert that anomalies ARE present.
+       *
+       * @example
+       * ```typescript
+       * expect(simulationResult).toBeFreeOfTrajectoryAnomalies();
+       * expect(simulationResult).toBeFreeOfTrajectoryAnomalies({ loopThreshold: 2 });
+       * ```
+       */
+      toBeFreeOfTrajectoryAnomalies(options?: TrajectoryAnomalyOptions): R;
     }
   }
 }

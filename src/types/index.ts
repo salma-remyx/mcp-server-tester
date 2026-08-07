@@ -37,7 +37,8 @@ export type ExpectationType =
   | 'error'
   | 'size'
   | 'toolsTriggered'
-  | 'toolCallCount';
+  | 'toolCallCount'
+  | 'trajectoryAnomalies';
 
 /**
  * Result of an expectation check

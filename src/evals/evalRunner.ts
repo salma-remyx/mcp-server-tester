@@ -32,6 +32,7 @@ import {
   validateSize,
   validateToolCalls,
   validateToolCallCount,
+  validateTrajectoryAnomalies,
   validateJudge,
 } from '../assertions/validators/index.js';
 import { execFileNoThrow } from '../utils/execFileNoThrow.js';
@@ -607,6 +608,19 @@ async function runExpectBlockValidations(
       expectBlock.toolCallCount
     );
     results.toolCallCount = {
+      pass: validation.pass,
+      details: validation.message,
+    };
+  }
+
+  // trajectoryAnomalies (toBeFreeOfTrajectoryAnomalies)
+  // Deterministic, judge-free failure detection on the recorded telemetry.
+  if (expectBlock.trajectoryAnomalies !== undefined) {
+    const validation = validateTrajectoryAnomalies(
+      response,
+      expectBlock.trajectoryAnomalies
+    );
+    results.trajectoryAnomalies = {
       pass: validation.pass,
       details: validation.message,
     };

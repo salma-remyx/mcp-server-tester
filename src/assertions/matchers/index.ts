@@ -20,6 +20,7 @@ import { toHaveToolResponseSize } from './toHaveToolResponseSize.js';
 import { toSatisfyToolPredicate } from './toSatisfyToolPredicate.js';
 import { toHaveToolCalls } from './toHaveToolCalls.js';
 import { toHaveToolCallCount } from './toHaveToolCallCount.js';
+import { toBeFreeOfTrajectoryAnomalies } from './toBeFreeOfTrajectoryAnomalies.js';
 
 // Import types for global declaration
 import './types.js';
@@ -52,6 +53,7 @@ export const expect = baseExpect.extend({
   toSatisfyToolPredicate,
   toHaveToolCalls,
   toHaveToolCallCount,
+  toBeFreeOfTrajectoryAnomalies,
 });
 
 // Re-export types

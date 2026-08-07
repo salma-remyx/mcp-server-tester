@@ -211,6 +211,8 @@ export {
   validateSize,
   validateToolCalls,
   validateToolCallCount,
+  validateTrajectoryAnomalies,
+  detectTrajectoryAnomalies,
   validateJudge,
   getResponseSizeBytes,
   normalizeWhitespace,

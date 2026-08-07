@@ -1159,7 +1159,7 @@ interface MCPConformanceResult {
 
 ### `EvalExpectBlock`
 
-```typescript snippet=src/evals/datasetTypes.ts#L186-L277
+```typescript snippet=src/evals/datasetTypes.ts#L186-L303
 export interface EvalExpectBlock {
   /**
    * Exact response match (toMatchToolResponse)
@@ -1251,7 +1251,33 @@ export interface EvalExpectBlock {
     /** Exact number of tool calls */
     exact?: number;
   };
+
+  /**
+   * Asserts that an mcp_host simulation trajectory is free of deterministic
+   * failure signatures (tool-call loops and consecutive tool-error cascades).
+   * A cheap, judge-free failure detector that runs on the recorded telemetry.
+   * Only meaningful for mcp_host mode — direct mode has no tool call trace.
+   *
+   * Adapted from the deterministic verification layer of "Real-Time Detection
+   * and Repair of LLM Agent Failures" (arXiv:2608.02464).
+   */
+  trajectoryAnomalies?: {
+    /**
+     * Consecutive identical tool calls (same name + arguments) that constitute
+     * a loop. @default 3
+     */
+    loopThreshold?: number;
+    /**
+     * Consecutive errored tool steps that constitute a cascade.
+     * @default 2
+     */
+    errorCascadeThreshold?: number;
+  };
 }
+
+/**
+ * A complete eval dataset containing multiple test cases
+ */
 ```
 
 ### `EvalCase`

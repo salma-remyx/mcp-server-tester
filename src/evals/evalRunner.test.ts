@@ -683,6 +683,65 @@ describe('toolsTriggered and toolCallCount expectations in eval runner', () => {
     const result = await runEvalCase(evalCase, createContext(mcp));
     expect(result.expectations.toolCallCount?.pass).toBe(true);
   });
+
+  it('flags trajectory anomalies (loop) from a simulation result', async () => {
+    const mcp = createMockMCP();
+    vi.mocked(mcp.callTool).mockResolvedValue({
+      success: true,
+      toolCalls: [
+        { name: 'search', arguments: { q: 'x' } },
+        { name: 'search', arguments: { q: 'x' } },
+        { name: 'search', arguments: { q: 'x' } },
+      ],
+      response: 'Done',
+    } as unknown as Awaited<ReturnType<typeof mcp.callTool>>);
+
+    const evalCase = createEvalCase({
+      expect: { trajectoryAnomalies: { loopThreshold: 3 } },
+    });
+
+    const result = await runEvalCase(evalCase, createContext(mcp));
+    expect(result.expectations.trajectoryAnomalies?.pass).toBe(false);
+    expect(result.expectations.trajectoryAnomalies?.details).toContain(
+      'search'
+    );
+    expect(result.pass).toBe(false);
+  });
+
+  it('passes trajectoryAnomalies for a clean simulation result', async () => {
+    const mcp = createMockMCP();
+    vi.mocked(mcp.callTool).mockResolvedValue({
+      success: true,
+      toolCalls: [
+        { name: 'search', arguments: {} },
+        { name: 'read', arguments: {} },
+      ],
+      response: 'Done',
+    } as unknown as Awaited<ReturnType<typeof mcp.callTool>>);
+
+    const evalCase = createEvalCase({
+      expect: { trajectoryAnomalies: {} },
+    });
+
+    const result = await runEvalCase(evalCase, createContext(mcp));
+    expect(result.expectations.trajectoryAnomalies?.pass).toBe(true);
+  });
+
+  it('hints mcp_host mode when trajectoryAnomalies gets a non-simulation response', async () => {
+    const mcp = createMockMCP({
+      content: [{ type: 'text', text: 'plain text' }],
+    });
+
+    const evalCase = createEvalCase({
+      expect: { trajectoryAnomalies: {} },
+    });
+
+    const result = await runEvalCase(evalCase, createContext(mcp));
+    expect(result.expectations.trajectoryAnomalies?.pass).toBe(false);
+    expect(result.expectations.trajectoryAnomalies?.details).toContain(
+      'mcp_host'
+    );
+  });
 });
 
 describe('runEvalDataset defaultLlmIterations', () => {

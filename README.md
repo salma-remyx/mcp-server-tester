@@ -223,3 +223,42 @@ If any of these affect your use case, please open an issue.
 ## License
 
 MIT
+
+## Trajectory Anomaly Detection
+
+For `mcp_host` evals, the framework can flag agent failures from the recorded tool-call telemetry alone — no LLM judge call required. The detector runs over an `MCPHostSimulationResult` and looks for two deterministic failure signatures:
+
+- **Loops** — the same tool called repeatedly with identical arguments.
+- **Error cascades** — consecutive tool steps that return `isError`.
+
+It is parameter-free, transfers unchanged across models, and is tuned to avoid false alarms on healthy runs. Use it as a cheap first-pass failure check before spending a judge call.
+
+Inline matcher:
+
+```typescript
+test('agent does not get stuck', async ({ mcp }) => {
+  const result = await simulateMCPHost(mcp, scenario, hostConfig);
+  expect(result).toBeFreeOfTrajectoryAnomalies();
+  // tighter loop sensitivity:
+  expect(result).toBeFreeOfTrajectoryAnomalies({ loopThreshold: 2 });
+});
+```
+
+Eval dataset expectation:
+
+```json
+{
+  "expect": {
+    "trajectoryAnomalies": { "loopThreshold": 3, "errorCascadeThreshold": 2 }
+  }
+}
+```
+
+Programmatic use:
+
+```typescript
+import { validateTrajectoryAnomalies } from '@gleanwork/mcp-server-tester';
+
+const v = validateTrajectoryAnomalies(simulationResult);
+if (!v.pass) console.log(v.message);
+```

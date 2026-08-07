@@ -274,6 +274,28 @@ export interface EvalExpectBlock {
     /** Exact number of tool calls */
     exact?: number;
   };
+
+  /**
+   * Asserts that an mcp_host simulation trajectory is free of deterministic
+   * failure signatures (tool-call loops and consecutive tool-error cascades).
+   * A cheap, judge-free failure detector that runs on the recorded telemetry.
+   * Only meaningful for mcp_host mode — direct mode has no tool call trace.
+   *
+   * Adapted from the deterministic verification layer of "Real-Time Detection
+   * and Repair of LLM Agent Failures" (arXiv:2608.02464).
+   */
+  trajectoryAnomalies?: {
+    /**
+     * Consecutive identical tool calls (same name + arguments) that constitute
+     * a loop. @default 3
+     */
+    loopThreshold?: number;
+    /**
+     * Consecutive errored tool steps that constitute a cascade.
+     * @default 2
+     */
+    errorCascadeThreshold?: number;
+  };
 }
 
 /**
@@ -435,6 +457,12 @@ const EvalExpectBlockSchema = z.object({
       min: z.number().int().min(0).optional(),
       max: z.number().int().min(0).optional(),
       exact: z.number().int().min(0).optional(),
+    })
+    .optional(),
+  trajectoryAnomalies: z
+    .object({
+      loopThreshold: z.number().int().min(1).optional(),
+      errorCascadeThreshold: z.number().int().min(1).optional(),
     })
     .optional(),
 });
