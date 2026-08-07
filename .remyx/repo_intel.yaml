@@ -178,7 +178,14 @@ observed_landing_zones:
     call_site_specifics: ''
     branch: voting-or-consensus-decision-making-in-multi-agent-debate
     timestamp: '2026-08-02T10:13:28Z'
-  last_observed: '2026-08-02T10:13:28Z'
+  - arxiv: 2608.02464v1
+    mode: Mode 1 (direct port)
+    call_site_specifics: runExpectBlockValidations() in src/evals/evalRunner.ts (line
+      787), reached from the public runEvalCase/runEvalDataset eval entry points for
+      dataset usage; also invoked from the public expect.extend ma
+    branch: real-time-detection-and-repair-of-llm-agent-failures
+    timestamp: '2026-08-07T21:36:16Z'
+  last_observed: '2026-08-07T21:36:16Z'
 rejected_shapes:
 - shape_tag: null
   reason_code: null
@@ -191,4 +198,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-08-06T11:02:03Z'
+last_updated: '2026-08-07T21:36:16Z'
