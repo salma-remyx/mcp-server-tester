@@ -164,6 +164,7 @@ observed_landing_zones:
   last_observed: '2026-07-23T04:42:03Z'
 - path: src/assertions/matchers/
   shape_tags:
+  - library-shape-public-api
   - registry-add
   confirmed_by:
   - arxiv: 2509.18420v1
@@ -185,7 +186,14 @@ observed_landing_zones:
       dataset usage; also invoked from the public expect.extend ma
     branch: real-time-detection-and-repair-of-llm-agent-failures
     timestamp: '2026-08-07T21:36:16Z'
-  last_observed: '2026-08-07T21:36:16Z'
+  - arxiv: 2608.04719v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: Library public API surface. The toAvoidCanaryTools matcher
+      is registered in src/assertions/matchers/index.ts and surfaced via the library's
+      exported expect (src/fixtures/mcp.ts -> src/index.ts); valid
+    branch: diagnosing-tool-selection-reasoning-in-llm-agents-with-canar
+    timestamp: '2026-08-08T14:36:06Z'
+  last_observed: '2026-08-08T14:36:06Z'
 rejected_shapes:
 - shape_tag: null
   reason_code: null
@@ -198,4 +206,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-08-07T21:36:16Z'
+last_updated: '2026-08-08T14:36:06Z'
