@@ -19,11 +19,14 @@ export interface ValidationResult {
   details?: Record<string, unknown>;
   /**
    * Optional quantitative metrics from the validation.
-   * Populated by validateToolCalls for precision/recall.
+   * Populated by validateToolCalls for precision/recall and by
+   * validateCanarySusceptibility for the canary susceptibility rate.
    */
   metrics?: {
     precision?: number;
     recall?: number;
+    /** Canary susceptibility rate (0-1), from validateCanarySusceptibility. */
+    csr?: number;
   };
 }
 

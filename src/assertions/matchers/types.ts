@@ -18,6 +18,7 @@ import type {
   ToolCallExpectation,
   ToolCallCountOptions,
 } from '../validators/toolCalls.js';
+import type { CanarySusceptibilityExpectation } from '../validators/canary.js';
 
 /**
  * Options for the LLM judge matcher
@@ -247,6 +248,21 @@ declare global {
        * ```
        */
       toHaveToolCallCount(options: ToolCallCountOptions): R;
+
+      /**
+       * Validates that an mcp_host simulation avoided canary probe tools — the
+       * model's canary susceptibility rate (CSR) stays within limits. Plant
+       * probes with `createCanaryAugmentedMCP`.
+       *
+       * @example
+       * ```typescript
+       * expect(simulationResult).toAvoidCanaryTools({
+       *   canaries: [{ name: 'canary_semantic_decoy', type: 'semantic_decoy' }],
+       * });
+       * expect(simulationResult).toAvoidCanaryTools({ canaries, maxCsr: 0.2 });
+       * ```
+       */
+      toAvoidCanaryTools(expectation: CanarySusceptibilityExpectation): R;
     }
   }
 }

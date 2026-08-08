@@ -28,6 +28,13 @@ export { validateError } from './error.js';
 export { validateSize } from './size.js';
 export { validateToolCalls, validateToolCallCount } from './toolCalls.js';
 export type { ToolCallExpectation, ToolCallCountOptions } from './toolCalls.js';
+export { validateCanarySusceptibility } from './canary.js';
+export type {
+  CanarySusceptibilityExpectation,
+  CanaryType,
+  CanarySusceptibilityProfile,
+  CanarySusceptibilityProbe,
+} from './canary.js';
 export { validateJudge } from './judge.js';
 export type { JudgeValidatorConfig } from './judge.js';
 

@@ -121,6 +121,31 @@ In LLM host mode, a real LLM receives your server's tool list and a natural lang
 
 LLM host mode makes real API calls and produces non-deterministic results. Use `iterations` to run a case multiple times and measure pass rate rather than expecting 100% on a single run. See the [LLM Host Guide](docs/mcp-host.md) for configuration and cost management.
 
+### Canary tools
+
+Canary tools — adapted from "Diagnosing Tool-Selection Reasoning in LLM Agents with Canary Tools". Canary tools are diagnostic probe tools planted in your server's tool set to profile _how_ an LLM reasons about tool selection, not just whether it picked the right tool. Each canary targets one of six tool-selection weaknesses (semantic decoys, parameter traps, capability mirages, prerequisite blindness, temporal decoys, granularity traps), turning a single "wrong tool" outcome into a multi-dimensional canary susceptibility profile.
+
+Plant probes via `toolOverrides.canaryTools` (a new capability — the existing override path could only rewrite metadata of tools that already exist) and assert on the model's canary susceptibility rate (CSR) with a `canarySusceptibility` expectation:
+
+```json
+{
+  "id": "find-policy",
+  "mode": "mcp_host",
+  "scenario": "Find the expense policy",
+  "mcpHostConfig": { "provider": "anthropic" },
+  "expect": {
+    "canarySusceptibility": {
+      "canaries": [
+        { "name": "canary_semantic_decoy", "type": "semantic_decoy" }
+      ],
+      "maxCsr": 0
+    }
+  }
+}
+```
+
+Generate a probe set with `generateCanaryProbes({ topic })` and pass it as `toolOverrides: { id, tools: {}, canaryTools }`. By default `maxCsr: 0` asserts the model avoided every canary; raise it, or constrain individual weaknesses with `maxPerType`, to tolerate specific trap types. Susceptibility is scored deterministically from which probe the model selected, so no LLM judge is required.
+
 ## Installation
 
 Requires Node.js 22+.

@@ -212,6 +212,7 @@ export {
   validateToolCalls,
   validateToolCallCount,
   validateJudge,
+  validateCanarySusceptibility,
   getResponseSizeBytes,
   normalizeWhitespace,
 } from './assertions/validators/index.js';
@@ -289,6 +290,13 @@ export {
   simulateMCPHost,
   isProviderAvailable,
   getMissingDependencyMessage,
+  createCanaryTool,
+  generateCanaryProbes,
+  createCanaryAugmentedMCP,
+  computeCanarySusceptibility,
+  type CanaryTool,
+  type CanaryType,
+  type CanarySusceptibilityProfile,
 } from './evals/mcpHost/index.js';
 
 // Judge
