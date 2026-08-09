@@ -103,7 +103,12 @@ observed_landing_zones:
     call_site_specifics: (none)
     branch: seal-tools-self-instruct-tool-learning-dataset-for-agent-tun
     timestamp: '2026-08-05T02:46:28Z'
-  last_observed: '2026-08-05T02:46:28Z'
+  - arxiv: 2608.06329v1
+    mode: ''
+    call_site_specifics: ''
+    branch: benchmarking-the-benchmarks-evaluating-benchmarks-for-conver
+    timestamp: '2026-08-09T07:56:44Z'
+  last_observed: '2026-08-09T07:56:44Z'
 - path: src/assertions/validators/
   shape_tags:
   - library-shape-public-api
@@ -206,4 +211,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-08-08T14:36:06Z'
+last_updated: '2026-08-09T07:56:44Z'
