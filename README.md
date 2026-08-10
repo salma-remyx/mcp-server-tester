@@ -223,3 +223,35 @@ If any of these affect your use case, please open an issue.
 ## License
 
 MIT
+
+## Judge Bias Probes
+
+LLM-as-a-judge evaluators carry systematic biases — favoring longer answers, preferring whichever option is presented first, or scoring consistently high/low. `judgeReps` reduce score _variance_ but do not expose these biases. The bias-probe validators (adapted from _Judging the Judges_, arXiv:2406.12624) measure them by applying controlled perturbations and comparing the judge's scores.
+
+- `probeVerbosityBias` — judges the response and a padded, same-content variant; a positive score delta flags verbosity bias.
+- `probePositionBias` — compares the response against a reference in both orders; an asymmetry flags position bias.
+- `computeLeniencyIndex` — closed-form mean shift from the neutral 0.5 midpoint, applied across a run's scores.
+- `validateJudgeBias` — runs the selected probes and returns a `ValidationResult`.
+
+```typescript
+import { validateJudgeBias } from '@gleanwork/mcp-server-tester';
+
+const result = await validateJudgeBias(response, {
+  rubric: 'correctness',
+  reference: expectedAnswer,
+  probes: ['verbosity', 'position'],
+  tolerance: 0.1,
+});
+if (!result.pass) console.log(result.message);
+```
+
+For inline use, opt the existing judge validator into a verbosity probe with `biasProbe`:
+
+```typescript
+import { validateJudge } from '@gleanwork/mcp-server-tester';
+
+const result = await validateJudge(response, {
+  rubric: 'correctness',
+  biasProbe: true, // attaches details.judgeBias.verbosity; adds two judge calls
+});
+```

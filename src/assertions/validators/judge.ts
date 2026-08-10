@@ -10,6 +10,7 @@ import type { RubricSpec } from '../../judge/rubrics.js';
 import { createJudge } from '../../judge/judgeClient.js';
 import { resolveRubric } from '../../judge/rubrics.js';
 import { getRegisteredJudge } from '../../judge/judgeRegistry.js';
+import { probeVerbosityBias } from './judgeBias.js';
 
 /**
  * Configuration for the judge validator
@@ -47,6 +48,15 @@ export interface JudgeValidatorConfig {
    * Register judges with `registerJudge()` before tests run.
    */
   judge?: string;
+  /**
+   * Opt-in LLM-judge bias probe. When truthy, runs a verbosity-bias probe
+   * (adapted from "Judging the Judges", arXiv:2406.12624) alongside the
+   * main evaluation and attaches the measurement to `details.judgeBias`.
+   * `judgeReps` reduce variance; this surfaces bias the reps cannot. Set to
+   * `true` for the default tolerance, or `{ tolerance }` to customize.
+   * Adds two judge calls. Off by default.
+   */
+  biasProbe?: boolean | { tolerance?: number };
 }
 
 /**
@@ -105,6 +115,7 @@ export async function validateJudge(
     temperature,
     maxBudgetUsd,
     maxToolOutputSize,
+    biasProbe,
   } = config;
 
   // Named custom judge — executor returns a score, threshold determines pass/fail
@@ -197,6 +208,23 @@ export async function validateJudge(
       }
     }
 
+    let judgeBias: Record<string, unknown> | undefined;
+    if (biasProbe) {
+      const biasTolerance =
+        typeof biasProbe === 'object' ? biasProbe.tolerance : undefined;
+      try {
+        judgeBias = {
+          verbosity: await probeVerbosityBias(response, {
+            rubric,
+            judge,
+            ...(biasTolerance !== undefined && { tolerance: biasTolerance }),
+          }),
+        };
+      } catch {
+        judgeBias = { verbosity: { error: 'verbosity bias probe failed' } };
+      }
+    }
+
     return {
       pass: passed,
       message: passed
@@ -212,6 +240,7 @@ export async function validateJudge(
           scoreStdDev: stdDev,
           highVariance,
         }),
+        ...(judgeBias !== undefined && { judgeBias }),
       },
     };
   } catch (err) {

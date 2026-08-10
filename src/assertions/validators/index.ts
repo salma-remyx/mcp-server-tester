@@ -30,6 +30,19 @@ export { validateToolCalls, validateToolCallCount } from './toolCalls.js';
 export type { ToolCallExpectation, ToolCallCountOptions } from './toolCalls.js';
 export { validateJudge } from './judge.js';
 export type { JudgeValidatorConfig } from './judge.js';
+export {
+  validateJudgeBias,
+  probeVerbosityBias,
+  probePositionBias,
+  computeLeniencyIndex,
+  makeVerboseVariant,
+} from './judgeBias.js';
+export type {
+  JudgeBiasProbeConfig,
+  VerbosityBiasResult,
+  PositionBiasResult,
+  BiasProbeKind,
+} from './judgeBias.js';
 
 // Export utilities
 export {
