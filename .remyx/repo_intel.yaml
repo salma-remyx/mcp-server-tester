@@ -134,7 +134,14 @@ observed_landing_zones:
       and the toPassToolJudge Playwright matcher at src/assertion
     branch: calibratedrubric-task-adaptive-rubric-banks-for-open-ended-l
     timestamp: '2026-08-06T11:02:03Z'
-  last_observed: '2026-08-06T11:02:03Z'
+  - arxiv: 2406.12624v6
+    mode: Mode 2 (adapted port)
+    call_site_specifics: validateJudge (src/assertions/validators/judge.ts:217), invoked
+      when config.biasProbe is set; validateJudge itself is reached from the toPassToolJudge
+      matcher and evalRunner
+    branch: judging-the-judges-evaluating-alignment-and-vulnerabilities-
+    timestamp: '2026-08-10T00:54:24Z'
+  last_observed: '2026-08-10T00:54:24Z'
 - path: src/evals/mcpHost/
   shape_tags:
   - callback
@@ -211,4 +218,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-08-09T07:56:44Z'
+last_updated: '2026-08-10T00:54:24Z'
