@@ -115,6 +115,13 @@ export type {
   LLMToolCall,
   MCPHostSimulationResult,
   MCPHostSimulator,
+  CanaryType,
+  CanaryTool,
+  CanarySeedTool,
+  CanaryInjectionOptions,
+  CanaryTypeStat,
+  CanarySusceptibilityReport,
+  CanaryVercelEntry,
 
   // Judge
   JudgeConfig,
@@ -289,6 +296,9 @@ export {
   simulateMCPHost,
   isProviderAvailable,
   getMissingDependencyMessage,
+  synthesizeCanaryTools,
+  buildCanaryVercelEntries,
+  computeCanarySusceptibility,
 } from './evals/mcpHost/index.js';
 
 // Judge

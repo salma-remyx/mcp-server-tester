@@ -169,6 +169,58 @@ export interface BrowserConfig {
 }
 
 /**
+ * A canary probe type from the tool-selection weakness taxonomy. Adapted from
+ * "Diagnosing Tool-Selection Reasoning in LLM Agents with Canary Tools".
+ */
+export type CanaryType =
+  | 'semantic-decoy'
+  | 'parameter-trap'
+  | 'capability-mirage'
+  | 'prerequisite-blindness'
+  | 'temporal-decoy'
+  | 'granularity-trap';
+
+/** Options for injecting canary probe tools (diagnostic decoys) into an MCP host simulation. */
+export interface CanaryInjectionOptions {
+  /** Set to `true` to synthesize and inject canaries. */
+  enabled: boolean;
+  /** Weakness types to probe. Defaults to all six. */
+  types?: CanaryType[];
+  /** Restrict mirroring to these real tool names. Defaults to all tools. */
+  mirrorTools?: string[];
+  /** Soften each canary's give-away phrase (the paper's subtlety ablation). @default 'plain' */
+  subtlety?: 'plain' | 'subtle';
+  /** Prefix for synthesized canary tool names. @default 'canary' */
+  prefix?: string;
+}
+
+/** Per-type counts in a {@link CanarySusceptibilityReport}. */
+export interface CanaryTypeStat {
+  type: CanaryType;
+  calls: number;
+  triggered: boolean;
+}
+
+/**
+ * Canary Susceptibility Rate (CSR) — how readily the agent selected canary
+ * (decoy) tools. A parameter-free proxy for the paper's judge-graded signal.
+ */
+export interface CanarySusceptibilityReport {
+  /** Fraction of all tool calls that hit a canary (0–1). */
+  susceptibilityRate: number;
+  /** True if the agent called at least one canary. */
+  triggeredAny: boolean;
+  /** Number of canary tool calls observed. */
+  canaryCalls: number;
+  /** Total tool calls observed. */
+  totalCalls: number;
+  /** Per-type breakdown. */
+  byType: CanaryTypeStat[];
+  /** The canary tool calls themselves. */
+  triggeredCalls: LLMToolCall[];
+}
+
+/**
  * Configuration for MCP host simulation
  */
 export interface MCPHostConfig {
@@ -225,6 +277,13 @@ export interface MCPHostConfig {
    * Browser host configuration (required for 'browser' host type).
    */
   browser?: BrowserConfig;
+
+  /**
+   * Inject canary probe tools to diagnose tool-selection reasoning weaknesses.
+   * When enabled, a {@link CanarySusceptibilityReport} is attached to the
+   * result. SDK host only (ignored by CLI/browser hosts).
+   */
+  canary?: CanaryInjectionOptions;
 }
 
 /**
@@ -281,6 +340,12 @@ export interface MCPHostSimulationResult {
    * Populated by SDK-based hosts from the AI SDK response.
    */
   usage?: UsageMetrics;
+
+  /**
+   * Canary Susceptibility report. Present only when `mcpHostConfig.canary`
+   * was enabled for the simulation.
+   */
+  canaryReport?: CanarySusceptibilityReport;
 }
 
 /**

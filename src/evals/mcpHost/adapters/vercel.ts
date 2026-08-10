@@ -14,10 +14,16 @@ import type {
   MCPHostSimulator,
   LLMProvider,
   LLMToolCall,
+  CanaryType,
 } from '../mcpHostTypes.js';
 import type { UsageMetrics } from '../../../types/index.js';
 import type { MCPFixtureApi } from '../../../mcp/fixtures/mcpFixture.js';
 import { extractText } from '../../../mcp/response.js';
+import {
+  synthesizeCanaryTools,
+  buildCanaryVercelEntries,
+  computeCanarySusceptibility,
+} from '../canaryTools.js';
 
 /**
  * Classifies a raw error from the Vercel AI SDK agentic loop and returns a
@@ -241,6 +247,25 @@ export function createVercelOrchestrator(): MCPHostSimulator {
         const maxSteps = config.maxToolCalls ?? 10;
         const llmStart = Date.now();
 
+        // Inject canary probe tools (diagnostic decoys) when configured. Each
+        // canary mirrors a real tool to probe one tool-selection weakness; its
+        // calls are recorded in allToolCalls and scored post-run. Canaries are
+        // local stubs and never reach the MCP server.
+        const canaryOpt = config.canary?.enabled ? config.canary : null;
+        const canaryTypes: Record<string, CanaryType> = {};
+        if (canaryOpt) {
+          const canaries = synthesizeCanaryTools(mcpTools, canaryOpt);
+          for (const canary of canaries) {
+            canaryTypes[canary.name] = canary.type;
+          }
+          Object.assign(
+            tools,
+            buildCanaryVercelEntries(canaries, jsonSchema, (name, args) => {
+              allToolCalls.push({ name, arguments: args });
+            })
+          );
+        }
+
         const result = await (generateText as any)({
           model,
           prompt: scenario,
@@ -252,6 +277,10 @@ export function createVercelOrchestrator(): MCPHostSimulator {
 
         const totalDurationMs = Date.now() - llmStart;
         const llmDurationMs = totalDurationMs - mcpDurationMs;
+
+        const canaryReport = canaryOpt
+          ? computeCanarySusceptibility(allToolCalls, canaryTypes)
+          : undefined;
 
         const hostUsage: UsageMetrics | undefined = result.usage
           ? {
@@ -281,6 +310,7 @@ export function createVercelOrchestrator(): MCPHostSimulator {
           mcpDurationMs,
           conversationHistory,
           usage: hostUsage,
+          canaryReport,
         };
       } catch (err) {
         return {

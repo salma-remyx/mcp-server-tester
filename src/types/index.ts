@@ -199,6 +199,13 @@ export type {
   LLMToolCall,
   MCPHostSimulationResult,
   MCPHostSimulator,
+  CanaryType,
+  CanaryTool,
+  CanarySeedTool,
+  CanaryVercelEntry,
+  CanaryInjectionOptions,
+  CanaryTypeStat,
+  CanarySusceptibilityReport,
 } from './evals.js';
 
 export type {

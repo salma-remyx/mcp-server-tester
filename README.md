@@ -223,3 +223,35 @@ If any of these affect your use case, please open an issue.
 ## License
 
 MIT
+
+## Canary tool probes (diagnostic decoys)
+
+In LLM host mode you can plant **canary tools** — diagnostic probe tools added to
+the agent's tool set, each engineered to expose one specific tool-selection
+weakness. Adapted from _Diagnosing Tool-Selection Reasoning in LLM Agents with
+Canary Tools_. The six-type taxonomy turns a single "picked the wrong tool"
+outcome into a per-type reasoning profile:
+
+- `semantic-decoy` — a near-synonym tool that operates on the wrong domain
+- `parameter-trap` — a tempting extra parameter with a foot-gun default
+- `capability-mirage` — capabilities the tool does not actually have
+- `prerequisite-blindness` — a required prior step the scenario skips
+- `temporal-decoy` — the wrong time frame
+- `granularity-trap` — the wrong granularity (bulk vs. single)
+
+Enable canary injection on an `mcp_host` case; each canary mirrors a real tool
+and is never forwarded to your server. The simulation result gains a
+`canaryReport` with the Canary Susceptibility Rate (fraction of tool calls that
+hit a canary), whether any canary fired, and a per-type breakdown. Use `subtlety`
+to soften each canary's give-away phrase.
+
+```json
+{
+  "mode": "mcp_host",
+  "scenario": "Find the current application config",
+  "mcpHostConfig": {
+    "provider": "anthropic",
+    "canary": { "enabled": true, "subtlety": "plain" }
+  }
+}
+```
