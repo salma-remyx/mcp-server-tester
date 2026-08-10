@@ -145,6 +145,7 @@ observed_landing_zones:
 - path: src/evals/mcpHost/
   shape_tags:
   - callback
+  - library-shape-public-api
   - registry-add
   confirmed_by:
   - arxiv: 2607.11598v1
@@ -161,7 +162,14 @@ observed_landing_zones:
       -> createVercelOrchestrator().'
     branch: tool-attention-is-all-you-need-dynamic-tool-gating-and-lazy-
     timestamp: '2026-08-04T08:21:36Z'
-  last_observed: '2026-08-04T08:21:36Z'
+  - arxiv: 2608.04719v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: 'createVercelOrchestrator() in src/evals/mcpHost/adapters/vercel.ts
+      (the SDK host''s tool-set assembly), reached via simulateMCPHost() and the eval
+      runner at src/evals/evalRunner.ts:443; fires whenever '
+    branch: diagnosing-tool-selection-reasoning-in-llm-agents-with-canar-v2
+    timestamp: '2026-08-10T19:19:58Z'
+  last_observed: '2026-08-10T19:19:58Z'
 - path: src/cli/utils/
   shape_tags:
   - library-shape-public-api
@@ -218,4 +226,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-08-10T00:54:24Z'
+last_updated: '2026-08-10T19:19:58Z'
