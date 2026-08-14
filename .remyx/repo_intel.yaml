@@ -141,7 +141,14 @@ observed_landing_zones:
       matcher and evalRunner
     branch: judging-the-judges-evaluating-alignment-and-vulnerabilities-
     timestamp: '2026-08-10T00:54:24Z'
-  last_observed: '2026-08-10T00:54:24Z'
+  - arxiv: 2608.07424v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: validateJudge (existing, in-production validator), reached
+      via the toPassToolJudge Playwright matcher and the eval runner's judge validation;
+      escalateJudgeVerification is also a public export of the p
+    branch: coba-cost-effective-test-time-scaling-via-compute-balanced-r
+    timestamp: '2026-08-14T01:16:28Z'
+  last_observed: '2026-08-14T01:16:28Z'
 - path: src/evals/mcpHost/
   shape_tags:
   - callback
@@ -226,4 +233,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-08-10T19:19:58Z'
+last_updated: '2026-08-14T01:16:28Z'
