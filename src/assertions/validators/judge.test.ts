@@ -401,4 +401,118 @@ describe('validateJudge', () => {
       expect(result.message).toContain('LLM API timeout');
     });
   });
+
+  describe('compute-balanced escalation (CoBa routing)', () => {
+    it('re-verifies with the stronger judge when the cheap verdict is high-variance', async () => {
+      // Cheap pass: [0.1, 0.9] → mean 0.5, stdDev 0.4 (high variance, fails 0.7)
+      const cheapJudge = makeMockJudge([
+        { score: 0.1, pass: false },
+        { score: 0.9, pass: true },
+      ]);
+      // Stronger pass: decisive 0.95 → passes
+      const escalationJudge = makeMockJudge([
+        { score: 0.95, pass: true, reasoning: 'Strong yes' },
+      ]);
+      mockCreateJudge.mockImplementation((config = {}) =>
+        config.model === 'claude-opus-4-strong' ? escalationJudge : cheapJudge
+      );
+
+      const result = await validateJudge('response', {
+        rubric: { text: 'Is it good?' },
+        reps: 2,
+        threshold: 0.7,
+        escalate: { model: 'claude-opus-4-strong' },
+      });
+
+      // Two judges created: cheap pass, then the escalation pass.
+      expect(mockCreateJudge).toHaveBeenCalledTimes(2);
+      // The escalation pass used the configured stronger model.
+      expect(mockCreateJudge).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ model: 'claude-opus-4-strong' })
+      );
+      // Cheap verdict (mean 0.5) is overridden by the stronger verdict (0.95).
+      expect(result.pass).toBe(true);
+      expect(result.message).toContain('0.95');
+      expect(result.message).toContain('routed to stronger verifier');
+      expect(result.details?.judgeEscalation?.escalated).toBe(true);
+      expect(result.details?.judgeEscalation?.routingDecision).toBe('escalated');
+      expect(result.details?.judgeEscalation?.score).toBe(0.95);
+    });
+
+    it('does not spend compute on escalation when the cheap verdict is decisive', async () => {
+      // [0.6, 0.8] → mean 0.7, stdDev 0.1 (low variance)
+      const cheapJudge = makeMockJudge([
+        { score: 0.6, pass: false },
+        { score: 0.8, pass: true },
+      ]);
+      const escalationJudge = makeMockJudge([{ score: 0.2, pass: false }]);
+      mockCreateJudge.mockImplementation((config = {}) =>
+        config.model === 'claude-opus-4-strong' ? escalationJudge : cheapJudge
+      );
+
+      const result = await validateJudge('response', {
+        rubric: { text: 'Is it good?' },
+        reps: 2,
+        threshold: 0.7,
+        escalate: { model: 'claude-opus-4-strong' },
+      });
+
+      // Only the cheap judge ran — the stronger judge was never created.
+      expect(mockCreateJudge).toHaveBeenCalledTimes(1);
+      expect(escalationJudge.evaluate).not.toHaveBeenCalled();
+      // Cheap verdict (mean 0.7) stands unchanged.
+      expect(result.pass).toBe(true);
+      expect(result.details?.judgeEscalation?.routingDecision).toBe(
+        'not-uncertain'
+      );
+      expect(result.details?.judgeEscalation?.escalated).toBe(false);
+    });
+
+    it('is a no-op without an escalate config (backward compatible)', async () => {
+      // High variance, but escalation is not configured.
+      const cheapJudge = makeMockJudge([
+        { score: 0.1, pass: false },
+        { score: 0.9, pass: true },
+      ]);
+      mockCreateJudge.mockReturnValue(cheapJudge);
+      const consoleSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+
+      const result = await validateJudge('response', {
+        rubric: { text: 'Is it good?' },
+        reps: 2,
+        threshold: 0.7,
+      });
+
+      expect(mockCreateJudge).toHaveBeenCalledTimes(1);
+      expect(result.pass).toBe(false); // mean 0.5 < 0.7
+      expect(result.details?.highVariance).toBe(true);
+      // No escalation metadata when escalation is disabled.
+      expect(result.details?.judgeEscalation).toBeUndefined();
+
+      consoleSpy.mockRestore();
+    });
+
+    it('only escalates when the cheap pass runs multiple reps', async () => {
+      // Single rep cannot detect variance, so escalation never fires.
+      const cheapJudge = makeMockJudge([{ score: 0.5, pass: false }]);
+      const escalationJudge = makeMockJudge([{ score: 0.95, pass: true }]);
+      mockCreateJudge.mockImplementation((config = {}) =>
+        config.model === 'claude-opus-4-strong' ? escalationJudge : cheapJudge
+      );
+
+      const result = await validateJudge('response', {
+        rubric: { text: 'Is it good?' },
+        reps: 1,
+        threshold: 0.7,
+        escalate: { model: 'claude-opus-4-strong' },
+      });
+
+      expect(mockCreateJudge).toHaveBeenCalledTimes(1);
+      expect(escalationJudge.evaluate).not.toHaveBeenCalled();
+      expect(result.pass).toBe(false); // 0.5 < 0.7, cheap verdict stands
+    });
+  });
 });

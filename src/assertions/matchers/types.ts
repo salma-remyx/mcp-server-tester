@@ -18,6 +18,7 @@ import type {
   ToolCallExpectation,
   ToolCallCountOptions,
 } from '../validators/toolCalls.js';
+import type { JudgeEscalationConfig } from '../validators/judgeEscalation.js';
 
 /**
  * Options for the LLM judge matcher
@@ -39,6 +40,12 @@ export interface JudgeMatcherOptions {
    * and its `pass` result is authoritative.
    */
   judge?: string;
+  /**
+   * Compute-balanced escalation (CoBa). When set and a multi-rep run flags the
+   * response as high-variance (uncertain), it is re-verified by a stronger
+   * judge whose verdict replaces the cheap one. No-op unless `reps > 1`.
+   */
+  escalate?: JudgeEscalationConfig;
 }
 
 /**

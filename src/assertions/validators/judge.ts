@@ -10,6 +10,11 @@ import type { RubricSpec } from '../../judge/rubrics.js';
 import { createJudge } from '../../judge/judgeClient.js';
 import { resolveRubric } from '../../judge/rubrics.js';
 import { getRegisteredJudge } from '../../judge/judgeRegistry.js';
+import {
+  escalateJudgeVerification,
+  type JudgeEscalationConfig,
+  type JudgeEscalationResult,
+} from './judgeEscalation.js';
 
 /**
  * Configuration for the judge validator
@@ -47,6 +52,13 @@ export interface JudgeValidatorConfig {
    * Register judges with `registerJudge()` before tests run.
    */
   judge?: string;
+  /**
+   * Compute-balanced escalation (CoBa). When set and a multi-rep run flags the
+   * candidate as high-variance (uncertain), the response is re-verified once by
+   * a stronger judge and the stronger verdict replaces the cheap one. Decisive
+   * (low-variance) candidates incur no extra compute. No-op unless `reps > 1`.
+   */
+  escalate?: JudgeEscalationConfig;
 }
 
 /**
@@ -105,6 +117,7 @@ export async function validateJudge(
     temperature,
     maxBudgetUsd,
     maxToolOutputSize,
+    escalate,
   } = config;
 
   // Named custom judge — executor returns a score, threshold determines pass/fail
@@ -175,7 +188,6 @@ export async function validateJudge(
     }
 
     const meanScore = scores.reduce((a, b) => a + b, 0) / scores.length;
-    const passed = meanScore >= threshold;
     const repNote =
       reps > 1
         ? ` (mean of ${reps} reps: [${scores.map((s) => s.toFixed(2)).join(', ')}])`
@@ -197,20 +209,58 @@ export async function validateJudge(
       }
     }
 
+    // CoBa compute-balanced routing: for every configured multi-rep run,
+    // consult the router. It spends the next unit of compute on the uncertain
+    // (high-variance) candidate by re-verifying with a stronger judge, and
+    // short-circuits without an LLM call otherwise — so the cheap verdict
+    // stands for decisive cases with no extra compute spent uniformly.
+    let escalation: JudgeEscalationResult | undefined;
+    if (reps > 1 && escalate !== undefined) {
+      escalation = await escalateJudgeVerification({
+        response,
+        reference: reference ?? null,
+        rubric: resolvedRubric,
+        highVariance: highVariance === true,
+        baseConfig: judgeConfig,
+        escalate,
+      });
+    }
+
+    const escalated = escalation?.escalated === true;
+    const finalScore = escalated ? escalation?.score ?? meanScore : meanScore;
+    const finalPassed = finalScore >= threshold;
+    const finalReasoning = escalated ? escalation?.reasoning : lastReasoning;
+    // When escalated, the headline score comes from the stronger verifier, so
+    // the cheap-rep breakdown is folded into the escalation note (rather than
+    // shown beside the stronger score) to keep the message self-consistent.
+    const escalationNote = escalated
+      ? ` [cheap mean ${meanScore.toFixed(2)} high-variance ` +
+        `→ routed to stronger verifier: ${escalation?.score?.toFixed(2)}]`
+      : '';
+    const verdictNote = escalated ? escalationNote : repNote;
+
     return {
-      pass: passed,
-      message: passed
-        ? `Judge passed with score ${meanScore.toFixed(2)}${repNote}`
-        : `Judge failed with score ${meanScore.toFixed(2)} (threshold: ${threshold})${repNote}. ${lastReasoning ?? ''}`,
+      pass: finalPassed,
+      message: finalPassed
+        ? `Judge passed with score ${finalScore.toFixed(2)}${verdictNote}`
+        : `Judge failed with score ${finalScore.toFixed(2)} (threshold: ${threshold})${verdictNote}. ${finalReasoning ?? ''}`,
       details: {
-        score: meanScore,
-        reasoning: lastReasoning,
+        score: finalScore,
+        reasoning: finalReasoning,
         judgeProvider: provider ?? 'anthropic',
         judgeModel: model,
         ...(reps > 1 && {
           scores,
           scoreStdDev: stdDev,
           highVariance,
+        }),
+        ...(escalation !== undefined && {
+          judgeEscalation: {
+            routingDecision: escalation.routingDecision,
+            escalated: escalation.escalated,
+            ...(escalation.score !== undefined && { score: escalation.score }),
+            ...(escalation.scores !== undefined && { scores: escalation.scores }),
+          },
         }),
       },
     };

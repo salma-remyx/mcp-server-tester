@@ -53,6 +53,7 @@ export type {
   ToolCallExpectation,
   ToolCallCountOptions,
   JudgeValidatorConfig,
+  JudgeEscalationConfig,
   JudgeMatcherOptions,
   ToolPredicate,
   PredicateResult,
@@ -212,6 +213,7 @@ export {
   validateToolCalls,
   validateToolCallCount,
   validateJudge,
+  escalateJudgeVerification,
   getResponseSizeBytes,
   normalizeWhitespace,
 } from './assertions/validators/index.js';

@@ -30,6 +30,12 @@ export { validateToolCalls, validateToolCallCount } from './toolCalls.js';
 export type { ToolCallExpectation, ToolCallCountOptions } from './toolCalls.js';
 export { validateJudge } from './judge.js';
 export type { JudgeValidatorConfig } from './judge.js';
+export {
+  escalateJudgeVerification,
+  type JudgeEscalationConfig,
+  type JudgeEscalationDecision,
+  type JudgeEscalationResult,
+} from './judgeEscalation.js';
 
 // Export utilities
 export {
