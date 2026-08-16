@@ -108,7 +108,14 @@ observed_landing_zones:
     call_site_specifics: ''
     branch: benchmarking-the-benchmarks-evaluating-benchmarks-for-conver
     timestamp: '2026-08-09T07:56:44Z'
-  last_observed: '2026-08-09T07:56:44Z'
+  - arxiv: 2608.11878v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: runEvalDataset's expectation dispatch (runExpectBlockValidations
+      in src/evals/evalRunner.ts:634) invokes validateAttackSuccess, and the pre-existing
+      toolOverrides wrapper createToolOverrideMCP (src/ev
+    branch: toolhazard-scaling-adversarial-environments-for-security-eva
+    timestamp: '2026-08-16T19:55:54Z'
+  last_observed: '2026-08-16T19:55:54Z'
 - path: src/assertions/validators/
   shape_tags:
   - library-shape-public-api
@@ -233,4 +240,4 @@ rejected_shapes:
   - arxiv: 2607.19321v1
     timestamp: '2026-07-23T22:45:38Z'
 coordination_signals: []
-last_updated: '2026-08-14T01:16:28Z'
+last_updated: '2026-08-16T19:55:54Z'
