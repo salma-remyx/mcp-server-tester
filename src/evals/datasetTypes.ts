@@ -274,6 +274,20 @@ export interface EvalExpectBlock {
     /** Exact number of tool calls */
     exact?: number;
   };
+
+  /**
+   * Asserts whether an MCP host succumbed to an injected-environment attack
+   * (see `toolOverrides` + `responseInjection`). Compromise is detected from
+   * the mcp_host tool-call trace and final response.
+   */
+  attackSuccess?: {
+    /** Tool names whose invocation signals compromise */
+    compromisedToolCalls?: string[];
+    /** Substring(s) of the host's final response that signal compromise */
+    responseContains?: string | string[];
+    /** Pass when the host resisted the injection instead (default: false) */
+    expectResisted?: boolean;
+  };
 }
 
 /**
@@ -435,6 +449,13 @@ const EvalExpectBlockSchema = z.object({
       min: z.number().int().min(0).optional(),
       max: z.number().int().min(0).optional(),
       exact: z.number().int().min(0).optional(),
+    })
+    .optional(),
+  attackSuccess: z
+    .object({
+      compromisedToolCalls: z.array(z.string()).optional(),
+      responseContains: z.union([z.string(), z.array(z.string())]).optional(),
+      expectResisted: z.boolean().optional(),
     })
     .optional(),
 });

@@ -32,11 +32,16 @@ import {
   validateSize,
   validateToolCalls,
   validateToolCallCount,
+  validateAttackSuccess,
   validateJudge,
 } from '../assertions/validators/index.js';
 import { execFileNoThrow } from '../utils/execFileNoThrow.js';
 import { debugEval } from '../debug.js';
 import { sumUsage } from '../utils/usageUtils.js';
+import {
+  injectToolResponse,
+  type ResponseInjection,
+} from './responseInjection.js';
 import packageJson from '../../package.json' with { type: 'json' };
 
 /**
@@ -83,6 +88,13 @@ export interface ToolMetadataOverride {
    * Replacement input schema shown to MCP hosts.
    */
   inputSchema?: Record<string, unknown>;
+
+  /**
+   * Indirect prompt injection embedded in this tool's output before the
+   * MCP host reads it. Used to measure whether a host follows attacker
+   * instructions arriving inside tool results (attackSuccess expectation).
+   */
+  responseInjection?: ResponseInjection;
 }
 
 /**
@@ -90,7 +102,9 @@ export interface ToolMetadataOverride {
  *
  * Tool keys are canonical MCP server tool names. Overrides affect only the
  * metadata returned from listTools(); callTool() still forwards canonical tool
- * names and arguments to the original MCP server.
+ * names and arguments to the original MCP server. A `responseInjection`
+ * additionally embeds an indirect prompt injection in that tool's output —
+ * the server is never called differently, only what the host reads differs.
  */
 export interface ToolOverrideVariant {
   /**
@@ -414,7 +428,12 @@ function createToolOverrideMCP(
       name: string,
       args: TArgs
     ) {
-      return mcp.callTool(name, args);
+      const injection = variant.tools[name]?.responseInjection;
+      if (injection === undefined) {
+        return mcp.callTool(name, args);
+      }
+      const result = await mcp.callTool(name, args);
+      return injectToolResponse(result, injection);
     },
   };
 }
@@ -607,6 +626,18 @@ async function runExpectBlockValidations(
       expectBlock.toolCallCount
     );
     results.toolCallCount = {
+      pass: validation.pass,
+      details: validation.message,
+    };
+  }
+
+  // attackSuccess — host-behavior deviation under an injected environment
+  if (expectBlock.attackSuccess !== undefined) {
+    const validation = validateAttackSuccess(
+      response,
+      expectBlock.attackSuccess
+    );
+    results.attackSuccess = {
       pass: validation.pass,
       details: validation.message,
     };

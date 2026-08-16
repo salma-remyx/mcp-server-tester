@@ -284,6 +284,18 @@ export {
 // AI-driven variant optimization experiments
 export { runVariantExperiment } from './evals/variantExperiment.js';
 
+// Adversarial tool-output injection for injected-environment evals
+export {
+  injectToolResponse,
+  resolveInjectionText,
+  INJECTION_PAYLOADS,
+} from './evals/responseInjection.js';
+export type {
+  ResponseInjection,
+  InjectionPlacement,
+  InjectionPayloadName,
+} from './evals/responseInjection.js';
+
 // MCP Host Simulation
 export {
   simulateMCPHost,

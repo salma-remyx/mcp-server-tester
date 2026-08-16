@@ -97,6 +97,7 @@ Supported assertion types:
 | `snapshot`       | Response matches a saved baseline               |
 | `judge`          | LLM evaluates response quality against a rubric |
 | `toolsTriggered` | LLM called the expected tools (LLM host mode)   |
+| `attackSuccess`  | Host behavior under an injected tool output     |
 
 ### LLM host mode
 

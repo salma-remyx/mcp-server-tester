@@ -507,6 +507,20 @@ await saveEvalRunComparison({ store, comparison, id: 'candidate-comparison' });
 **Result Structure:**
 
 ```typescript snippet=src/evals/evalRunner.ts#L106-L184
+ * additionally embeds an indirect prompt injection in that tool's output —
+ * the server is never called differently, only what the host reads differs.
+ */
+export interface ToolOverrideVariant {
+  /**
+   * Stable identifier for this runtime variant.
+   */
+  id: string;
+
+  /**
+   * Optional human-readable explanation of what this variant is testing.
+   */
+  description?: string;
+
   /**
    * Per-tool metadata overrides keyed by canonical tool name.
    */
@@ -572,19 +586,6 @@ export interface EvalRunnerResult {
    * Average tool recall across all mcp_host cases that have a
    * `toolsTriggered` expectation (recall = fraction of required tools
    * that were actually called). Only present when at least one such case ran.
-   */
-  datasetToolRecall?: number;
-
-  /**
-   * Harmonic mean of `datasetToolPrecision` and `datasetToolRecall`.
-   * Only present when at least one case contributes precision/recall data.
-   */
-  datasetToolF1?: number;
-
-  /**
-   * Experiment tracking metadata captured at run time.
-   */
-  metadata?: EvalRunMetadata;
 ```
 
 ### `runVariantExperiment(options, context)`
@@ -1251,7 +1252,6 @@ export interface EvalExpectBlock {
     /** Exact number of tool calls */
     exact?: number;
   };
-}
 ```
 
 ### `EvalCase`
